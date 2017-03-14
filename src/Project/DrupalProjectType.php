@@ -1,0 +1,279 @@
+<?php
+
+namespace Droath\ProjectX\Project;
+
+use Boedah\Robo\Task\Drush\loadTasks;
+
+/**
+ * Define Drupal project type.
+ */
+class DrupalProjectType extends PhpProjectType
+{
+    use loadTasks;
+
+    const BUILD_FRESH = 'build:fresh';
+    const BUILD_DIRTY = 'build:dirty';
+    const BUILD_ABORT = 'build:abort';
+
+    /**
+     * Constructor for the Drupal project type.
+     */
+    public function __construct()
+    {
+        $this->supportsDocker();
+    }
+
+    /**
+     * {@inheritdoc}.
+     */
+    public function build()
+    {
+        $status = $this->startBuild();
+
+        if ($status === static::BUILD_ABORT) {
+            return;
+        } elseif ($status === static::BUILD_DIRTY) {
+            $this->removeInstallRoot();
+        } elseif ($status === static::BUILD_FRESH) {
+            $this->updateProjectComposer();
+        }
+        parent::build();
+
+        // Create application install root directory.
+        $this->taskFilesystemStack()
+            ->chmod($this->getProjectXRootPath(), 0775)
+            ->mkdir($this->getInstallPath(), 0775)
+            ->run();
+
+        // Run composer update within the project root.
+        $this->taskComposerUpdate()
+            ->run();
+    }
+
+    /**
+     * {@inheritdoc}.
+     */
+    public function install()
+    {
+        $status = $this->startInstall();
+
+        if (!$status) {
+            return;
+        }
+        $this->say("Drupal's install process has begun. 🤘");
+
+        $options = $this->getInstallOptions();
+        $install_path = $this->getInstallPath();
+        $template_path = $this->getTemplateDirectoryPath();
+
+        $sites = "{$install_path}/sites";
+        $settings = "{$sites}/default/settings.php";
+        $settings_local = "{$sites}/default/settings.local.php";
+
+        // Change permission, create default files directory, copy settings.php,
+        // create local settings.
+        $this->taskFilesystemStack()
+            ->chmod($sites, 0775, 0000, true)
+            ->mkdir("{$sites}/default/files")
+            ->copy("{$sites}/default/default.settings.php", $settings)
+            ->copy("{$sites}/example.settings.local.php", $settings_local)
+            ->run();
+
+        // Append configurations into default local settings.
+        $this->taskWriteToFile($settings_local)
+            ->append()
+            ->textFromFile("{$template_path}/settings.local.txt")
+            ->run();
+
+        // Start project environment.
+        $this->taskSymfonyCommand($this->getAppCommand('project:up'))
+            ->run();
+
+        // Run Drupal site install via drush.
+        $this->taskDrushStack()
+            ->drupalRootDirectory($install_path)
+            ->siteName($options['site']['name'])
+            ->accountMail($options['account']['mail'])
+            ->accountName($options['account']['name'])
+            ->accountPass($options['account']['pass'])
+            ->mysqlDbUrl('admin:root@127.0.0.1:3306/drupal')
+            ->siteInstall($options['site']['profile'])
+            ->run();
+
+        // Append configurations into default settings.
+        $this->_chmod($settings, 0775);
+        $this->taskWriteToFile($settings)
+            ->append()
+            ->textFromFile("{$template_path}/settings.txt")
+            ->run();
+
+        // Open project site in browser.
+        $this->taskOpenBrowser('http://localhost')
+            ->run();
+    }
+
+    /**
+     * Get Drupal install options.
+     */
+    protected function getInstallOptions()
+    {
+        $options = isset($config['options']['drupal'])
+            ? $config['options']['drupal']
+            : [];
+
+        return $options + $this->defaultInstallOptions();
+    }
+
+    /**
+     * Get default Drupal install options.
+     */
+    protected function defaultInstallOptions()
+    {
+        $config = $this->getProjectXConfig();
+
+        return [
+            'site' => [
+                'name' => $config['name'],
+                'profile' => 'standard',
+            ],
+            'account' => [
+                'mail' => 'admin@example.com',
+                'name' => 'admin',
+                'pass' => 'admin',
+            ],
+        ];
+    }
+
+    /**
+     * Install docker configurations that are specific to Drupal.
+     */
+    public function dockerInstall()
+    {
+        $project_root = $this->getProjectXRootPath();
+        $docker_root = $project_root . '/docker';
+
+        $template_path = $this
+            ->getTemplateDirectoryPath() . '/docker';
+
+        $this->taskfilesystemStack()
+            ->mkdir($docker_root)
+            ->mirror("{$template_path}/mysql", "{$docker_root}/mysql")
+            ->mirror("{$template_path}/nginx", "{$docker_root}/nginx")
+            ->mirror("{$template_path}/php-fpm", "{$docker_root}/php-fpm")
+            ->copy("{$template_path}/docker-compose.yml", "{$project_root}/docker-compose.yml")
+            ->run();
+    }
+
+    /**
+     * Start the Drupal build.
+     */
+    protected function startBuild()
+    {
+        $rebuild = false;
+
+        if ($this->isBuilt()) {
+            $rebuild = $this->confirm(
+                'Drupal has been built already, do you want to rebuild?'
+            );
+
+            if (!$rebuild) {
+                $this->say("Drupal's build process has been aborted! ⛈️");
+
+                return static::BUILD_ABORT;
+            }
+        }
+        $this->say("Drupal's build process has begun. 🤘");
+
+        return !$rebuild ? static::BUILD_FRESH : static::BUILD_DIRTY;
+    }
+
+    /**
+     * Start the Drupal install.
+     */
+    protected function startInstall()
+    {
+        if (!$this->isBuilt()) {
+            $this->say(
+                "Unable to install Drupal as the project hasn't been built yet. ⛈️"
+            );
+
+            return false;
+        }
+
+        return true;
+    }
+
+    /**
+     * Get composer template file.
+     *
+     * @return string
+     */
+    protected function getComposerTemplate()
+    {
+        $template = 'composer.json';
+
+        if ($this->useBlt()) {
+            $template = 'blt.composer.json';
+        }
+
+        return $template;
+    }
+
+    /**
+     * Has Drupal been built.
+     *
+     * @return bool
+     */
+    protected function isBuilt()
+    {
+        $project_root = dirname(
+            $this->findProjectXConfigPath()
+        );
+
+        // Check if Drupal install root exist and is not empty.
+        return is_dir($project_root . static::INSTALL_ROOT)
+            && (new \FilesystemIterator($project_root . static::INSTALL_ROOT))->valid();
+    }
+
+    /**
+     * Use Acquia BLT.
+     */
+    protected function useBlt()
+    {
+        return $this->confirm('Use Acquia BLT?');
+    }
+
+    /**
+     * Update project composer.json.
+     */
+    protected function updateProjectComposer()
+    {
+        $template = $this->getComposerTemplate();
+        $this->composer()
+            ->mergeWithTemplate($template)
+            ->update();
+
+        return $this;
+    }
+
+    /**
+     * Remove project install root.
+     */
+    protected function removeInstallRoot()
+    {
+        $this->taskDeleteDir($this->getInstallPath())->run();
+
+        return $this;
+    }
+
+    /**
+     * Get project install path.
+     *
+     * @return string
+     *   The project install path.
+     */
+    protected function getInstallPath()
+    {
+        return $this->getProjectXRootPath() . static::INSTALL_ROOT;
+    }
+}

@@ -1,0 +1,28 @@
+
+/**
+ * Local database settings.
+ */
+$databases['default']['default'] = array(
+  'database' => 'drupal',
+  'username' => 'admin',
+  'password' => 'root',
+  'prefix' => '',
+  'host' => 'mysql',
+  'port' => '3306',
+  'namespace' => 'Drupal\\Core\\Database\\Driver\\mysql',
+  'driver' => 'mysql',
+);
+
+/*
+ * Local Drupal command-line application.
+ *
+ * If executing local Drupal CLI commands on the host machine, you'll need to
+ * change the database host so the connection resolves. It's also possible to
+ * configure Drupal CLI tools to use SSH to connect to the Docker container
+ * to execute their command(s) within the environment.
+ */
+if (php_sapi_name() === 'cli'
+  && $_SERVER['USER'] !== 'www-data') {
+
+  $databases['default']['default']['host'] = '127.0.0.1';
+}

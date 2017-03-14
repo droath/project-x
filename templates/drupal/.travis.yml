@@ -1,0 +1,115 @@
+# @file
+# .travis.yml - Drupal 8 Travis CI Integration
+
+language: php
+
+sudo: false
+
+php:
+  - 5.6
+
+env:
+  global:
+    - MODULE_NAME='amber_alert_module'
+    - DRUPAL_REPO='git://drupalcode.org/project/drupal.git'
+    - DRUPAL_VERSION='8.2.x'
+    - PHPCS_VERSION='2.7.*'
+    - CODER_VERSION='8.2.9'
+
+notifications:
+  slack: 'xxx'
+
+# Cache Composer & Drush directories.
+cache:
+  bundler: true
+  apt: true
+  directories:
+  - "$HOME/.composer/cache"
+  - "$HOME/.drush/cache"
+
+mysql:
+  database: drupal
+  username: root
+  encoding: utf8
+
+before_install:
+  # Disable xdebug.
+  - phpenv config-rm xdebug.ini
+
+  # Composer.
+  - sed -i '1i export PATH="$HOME/.composer/vendor/bin:$PATH"' $HOME/.bashrc
+  - source $HOME/.bashrc
+  # - composer self-update
+
+  # Drush.
+  - composer global require drush/drush:~8.1
+
+  # Codesniffer.
+  - composer global require squizlabs/php_codesniffer:$PHPCS_VERSION
+
+  # Coder.
+  - composer global require drupal/coder:$CODER_VERSION
+  - ln -s ~/.composer/vendor/drupal/coder/coder_sniffer/Drupal ~/.composer/vendor/squizlabs/php_codesniffer/CodeSniffer/Standards/
+
+  # Ensure the PHP environment is ready.
+  - phpenv rehash
+
+install:
+  - git clone --branch $DRUPAL_VERSION $DRUPAL_REPO drupal --depth 1
+  - cd drupal && composer install && cd -
+  - mkdir -p drupal/modules/$MODULE_NAME
+
+  # switched to doing it this way because it makes local testing a bit easier.
+  # create symbolic links to all of the files/folders in the module directory
+  - for d in $(pwd)/*; do ln -s "$d" "drupal/modules/$MODULE_NAME"; done
+
+  # remove the recursive drupal folder from the symlinks
+  - rm -f drupal/modules/$MODULE_NAME/drupal
+
+  - cd drupal
+
+before_script:
+
+  # This fixes a fail when install Drupal.
+  - echo 'sendmail_path = /bin/true' >> ~/.phpenv/versions/$(phpenv version-name)/etc/conf.d/travis.ini
+
+  # Mysql might time out for long tests, increase the wait timeout.
+  - mysql -e 'SET @@GLOBAL.wait_timeout=1200'
+
+  # Install Drupal and enable the required modules (including this one).
+  - mysql -e 'create database drupal;'
+  - cd $TRAVIS_BUILD_DIR/drupal && drush --yes site-install standard --db-url="mysql://root@127.0.0.1/drupal"
+
+  # Dependency Modules
+  - cd $TRAVIS_BUILD_DIR/drupal && drush --yes en $MODULE_NAME
+  - cd $TRAVIS_BUILD_DIR/drupal && drush --yes en simpletest
+
+  # Export web server URL for browser tests.
+  - export SIMPLETEST_BASE_URL=http://localhost:8080
+
+  # Export database variable for kernel tests.
+  - export SIMPLETEST_DB=mysql://root:@127.0.0.1/drupal
+
+script:
+
+  # Start a web server.
+  - cd $TRAVIS_BUILD_DIR/drupal
+  - drush runserver 127.0.0.1:8080 &
+
+  # Run code sniffer.
+  # Warnings are disabled until the SMS notifier is ported.
+  - phpcs --report=full --standard=Drupal --warning-severity=0 $TRAVIS_BUILD_DIR/drupal/modules/$MODULE_NAME --ignore=bin,*.css,gulpfile.js,libraries,modules/contrib,vendor
+
+  # Drupal "SimpleTests" via run-tests.sh
+  - cd $TRAVIS_BUILD_DIR/drupal
+  - php core/scripts/run-tests.sh --verbose --color --module $MODULE_NAME --php $(which php) --url http://127.0.0.1:8080
+
+  # PHP Unit Tests
+  - cd $TRAVIS_BUILD_DIR/drupal
+  - phpunit -c core/phpunit.xml.dist modules/$MODULE_NAME --debug --testdox
+
+
+  # Behat Tests - RUN THESE LAST OTHERWISE PHPUNIT WILL FAIL BECAUSE OF DEPENDENCY CONFLICTS
+  - cd $TRAVIS_BUILD_DIR/drupal/modules/$MODULE_NAME
+  - composer install
+  - vendor/bin/behat --config tests/behat/behat.yml
