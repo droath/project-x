@@ -1,0 +1,7 @@
+# Reference the database file uploaded to probo's /assets
+
+steps:
+  - name: Drupal setup
+    plugin: Drupal
+    drupalVersion: 8
+    subDirectory: docroot

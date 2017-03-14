@@ -1,0 +1,8 @@
+syncs:
+  app-sync:
+    src: './'
+    dest: '/var/www/html'
+    sync_user: 'www-data'
+    sync_host_ip: '127.0.0.1'
+    sync_strategy: 'unison'
+    notify_terminal: true
