@@ -64,7 +64,6 @@ class DrupalProjectType extends PhpProjectType
 
         $options = $this->getInstallOptions();
         $install_path = $this->getInstallPath();
-        $template_path = $this->getTemplateDirectoryPath();
 
         $sites = "{$install_path}/sites";
         $settings = "{$sites}/default/settings.php";
@@ -82,7 +81,7 @@ class DrupalProjectType extends PhpProjectType
         // Append configurations into default local settings.
         $this->taskWriteToFile($settings_local)
             ->append()
-            ->textFromFile("{$template_path}/settings.local.txt")
+            ->textFromFile($this->getTemplateFilePath('settings.local.txt'))
             ->run();
 
         // Start project environment.
@@ -104,7 +103,7 @@ class DrupalProjectType extends PhpProjectType
         $this->_chmod($settings, 0775);
         $this->taskWriteToFile($settings)
             ->append()
-            ->textFromFile("{$template_path}/settings.txt")
+            ->textFromFile($this->getTemplateFilePath('settings.txt'))
             ->run();
 
         // Open project site in browser.
@@ -152,15 +151,12 @@ class DrupalProjectType extends PhpProjectType
         $project_root = $this->getProjectXRootPath();
         $docker_root = $project_root . '/docker';
 
-        $template_path = $this
-            ->getTemplateDirectoryPath() . '/docker';
-
         $this->taskfilesystemStack()
             ->mkdir($docker_root)
-            ->mirror("{$template_path}/mysql", "{$docker_root}/mysql")
-            ->mirror("{$template_path}/nginx", "{$docker_root}/nginx")
-            ->mirror("{$template_path}/php-fpm", "{$docker_root}/php-fpm")
-            ->copy("{$template_path}/docker-compose.yml", "{$project_root}/docker-compose.yml")
+            ->mirror($this->getTemplateFilePath('docker/mysql'), "{$docker_root}/mysql")
+            ->mirror($this->getTemplateFilePath('docker/nginx'), "{$docker_root}/nginx")
+            ->mirror($this->getTemplateFilePath('docker/php-fpm'), "{$docker_root}/php-fpm")
+            ->copy($this->getTemplateFilePath('docker/docker-compose.yml'), "{$project_root}/docker-compose.yml")
             ->run();
     }
 

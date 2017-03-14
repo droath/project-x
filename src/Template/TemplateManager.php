@@ -17,6 +17,11 @@ class TemplateManager
     const BASE_DIRECTORY = '/templates';
 
     /**
+     * Template project directory.
+     */
+    const PROJECT_DIRECTORY = '/project-x';
+
+    /**
      * Load template file contents.
      *
      * @param string $filename
@@ -52,12 +57,52 @@ class TemplateManager
      */
     public function getTemplateFilePath($filename)
     {
-        $filepath = $this->getTemplatePathByProject() . "/{$filename}";
+        $filepath = $this->locateTemplateFilePath($filename);
 
         if (!file_exists($filepath)) {
             throw new \Exception(
-                'Unable to locate the template file.'
+                sprintf('Unable to locate the template file (%s).', $filename)
             );
+        }
+
+        return $filepath;
+    }
+
+    /**
+     * Has project template directory.
+     *
+     * @return bool
+     *   Return true if the project template directory exist; otherwise false.
+     */
+    public function hasProjectTemplateDirectory()
+    {
+        return is_dir($this->templateProjectPath());
+    }
+
+    /**
+     * Locate the template file path.
+     *
+     * It checks different template directories for a specific filename to see
+     * if the template file was overridden before returning the default.
+     *
+     * @param string $filename
+     *   The name of the template file.
+     *
+     * @return string
+     *   The path to the template file.
+     */
+    protected function locateTemplateFilePath($filename) {
+        $default = $this->getTemplatePathByProject() . "/{$filename}";
+
+        // Check if the project has a template directory.
+        if (!$this->hasProjectTemplateDirectory()) {
+            return $default;
+        }
+
+        // Check if the file exist in the project template directory.
+        $filepath = $this->templateProjectPath() . "/{$filename}";
+        if (!file_exists($filepath)) {
+            return $default;
         }
 
         return $filepath;
@@ -69,7 +114,7 @@ class TemplateManager
      * @return string
      *   The path to the template directory based on project.
      */
-    public function getTemplatePathByProject()
+    protected function getTemplatePathByProject()
     {
         $config = $this->getProjectXConfig();
 
@@ -107,9 +152,21 @@ class TemplateManager
      * Project-X template base path.
      *
      * @return string
+     *   The application template path.
      */
     protected function templateBasePath()
     {
         return APP_ROOT . static::BASE_DIRECTORY;
+    }
+
+    /**
+     * Project-X template project path.
+     *
+     * @return string
+     *   The project template path.
+     */
+    protected function templateProjectPath()
+    {
+        return $this->getProjectXRootPath() . static::PROJECT_DIRECTORY;
     }
 }

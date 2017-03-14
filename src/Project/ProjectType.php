@@ -128,14 +128,14 @@ abstract class ProjectType implements BuilderAwareInterface, ContainerAwareInter
     }
 
     /**
-     * Get project template directory path.
+    /**
+     * Get template directory path for the given file.
      *
      * @return string
-     *   The path to the project template directory.
+     *   The full path to the template file.
      */
-    protected function getTemplateDirectoryPath()
+    protected function getTemplateFilePath($filename)
     {
-        return $this->templateManager()
-            ->getTemplatePathByProject();
+        return $this->templateManager()->getTemplateFilePath($filename);
     }
 }
