@@ -69,6 +69,10 @@ class DrupalProjectType extends PhpProjectType
         $settings = "{$sites}/default/settings.php";
         $settings_local = "{$sites}/default/settings.local.php";
 
+        // Start project environment.
+        $this->taskSymfonyCommand($this->getAppCommand('project:up'))
+            ->run();
+
         // Change permission, create default files directory, copy settings.php,
         // create local settings.
         $this->taskFilesystemStack()
@@ -84,9 +88,17 @@ class DrupalProjectType extends PhpProjectType
             ->textFromFile($this->getTemplateFilePath('settings.local.txt'))
             ->run();
 
-        // Start project environment.
-        $this->taskSymfonyCommand($this->getAppCommand('project:up'))
-            ->run();
+        $this->say('Waiting on project engine to become available...');
+
+        $db_host = '127.0.0.1';
+        $db_connection = $this->hasDatabaseConnection($db_host);
+
+        if (!$db_connection) {
+            throw new \Exception(
+                sprintf('Unable to connection to engine database %s', $db_host)
+            );
+        }
+        sleep(10);
 
         // Run Drupal site install via drush.
         $this->taskDrushStack()
@@ -95,7 +107,7 @@ class DrupalProjectType extends PhpProjectType
             ->accountMail($options['account']['mail'])
             ->accountName($options['account']['name'])
             ->accountPass($options['account']['pass'])
-            ->mysqlDbUrl('admin:root@127.0.0.1:3306/drupal')
+            ->mysqlDbUrl("admin:root@$db_host:3306/drupal")
             ->siteInstall($options['site']['profile'])
             ->run();
 
@@ -109,6 +121,29 @@ class DrupalProjectType extends PhpProjectType
         // Open project site in browser.
         $this->taskOpenBrowser('http://localhost')
             ->run();
+    }
+
+    /**
+     * Check if host has database connection.
+     *
+     * @param string $host
+     *   The database hostname.
+     * @param int $port
+     *   The database port.
+     * @param int $seconds
+     *   The amount of seconds to continually check.
+     *
+     * @return bool
+     *   Return true if the database is connectible; otherwise false.
+     */
+    protected function hasDatabaseConnection($host, $port = 3306, $seconds = 30)
+    {
+        $hostChecker = $this->getHostChecker();
+        $hostChecker
+            ->setHost($host)
+            ->setPort($port);
+
+        return $hostChecker->isPortOpenRepeater($seconds);
     }
 
     /**

@@ -128,6 +128,16 @@ abstract class ProjectType implements BuilderAwareInterface, ContainerAwareInter
     }
 
     /**
+     * Get host checker service.
+     *
+     * @return \Droath\ProjectX\Service\HostChecker
+     *   The host check object.
+     */
+    protected function getHostChecker()
+    {
+        return $this->getContainer()->get('projectXHostChecker');
+    }
+
     /**
      * Get template directory path for the given file.
      *

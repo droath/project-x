@@ -42,6 +42,8 @@ class ProjectX extends Application
         $this->container
             ->share('projectXTemplate', \Droath\ProjectX\Template\TemplateManager::class);
         $this->container
+            ->add('projectXHostChecker', \Droath\ProjectX\Service\HostChecker::class);
+        $this->container
             ->share('projectXEngine', function () {
                 return (new \Droath\ProjectX\Engine\EngineTypeFactory())
                     ->createInstance();
