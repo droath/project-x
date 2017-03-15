@@ -151,11 +151,15 @@ class DrupalProjectType extends PhpProjectType
      */
     protected function getInstallOptions()
     {
+        $config = $this->getProjectXConfig();
+
         $options = isset($config['options']['drupal'])
             ? $config['options']['drupal']
             : [];
 
-        return $options + $this->defaultInstallOptions();
+        return array_replace_recursive(
+            $this->defaultInstallOptions(), $options
+        );
     }
 
     /**
