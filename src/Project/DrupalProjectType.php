@@ -70,7 +70,7 @@ class DrupalProjectType extends PhpProjectType
         $settings_local = "{$sites}/default/settings.local.php";
 
         // Start project environment.
-        $this->taskSymfonyCommand($this->getAppCommand('project:up'))
+        $this->taskSymfonyCommand($this->getAppCommand('engine:up'))
             ->run();
 
         // Change permission, create default files directory, copy settings.php,
