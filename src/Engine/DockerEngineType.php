@@ -111,9 +111,9 @@ class DockerEngineType extends EngineType
      */
     protected function runDockerSyncDownCollection()
     {
-      $this->collectionBuilder()
-        ->addTask($this->taskDockerSyncDaemonStop())
-        ->completion($this->taskDockerSyncDaemonClean())
-        ->run();
+        $this->collectionBuilder()
+            ->addTask($this->taskDockerSyncDaemonStop())
+            ->completion($this->taskDockerSyncDaemonClean())
+            ->run();
     }
 }
