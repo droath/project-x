@@ -14,9 +14,9 @@ define('APP_ROOT', dirname(__DIR__));
 
 if (file_exists(APP_ROOT . '/../../vendor/autoload.php')) {
     $autoloader = include_once APP_ROOT . '/../../vendor/autoload.php';
-} elseif (file_exists($root . '/vendor/autoload.php')) {
+} elseif (file_exists(APP_ROOT . '/vendor/autoload.php')) {
     $autoloader = include_once APP_ROOT . '/vendor/autoload.php';
-} elseif (file_exists($root . '/../../autoload.php')) {
+} elseif (file_exists(APP_ROOT . '/../../autoload.php')) {
     $autoloader = include_once APP_ROOT . '/../../autoload.php';
 } else {
     echo 'Unable to find PHP autoloader' . PHP_EOL .
