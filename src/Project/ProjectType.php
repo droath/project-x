@@ -54,6 +54,22 @@ abstract class ProjectType implements BuilderAwareInterface, ContainerAwareInter
     }
 
     /**
+     * React on the engine startup.
+     */
+    public function onEngineUp()
+    {
+        // Nothing to do at the parent level.
+    }
+
+    /**
+     * React on the engine shutdown.
+     */
+    public function onEngineDown()
+    {
+        // Nothing to do at the parent level.
+    }
+
+    /**
      * Project copy template file to project.
      *
      * @param string $filename

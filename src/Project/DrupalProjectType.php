@@ -124,6 +124,19 @@ class DrupalProjectType extends PhpProjectType
     }
 
     /**
+     * {@inheritdoc}
+     */
+    public function onEngineUp()
+    {
+        $this->say("Setting Drupal's default/files directory permissions. 🤘");
+        $install_path = $this->getInstallPath();
+        $files = "{$install_path}/sites/default/files";
+
+        // Ensure default/files permissions are 0775 on project launch.
+        $this->_chmod($files, 0775, 0000, true);
+    }
+
+    /**
      * Check if host has database connection.
      *
      * @param string $host
@@ -158,7 +171,8 @@ class DrupalProjectType extends PhpProjectType
             : [];
 
         return array_replace_recursive(
-            $this->defaultInstallOptions(), $options
+            $this->defaultInstallOptions(),
+            $options
         );
     }
 
@@ -184,8 +198,11 @@ class DrupalProjectType extends PhpProjectType
 
     /**
      * Install docker configurations that are specific to Drupal.
+     *
+     * @param bool $use_docker_sync
+     *   Use docker sync.
      */
-    public function dockerInstall()
+    public function dockerInstall($use_docker_sync)
     {
         $project_root = $this->getProjectXRootPath();
         $docker_root = $project_root . '/docker';
@@ -197,6 +214,22 @@ class DrupalProjectType extends PhpProjectType
             ->mirror($this->getTemplateFilePath('docker/php-fpm'), "{$docker_root}/php-fpm")
             ->copy($this->getTemplateFilePath('docker/docker-compose.yml'), "{$project_root}/docker-compose.yml")
             ->run();
+
+        if ($use_docker_sync) {
+            $this->taskfilesystemStack()
+                ->copy($this->getTemplateFilePath('docker/docker-sync.yml'), "{$project_root}/docker-sync.yml")
+                ->copy($this->getTemplateFilePath('docker/docker-sync.yml'), "{$project_root}/docker-sync.yml")
+                ->copy($this->getTemplateFilePath('docker/docker-compose-dev.yml'), "{$project_root}/docker-compose-dev.yml")
+                ->run();
+
+            $config = $this->getProjectXConfig();
+            $sync_name = strtolower(strtr($config['name'], ' ', '_'));
+
+            // Set the docker sync .env file with the sync name defined.
+            $this->taskWriteToFile("{$project_root}/.env")
+                ->line("SYNC_NAME=$sync_name")
+                ->run();
+        }
     }
 
     /**

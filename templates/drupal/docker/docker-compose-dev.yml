@@ -1,0 +1,14 @@
+version: "2"
+services:
+  nginx:
+    volumes:
+      - docker-sync:/var/www/html:rw
+  php:
+    volumes:
+      - docker-sync:/var/www/html:rw
+
+volumes:
+  docker-sync:
+    external:
+      name: "${SYNC_NAME}-unison-sync"
+

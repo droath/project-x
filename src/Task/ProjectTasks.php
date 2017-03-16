@@ -59,55 +59,11 @@ class ProjectTasks extends TaskBase
 
         if ($engine->getTypeId() === 'docker'
             && $project->hasDockerSupport()) {
-            $project->dockerInstall();
+            $project->dockerInstall($engine->useDockerSync());
         } else {
             $engine->install();
         }
 
         return $this;
-    }
-
-    /**
-     * Startup project engine.
-     */
-    public function projectUp()
-    {
-        $this->engineInstance()->up();
-
-        return $this;
-    }
-
-    /**
-     * Shutdown project engine.
-     */
-    public function projectDown()
-    {
-        $this->engineInstance()->down();
-
-        return $this;
-    }
-
-    /**
-     * Engine type instance.
-     *
-     * @return \Droath\ProjectX\Engine\EngineTypeInterface
-     */
-    protected function engineInstance()
-    {
-        return $this->container
-            ->get('projectXEngine')
-            ->setBuilder($this->getBuilder());
-    }
-
-    /**
-     * Project type instance.
-     *
-     * @return \Droath\ProjectX\Project\ProjectTypeInterface
-     */
-    protected function projectInstance()
-    {
-        return $this->container
-            ->get('projectXProject')
-            ->setBuilder($this->getBuilder());
     }
 }
