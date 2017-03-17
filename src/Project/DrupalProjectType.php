@@ -222,12 +222,15 @@ class DrupalProjectType extends PhpProjectType
                 ->copy($this->getTemplateFilePath('docker/docker-compose-dev.yml'), "{$project_root}/docker-compose-dev.yml")
                 ->run();
 
-            $config = $this->getProjectXConfig();
-            $sync_name = strtolower(strtr($config['name'], ' ', '_'));
+            $project_name = $this->getApplication()
+                ->getProjectMachineName();
+
+            $sync_name = uniqid("$project_name-", false);
 
             // Set the docker sync .env file with the sync name defined.
             $this->taskWriteToFile("{$project_root}/.env")
-                ->line("SYNC_NAME=$sync_name")
+                ->append()
+                ->appendUnlessMatches('/SYNC_NAME=\w+/', "SYNC_NAME=$sync_name")
                 ->run();
         }
     }
