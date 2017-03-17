@@ -66,6 +66,18 @@ class ProjectX extends Application
     }
 
     /**
+     * Get Project-X project machine-name.
+     *
+     * @return string
+     */
+    public function getProjectMachineName()
+    {
+        $config = $this->getProjectXConfig();
+
+        return strtolower(strtr($config['name'], ' ', '_'));
+    }
+
+    /**
      * Print application banner.
      */
     private function printBanner()
