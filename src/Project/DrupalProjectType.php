@@ -216,10 +216,11 @@ class DrupalProjectType extends PhpProjectType
             ->run();
 
         if ($use_docker_sync) {
-            $this->taskfilesystemStack()
-                ->copy($this->getTemplateFilePath('docker/docker-sync.yml'), "{$project_root}/docker-sync.yml")
-                ->copy($this->getTemplateFilePath('docker/docker-sync.yml'), "{$project_root}/docker-sync.yml")
-                ->copy($this->getTemplateFilePath('docker/docker-compose-dev.yml'), "{$project_root}/docker-compose-dev.yml")
+            $this->copyTemplateFilesToProject([
+                'docker/docker-sync.yml' => 'docker-sync.yml',
+                'docker/docker-compose-dev.yml' => 'docker-compose-dev.yml',
+            ]);
+
                 ->run();
 
             $project_name = $this->getApplication()

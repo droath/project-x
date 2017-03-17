@@ -70,24 +70,44 @@ abstract class ProjectType implements BuilderAwareInterface, ContainerAwareInter
     }
 
     /**
-     * Project copy template file to project.
+     * Copy template file to project root.
      *
      * @param string $filename
-     *   The template file name.
+     *   The filename of template file.
+     * @param bool $overwrite
+     *   A flag to determine if the file should be overwritten if exists.
      */
-    protected function copyTemplateFileToProject($filename)
+    protected function copyTemplateFileToProject($filename, $overwrite = false)
+    {
+        $this->copyTemplateFilesToProject([$filename => $filename], $overwrite);
+    }
+
+    /**
+     * Copy template files to project root.
+     *
+     * @param array $filenames
+     *   An array of template filenames, keyed by target path.
+     * @param bool $overwrite
+     *   A flag to determine if the file should be overwritten if exists.
+     */
+    protected function copyTemplateFilesToProject(array $filenames, $overwrite = false)
     {
         try {
-            $filepath = $this->getProjectXRootPath() . "/{$filename}";
-            $template_path = $this->templateManager()
-                ->getTemplateFilePath($filename);
+            $filesystem = $this->taskFilesystemStack();
+            foreach ($filenames as $template_path => $target_path) {
+                $target_file = $this
+                    ->getProjectXRootPath() . "/{$target_path}";
 
-            $this->taskFilesystemStack()
-                ->copy($template_path, $filepath)
-                ->run();
+                $template_file = $this
+                    ->templateManager()
+                    ->getTemplateFilePath($template_path);
+
+                $filesystem->copy($template_file, $target_file, $overwrite);
+            }
+            $filesystem->run();
         } catch (\Exception $e) {
             throw new \Exception(
-                sprintf('Coping template file (%s) to project failed!', $filename)
+                sprintf('Failed to copy template file(s) into project!')
             );
         }
     }
