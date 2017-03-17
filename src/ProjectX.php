@@ -56,6 +56,28 @@ class ProjectX extends Application
     }
 
     /**
+     * Get client hostname.
+     *
+     * @return string
+     *   The client hostname.
+     */
+    public static function clientHostName()
+    {
+        return gethostname();
+    }
+
+    /**
+     * Get client hostname IP.
+     *
+     * @return string
+     *   The client hostname IP address.
+     */
+    public static function clientHostIP()
+    {
+        return getHostByName(static::clientHostName());
+    }
+
+    /**
      * Has project-x configuration.
      *
      * @return bool

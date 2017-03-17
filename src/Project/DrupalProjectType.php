@@ -3,6 +3,7 @@
 namespace Droath\ProjectX\Project;
 
 use Boedah\Robo\Task\Drush\loadTasks;
+use Droath\ProjectX\ProjectX;
 
 /**
  * Define Drupal project type.
@@ -221,6 +222,11 @@ class DrupalProjectType extends PhpProjectType
                 'docker/docker-compose-dev.yml' => 'docker-compose-dev.yml',
             ]);
 
+            // Update the docker compose development configuration to replace
+            // the placeholder variables with the valid host IP.
+            $this->taskWriteToFile("$project_root/docker-compose-dev.yml")
+                ->append()
+                ->place('HOST_IP_ADDRESS', ProjectX::clientHostIP())
                 ->run();
 
             $project_name = $this->getApplication()
