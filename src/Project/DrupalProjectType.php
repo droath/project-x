@@ -70,10 +70,6 @@ class DrupalProjectType extends PhpProjectType
         $settings = "{$sites}/default/settings.php";
         $settings_local = "{$sites}/default/settings.local.php";
 
-        // Start project environment.
-        $this->taskSymfonyCommand($this->getAppCommand('engine:up'))
-            ->run();
-
         // Change permission, create default files directory, copy settings.php,
         // create local settings.
         $this->taskFilesystemStack()
@@ -83,10 +79,18 @@ class DrupalProjectType extends PhpProjectType
             ->copy("{$sites}/example.settings.local.php", $settings_local)
             ->run();
 
+        // Start project environment.
+        $this->taskSymfonyCommand($this->getAppCommand('engine:up'))
+            ->run();
+
         // Append configurations into default local settings.
+        $settings_local_text = $this
+            ->templateManager()
+            ->loadTemplate('settings.local.txt', 'none');
+
         $this->taskWriteToFile($settings_local)
             ->append()
-            ->textFromFile($this->getTemplateFilePath('settings.local.txt'))
+            ->appendUnlessMatches('/\$databases\[.+\]/', $settings_local_text)
             ->run();
 
         $this->say('Waiting on project engine to become available...');
@@ -112,11 +116,18 @@ class DrupalProjectType extends PhpProjectType
             ->siteInstall($options['site']['profile'])
             ->run();
 
-        // Append configurations into default settings.
         $this->_chmod($settings, 0775);
+        $settings_include = $this
+            ->templateManager()
+            ->loadTemplate('settings.txt');
+
+        // Append settings.local include into sites/default/settings.php.
         $this->taskWriteToFile($settings)
             ->append()
-            ->textFromFile($this->getTemplateFilePath('settings.txt'))
+            ->appendUnlessMatches(
+                "/^(if\s?\(file_exists\(.+\/settings.local.php'\)\)\s?\{)\n/",
+                $settings_include
+            )
             ->run();
 
         // Open project site in browser.
