@@ -103,7 +103,11 @@ class DrupalProjectType extends PhpProjectType
                 sprintf('Unable to connection to engine database %s', $db_host)
             );
         }
-        sleep(10);
+
+        // Sometimes it takes awhile after the mysql host is up on the network
+        // to become totally available to except connections. Due to the
+        // uncertainty we'll need to sleep for about 30 seconds.
+        sleep(30);
 
         // Run Drupal site install via drush.
         $this->taskDrushStack()
@@ -116,21 +120,25 @@ class DrupalProjectType extends PhpProjectType
             ->siteInstall($options['site']['profile'])
             ->run();
 
-        $this->_chmod($settings, 0775);
+        // Update permissions to ensure all files can be accessed on the
+        // install path for both user and groups.
+        $this->_chmod($install_path, 0775, 0000, true);
+
         $settings_include = $this
             ->templateManager()
-            ->loadTemplate('settings.txt');
+            ->loadTemplate('settings.txt', 'none');
 
         // Append settings.local include into sites/default/settings.php.
         $this->taskWriteToFile($settings)
             ->append()
             ->appendUnlessMatches(
-                "/^(if\s?\(file_exists\(.+\/settings.local.php'\)\)\s?\{)\n/",
+                "/(include.+\/settings.local.php\'\;)\n\}/",
                 $settings_include
             )
             ->run();
 
         // Open project site in browser.
+        sleep(10);
         $this->taskOpenBrowser('http://localhost')
             ->run();
     }
