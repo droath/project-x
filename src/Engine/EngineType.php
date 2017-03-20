@@ -25,7 +25,7 @@ abstract class EngineType implements BuilderAwareInterface, ContainerAwareInterf
      */
     public function up()
     {
-        $this->say('Docker engine is preparing for takeoff. 🚀');
+        $this->say('Project engine is preparing for takeoff. 🚀');
     }
 
     /**
@@ -33,7 +33,7 @@ abstract class EngineType implements BuilderAwareInterface, ContainerAwareInterf
      */
     public function down()
     {
-        $this->say('Docker engine is preparing to shutdown. 💥');
+        $this->say('Project engine is preparing to shutdown. 💥');
     }
 
     /**
@@ -41,7 +41,7 @@ abstract class EngineType implements BuilderAwareInterface, ContainerAwareInterf
      */
     public function install()
     {
-        $this->say('Docker engine is running the install process. 🤘');
+        $this->say('Project engine is running the install process. 🤘');
     }
 
     /**
