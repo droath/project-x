@@ -175,6 +175,19 @@ abstract class ProjectType implements BuilderAwareInterface, ContainerAwareInter
     }
 
     /**
+     * Get project hostname.
+     *
+     * @return string
+     *   The project hostname defined in project-x config; otherwise localhost.
+     */
+    protected function getProjectHostname()
+    {
+        $config = $this->getProjectXConfig();
+
+        return isset($config['host']) ? $config['host']['name'] : 'localhost';
+    }
+
+    /**
      * Get template directory path for the given file.
      *
      * @return string

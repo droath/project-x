@@ -81,6 +81,7 @@ class DrupalProjectType extends PhpProjectType
 
         // Start project environment.
         $this->taskSymfonyCommand($this->getAppCommand('engine:up'))
+            ->opt('no-browser')
             ->run();
 
         // Append configurations into default local settings.
@@ -137,9 +138,11 @@ class DrupalProjectType extends PhpProjectType
             )
             ->run();
 
-        // Open project site in browser.
         sleep(10);
-        $this->taskOpenBrowser('http://localhost')
+
+         // Open project site in browser.
+        $hostname = $this->getProjectHostname();
+        $this->taskOpenBrowser("http://$hostname")
             ->run();
     }
 
