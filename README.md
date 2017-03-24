@@ -1,5 +1,7 @@
 # Project-X
 
+[![Build Status](https://travis-ci.org/droath/project-x.svg?branch=master)](https://travis-ci.org/droath/project-x)
+
 A development tool to manage PHP based projects.
 
 ### Getting Started
@@ -7,5 +9,5 @@ A development tool to manage PHP based projects.
 First, you'll need to download the project-x library using composer:
 
 ```bash
-composer require droath/project-x-robo:~0.0.1
+composer require droath/project-x-robo:^0.0.9
 ```
