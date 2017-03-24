@@ -91,7 +91,8 @@ class TemplateManager
      * @return string
      *   The path to the template file.
      */
-    protected function locateTemplateFilePath($filename) {
+    protected function locateTemplateFilePath($filename)
+    {
         $default = $this->getTemplatePathByProject() . "/{$filename}";
 
         // Check if the project has a template directory.
