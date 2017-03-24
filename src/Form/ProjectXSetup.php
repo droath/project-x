@@ -69,5 +69,4 @@ class ProjectXSetup implements FormInterface
             'docker' => 'Docker',
         ];
     }
-
 }
