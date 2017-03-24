@@ -79,6 +79,8 @@ class DrupalProjectType extends PhpProjectType
             ->copy("{$sites}/example.settings.local.php", $settings_local)
             ->run();
 
+        $this->copyTemplateFileToProject('.gitignore');
+
         // Start project environment.
         $this->taskSymfonyCommand($this->getAppCommand('engine:up'))
             ->opt('no-browser')

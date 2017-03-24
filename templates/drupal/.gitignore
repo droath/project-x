@@ -1,0 +1,138 @@
+# Ignore configuration files that may contain sensitive information.
+*.local
+settings.local.php
+project-x.local.yml
+development.services.yml
+
+# Ignore drupal core.
+docroot/core
+
+# Ignore paths that contain user-generated content.
+docroot/sites/*/files
+docroot/sites/*/files-private
+docroot/sites/*/private
+
+# Ignore contrib modules. These should be created during build process.
+files-private
+docroot/modules/contrib
+docroot/themes/contrib
+docroot/profiles/contrib
+docroot/libraries
+drush/contrib
+
+# Ignore custom theme folders
+docroot/themes/custom/*/node_modules
+
+# Ignore build artifacts
+docroot/themes/custom/*/css
+docroot/themes/custom/*/styleguide
+docroot/themes/custom/*/.sass-cache
+docroot/themes/custom/*/.sass-cache/*
+/deploy
+bin/*
+tmp
+reports
+
+# OS X
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Thumbnails
+._*
+
+# Files that might appear on external disk
+.Spotlight-V100
+.Trashes
+
+# Windows image file caches
+Thumbs.db
+ehthumbs.db
+
+# Folder config file
+Desktop.ini
+
+# Recycle Bin used on file shares
+$RECYCLE.BIN/
+
+# Eclipse
+*.pydevproject
+.project
+.metadata
+tmp/**
+tmp/**/*
+*.tmp
+*.bak
+*.swp
+*~.nib
+local.properties
+.classpath
+.settings/
+.loadpath
+
+# External tool builders
+.externalToolBuilders/
+
+# Locally stored "Eclipse launch configurations"
+*.launch
+
+# CDT-specific
+.cproject
+
+# PDT-specific
+.buildpathk
+
+# Emacs
+*~
+\#*\#
+/.emacs.desktop
+/.emacs.desktop.lock
+*.elc
+auto-save-list
+tramp
+.\#*
+
+# User-specific stuff:
+.idea/
+
+# XHProf
+xhprof_*
+
+# Composer vendor
+vendor/
+vendor/.git
+
+# Chosen wants to install components in /components
+/components
+
+#Sass
+.sass-cache
+*.css.map
+
+# Netbeans IDE
+nbproject
+nbproject/*
+
+# Sublime Text
+*.sublime-project
+*.sublime-workspace
+
+# DrupalVM
+.vagrant/
+
+# DevDesktop
+*.dd
+
+# Exports
+*.gz
+*.sql
+*.zip
+
+# PHPStorm
+atlassian-ide-plugin.xml
+
+# Drupal console
+console
+
+# Docker
+.docker-sync
