@@ -17,6 +17,19 @@ trait ProjectXAwareTrait
     protected $projectXConfigPath = false;
 
     /**
+     * Set Project-X configuration path.
+     *
+     * @param string $path
+     *   The path to the project-x file.
+     */
+    public function setProjectXConfigPath($path)
+    {
+        $this->projectXConfigPath = $path;
+
+        return $this;
+    }
+
+    /**
      * Get Project-X parse output.
      *
      * @return array
@@ -63,20 +76,15 @@ trait ProjectXAwareTrait
     }
 
     /**
-     * Find Project-x file path.
-     *
-     * @param string $path
-     *   The starting directory path.
+     * Find Project-X file path.
      *
      * @return string|bool
      *   The project-x path; otherwise false if not found.
      */
-    protected function findProjectXConfigPath($path = null)
+    protected function findProjectXConfigPath()
     {
         if (!$this->projectXConfigPath) {
-            if (!isset($path)) {
-                $path = getcwd();
-            }
+            $path = getcwd();
 
             $filename = 'project-x.yml';
             $directories = array_filter(explode('/', $path));
