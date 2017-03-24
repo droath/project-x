@@ -32,11 +32,17 @@
         "droath/hostsfile-manager": "^0.0.1"
     },
     "require-dev": {
-        "phpunit/phpunit": "^5.5"
+        "phpunit/phpunit": "^5.5",
+        "mikey179/vfsStream": "^1.6"
     },
     "autoload": {
         "psr-4": {
             "Droath\\ProjectX\\": "./src"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Droath\\ProjectX\\Tests\\": "./tests"
         }
     }
 }
