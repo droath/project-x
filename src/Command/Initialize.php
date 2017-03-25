@@ -6,6 +6,7 @@ use Droath\ConsoleForm\Form;
 use Droath\ProjectX\Filesystem\YamlFilesystem;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
+use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
 class Initialize extends Command
@@ -17,7 +18,14 @@ class Initialize extends Command
     {
         $this
             ->setName('init')
-            ->setDescription('Generate Project-X configuration.');
+            ->setDescription('Generate Project-X configuration.')
+            ->addOption(
+                'path',
+                null,
+                InputOption::VALUE_OPTIONAL,
+                'Set the path for the Project-X configuration.',
+                getcwd()
+            );
     }
 
     /**
@@ -29,9 +37,17 @@ class Initialize extends Command
             ->getHelper('form')
             ->getFormByName('project-x.form.setup', $input, $output);
 
-        $form->save(function ($results) use ($input, $output) {
+        $path = $input->getOption('path');
+
+        if (!file_exists($path)) {
+            throw new \InvalidArgumentException(
+                'Path does not exist.'
+            );
+        }
+
+        $form->save(function ($results) use ($input, $output, $path) {
             $filename = 'project-x.yml';
-            $saved = (new YamlFilesystem($results))
+            $saved = (new YamlFilesystem($results, $path))
                 ->save($filename);
 
             if ($saved) {
