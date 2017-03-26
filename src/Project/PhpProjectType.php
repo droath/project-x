@@ -12,17 +12,11 @@ class PhpProjectType extends ProjectType implements ProjectTypeInterface
      */
     public function build()
     {
+        parent::build();
+
         $this
             ->useTravis()
             ->useProboCi();
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function install()
-    {
-        // @todo: add install instructions for a basic PHP application.
     }
 
     /**

@@ -2,19 +2,13 @@
 
 namespace Droath\ProjectX\Project;
 
-use Droath\ProjectX\ProjectXAwareTrait;
-use League\Container\ContainerAwareInterface;
-use League\Container\ContainerAwareTrait;
-use Robo\Common\IO;
-use Robo\Contract\BuilderAwareInterface;
-use Robo\Contract\IOAwareInterface;
-use Robo\LoadAllTasks;
+use Droath\ProjectX\TaskSubType;
 use Symfony\Component\Console\Question\ConfirmationQuestion;
 
 /**
  * Define Project-X project type.
  */
-abstract class ProjectType implements BuilderAwareInterface, ContainerAwareInterface, IOAwareInterface
+abstract class ProjectType extends TaskSubType implements ProjectTypeInterface
 {
     /**
      * Project install root.
@@ -27,11 +21,6 @@ abstract class ProjectType implements BuilderAwareInterface, ContainerAwareInter
      * @var bool
      */
     protected $supportsDocker = false;
-
-    use IO;
-    use LoadAllTasks;
-    use ContainerAwareTrait;
-    use ProjectXAwareTrait;
 
     /**
      * Project supports docker.
@@ -46,11 +35,19 @@ abstract class ProjectType implements BuilderAwareInterface, ContainerAwareInter
     }
 
     /**
-     * Has project docker support.
+     * {@inheritdoc}
      */
-    public function hasDockerSupport()
+    public function build()
     {
-        return $this->supportsDocker;
+        // Noting to do at the parent level.
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function install()
+    {
+        $this->projectEngineInstall();
     }
 
     /**
@@ -70,46 +67,69 @@ abstract class ProjectType implements BuilderAwareInterface, ContainerAwareInter
     }
 
     /**
-     * Copy template file to project root.
-     *
-     * @param string $filename
-     *   The filename of template file.
-     * @param bool $overwrite
-     *   A flag to determine if the file should be overwritten if exists.
+     * Has docker support.
      */
-    protected function copyTemplateFileToProject($filename, $overwrite = false)
+    public function hasDockerSupport()
     {
-        $this->copyTemplateFilesToProject([$filename => $filename], $overwrite);
+        return $this->supportsDocker;
     }
 
     /**
-     * Copy template files to project root.
+     * Run the engine up command.
      *
-     * @param array $filenames
-     *   An array of template filenames, keyed by target path.
-     * @param bool $overwrite
-     *   A flag to determine if the file should be overwritten if exists.
+     * @return self
      */
-    protected function copyTemplateFilesToProject(array $filenames, $overwrite = false)
+    public function projectEngineUp()
     {
-        try {
-            $filesystem = $this->taskFilesystemStack();
-            foreach ($filenames as $template_path => $target_path) {
-                $target_file = $this
-                    ->getProjectXRootPath() . "/{$target_path}";
+        $this->taskSymfonyCommand($this->getAppCommand('engine:up'))
+            ->opt('no-browser')
+            ->run();
 
-                $template_file = $this
-                    ->templateManager()
-                    ->getTemplateFilePath($template_path);
+        return $this;
+    }
 
-                $filesystem->copy($template_file, $target_file, $overwrite);
-            }
-            $filesystem->run();
-        } catch (\Exception $e) {
-            throw new \Exception(
-                sprintf('Failed to copy template file(s) into project!')
-            );
-        }
+    /**
+     * Run the engine install command.
+     *
+     * @return self
+     */
+    public function projectEngineInstall()
+    {
+        $this->taskSymfonyCommand($this->getAppCommand('engine:install'))
+            ->run();
+
+        return $this;
+    }
+
+    /**
+     * Project launch browser.
+     *
+     * @param string $schema
+     *   The URL schema.
+     * @param int $delay
+     *   The startup delay in seconds.
+     *
+     * @return self
+     */
+    public function projectLaunchBrowser($schema = 'http', $delay = 10)
+    {
+        sleep($delay);
+
+        $this->taskOpenBrowser("{$schema}://{$this->getProjectHostname()}")
+            ->run();
+
+        return $this;
+    }
+
+    /**
+     * Has project been built and is not empty.
+     *
+     * @return bool
+     */
+    protected function isBuilt()
+    {
+        return is_dir($this->getInstallPath())
+            && (new \FilesystemIterator($this->getInstallPath()))->valid();
     }
 
     /**
@@ -131,6 +151,29 @@ abstract class ProjectType implements BuilderAwareInterface, ContainerAwareInter
     }
 
     /**
+     * Check if host has database connection.
+     *
+     * @param string $host
+     *   The database hostname.
+     * @param int $port
+     *   The database port.
+     * @param int $seconds
+     *   The amount of seconds to continually check.
+     *
+     * @return bool
+     *   Return true if the database is connectible; otherwise false.
+     */
+    protected function hasDatabaseConnection($host, $port = 3306, $seconds = 30)
+    {
+        $hostChecker = $this->getHostChecker();
+        $hostChecker
+            ->setHost($host)
+            ->setPort($port);
+
+        return $hostChecker->isPortOpenRepeater($seconds);
+    }
+
+    /**
      * Get application command.
      *
      * @param string $name
@@ -141,26 +184,6 @@ abstract class ProjectType implements BuilderAwareInterface, ContainerAwareInter
     protected function getAppCommand($name)
     {
         return $this->getApplication()->find($name);
-    }
-
-    /**
-     * Template manager instance.
-     *
-     * @return \Droath\ProjectX\Template\TemplateManager
-     */
-    protected function templateManager()
-    {
-        return $this->getContainer()->get('projectXTemplate');
-    }
-
-    /**
-     * Get console application.
-     *
-     * @return \Symfony\Component\Console\Application
-     */
-    protected function getApplication()
-    {
-        return $this->getContainer()->get('application');
     }
 
     /**
@@ -188,13 +211,25 @@ abstract class ProjectType implements BuilderAwareInterface, ContainerAwareInter
     }
 
     /**
-     * Get template directory path for the given file.
+     * Get project install path.
      *
      * @return string
-     *   The full path to the template file.
+     *   The full path to the project install root.
      */
-    protected function getTemplateFilePath($filename)
+    protected function getInstallPath()
     {
-        return $this->templateManager()->getTemplateFilePath($filename);
+        return $this->getProjectXRootPath() . static::INSTALL_ROOT;
+    }
+
+    /**
+     * Delete project install directory.
+     *
+     * @return self
+     */
+    protected function deleteInstallDirectory()
+    {
+        $this->taskDeleteDir($this->getInstallPath())->run();
+
+        return $this;
     }
 }
