@@ -15,7 +15,6 @@ class ProjectTasks extends TaskBase
         $this
             ->projectDependsInstall()
             ->projectBuild()
-            ->projectEngineInstall()
             ->projectInstall();
     }
 
@@ -45,24 +44,6 @@ class ProjectTasks extends TaskBase
     public function projectDependsInstall()
     {
         // @todo: install local OS dependencies using brew, ruby gems via ansible.
-
-        return $this;
-    }
-
-    /**
-     * Run project engine installation.
-     */
-    public function projectEngineInstall()
-    {
-        $engine = $this->engineInstance();
-        $project = $this->projectInstance();
-
-        if ($engine->getTypeId() === 'docker'
-            && $project->hasDockerSupport()) {
-            $project->dockerInstall($engine->useDockerSync());
-        } else {
-            $engine->install();
-        }
 
         return $this;
     }
