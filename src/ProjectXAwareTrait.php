@@ -12,15 +12,12 @@ trait ProjectXAwareTrait
     /**
      * Project-X config path.
      *
-     * @var string|bool
+     * @var string
      */
-    protected $projectXConfigPath = false;
+    protected $projectXConfigPath = null;
 
     /**
-     * Set Project-X configuration path.
-     *
-     * @param string $path
-     *   The path to the project-x file.
+     * {@inheritdoc}
      */
     public function setProjectXConfigPath($path)
     {
@@ -46,7 +43,7 @@ trait ProjectXAwareTrait
     }
 
     /**
-     * Get Project-X raw output.
+     * Get Project-X file raw output.
      *
      * @return string
      */
@@ -64,7 +61,7 @@ trait ProjectXAwareTrait
     }
 
     /**
-     * Get the Project-X root path.
+     * Get Project-X file root path.
      *
      * @return string|null
      */
@@ -72,18 +69,18 @@ trait ProjectXAwareTrait
     {
         $path = $this->findProjectXConfigPath();
 
-        return !$path ? null : dirname($path);
+        return isset($path) ? dirname($path) : null;
     }
 
     /**
      * Find Project-X file path.
      *
-     * @return string|bool
-     *   The project-x path; otherwise false if not found.
+     * @return string
+     *   The project-x path to project configuration.
      */
     protected function findProjectXConfigPath()
     {
-        if (!$this->projectXConfigPath) {
+        if (!isset($this->projectXConfigPath)) {
             $path = getcwd();
 
             $filename = 'project-x.yml';
@@ -93,8 +90,8 @@ trait ProjectXAwareTrait
             for ($offset = 0; $offset < $count; ++$offset) {
                 $next_path = '/' . implode('/', array_slice($directories, 0, $count - $offset));
 
-                if (file_exists("$next_path/$filename")) {
-                    $this->projectXConfigPath = "$next_path/$filename";
+                if (file_exists("{$next_path}/{$filename}")) {
+                    $this->projectXConfigPath = "{$next_path}/{$filename}";
                     break;
                 }
             }
