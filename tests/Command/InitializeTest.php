@@ -1,6 +1,6 @@
 <?php
 
-namespace Droath\ProjectX\Tests;
+namespace Droath\ProjectX\Tests\Command;
 
 use Droath\ConsoleForm\FormHelper;
 use Droath\ProjectX\Command\Initialize;
