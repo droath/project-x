@@ -3,7 +3,6 @@
 namespace Droath\ProjectX\Project;
 
 use Droath\ProjectX\TaskSubType;
-use Symfony\Component\Console\Question\ConfirmationQuestion;
 
 /**
  * Define Project-X project type.
@@ -14,6 +13,21 @@ abstract class ProjectType extends TaskSubType implements ProjectTypeInterface
      * Project install root.
      */
     const INSTALL_ROOT = '/docroot';
+
+    /**
+     * Project build abort state.
+     */
+    const BUILD_ABORT = 0;
+
+    /**
+     * Project build fresh state.
+     */
+    const BUILD_FRESH = 1;
+
+    /**
+     * Project build dirty state.
+     */
+    const BUILD_DIRTY = 2;
 
     /**
      * Project type supports docker.
@@ -39,7 +53,7 @@ abstract class ProjectType extends TaskSubType implements ProjectTypeInterface
      */
     public function build()
     {
-        // Noting to do at the parent level.
+        $this->say('The project build process has begun. 🤘');
     }
 
     /**
@@ -48,6 +62,7 @@ abstract class ProjectType extends TaskSubType implements ProjectTypeInterface
     public function install()
     {
         $this->projectEngineInstall();
+        $this->say('The project install process has begun. 🤘');
     }
 
     /**
@@ -102,6 +117,25 @@ abstract class ProjectType extends TaskSubType implements ProjectTypeInterface
     }
 
     /**
+     * Setup project filesystem.
+     *
+     * The setup process consist of the following:
+     *   - Update project root permission.
+     *   - Make project install directory.
+     *
+     * @return self
+     */
+    public function setupProjectFilesystem()
+    {
+        $this->taskFilesystemStack()
+            ->chmod($this->getProjectXRootPath(), 0775)
+            ->mkdir($this->getInstallPath(), 0775)
+            ->run();
+
+        return $this;
+    }
+
+    /**
      * Project launch browser.
      *
      * @param string $schema
@@ -122,32 +156,46 @@ abstract class ProjectType extends TaskSubType implements ProjectTypeInterface
     }
 
     /**
-     * Has project been built and is not empty.
+     * Is project built and not empty.
      *
      * @return bool
      */
-    protected function isBuilt()
+    public function isBuilt()
     {
         return is_dir($this->getInstallPath())
             && (new \FilesystemIterator($this->getInstallPath()))->valid();
     }
 
     /**
-     * Ask confirmation question.
-     *
-     * @param string $text
-     *   The question text.
-     * @param bool $default
-     *   The default value.
-     *
-     * @return bool
+     * Can project run it's install process.
      */
-    protected function askConfirmQuestion($text, $default = false)
+    protected function canInstall()
     {
-        $default_text = $default ? 'yes' : 'no';
-        $question = "☝️  $text (y/n) [$default_text] ";
+        return $this->isBuilt();
+    }
 
-        return $this->doAsk(new ConfirmationQuestion($question, $default));
+    /**
+     * Can project run it's build process.
+     *
+     * @return int
+     *   Return the build status.
+     */
+    protected function canBuild()
+    {
+        $rebuild = false;
+
+        if ($this->isBuilt()) {
+            $rebuild = $this->askConfirmQuestion(
+                'Project has already been built, do you want to rebuild?',
+                false
+            );
+
+            if (!$rebuild) {
+                return static::BUILD_ABORT;
+            }
+        }
+
+        return !$rebuild ? static::BUILD_FRESH : static::BUILD_DIRTY;
     }
 
     /**

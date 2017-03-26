@@ -20,6 +20,19 @@ class PhpProjectType extends ProjectType implements ProjectTypeInterface
     }
 
     /**
+     * Run composer update.
+     *
+     * @return self
+     */
+    public function runComposerUpdate()
+    {
+        $this->taskComposerUpdate()
+            ->run();
+
+        return $this;
+    }
+
+    /**
      * Use TravisCI.
      *
      * @return self
