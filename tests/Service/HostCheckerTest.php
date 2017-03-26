@@ -1,6 +1,6 @@
 <?php
 
-namespace Droath\ProjectX\Tests;
+namespace Droath\ProjectX\Tests\Service;
 
 use Droath\ProjectX\Service\HostChecker;
 use PHPUnit\Framework\TestCase;
