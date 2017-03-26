@@ -34,21 +34,21 @@ class ProjectX extends Application
     /**
      * Set default container services.
      */
-    public function setDefaultServices()
+    public static function setDefaultServices($container)
     {
-        $this->container
+        $container
             ->add('projectXComposer', \Droath\ProjectX\Composer::class)
             ->withArgument('projectXTemplate');
-        $this->container
+        $container
             ->share('projectXTemplate', \Droath\ProjectX\Template\TemplateManager::class);
-        $this->container
+        $container
             ->add('projectXHostChecker', \Droath\ProjectX\Service\HostChecker::class);
-        $this->container
+        $container
             ->share('projectXEngine', function () {
                 return (new \Droath\ProjectX\Engine\EngineTypeFactory())
                     ->createInstance();
             });
-        $this->container
+        $container
             ->share('projectXProject', function () {
                 return (new \Droath\ProjectX\Project\ProjectTypeFactory())
                     ->createInstance();

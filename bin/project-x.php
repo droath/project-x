@@ -36,10 +36,10 @@ $app->getHelperSet()
 
 // Construct the default Robo container.
 $container = Robo::createDefaultContainer($input, $output, $app, new Config());
+ProjectX::setDefaultServices($container);
 
 // Set the Robo container inside the project-x app.
-$app->setContainer($container)
-    ->setDefaultServices();
+$app->setContainer($container);
 
 // Auto discover the Robo tasks command files if the project contains a
 // project-x configuration.
