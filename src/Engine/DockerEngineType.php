@@ -161,7 +161,7 @@ class DockerEngineType extends EngineType
      */
     protected function useDockerSync()
     {
-        return $this->confirm('Use Docker Sync?');
+        return $this->askConfirmQuestion('Use Docker Sync?', true);
     }
 
     /**
