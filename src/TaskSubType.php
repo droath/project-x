@@ -8,6 +8,7 @@ use Robo\Common\IO;
 use Robo\Contract\BuilderAwareInterface;
 use Robo\Contract\IOAwareInterface;
 use Robo\LoadAllTasks;
+use Symfony\Component\Console\Question\ConfirmationQuestion;
 
 /**
  * Define the Project-X task subtype class.
@@ -91,5 +92,23 @@ abstract class TaskSubType implements BuilderAwareInterface, ContainerAwareInter
                 sprintf('Failed to copy template file(s) into project!')
             );
         }
+    }
+
+    /**
+     * Ask confirmation question.
+     *
+     * @param string $text
+     *   The question text.
+     * @param bool $default
+     *   The default value.
+     *
+     * @return bool
+     */
+    protected function askConfirmQuestion($text, $default = false)
+    {
+        $default_text = $default ? 'yes' : 'no';
+        $question = "☝️  $text (y/n) [$default_text] ";
+
+        return $this->doAsk(new ConfirmationQuestion($question, $default));
     }
 }
