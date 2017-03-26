@@ -57,6 +57,11 @@ abstract class TestBase extends TestCase
         ->save($this->projectFileName);
     }
 
+    /**
+     * Get Project-X file contents fixture.
+     *
+     * @return array
+     */
     protected function getProjectXFileContents()
     {
         return [
@@ -70,8 +75,68 @@ abstract class TestBase extends TestCase
         ];
     }
 
+    /**
+     * Get Project-X file path.
+     *
+     * @return string
+     */
+    protected function getProjectXFilePath()
+    {
+        return $this->getProjectFileUrl($this->projectFileName);
+    }
+
+    /**
+     * Get project file URL.
+     *
+     * @param string $filename
+     *   The project filename.
+     *
+     * @return string
+     */
     protected function getProjectFileUrl($filename)
     {
         return vfsStream::url("root/{$filename}");
+    }
+
+    /**
+     * Assert if the project file exists.
+     *
+     * @param string $path
+     *   Path to file.
+     */
+    protected function assertProjectFileExists($path)
+    {
+        $filename = $this->getProjectFileUrl($path);
+        $this->assertFileExists($filename);
+    }
+
+    /**
+     * Assert if project file permission match.
+     *
+     * @param string $expected
+     *   The expected file permissions.
+     * @param string $path
+     *   Path to file.
+     */
+    protected function assertProjectFilePermission($expected, $path)
+    {
+        $filename = $this->getProjectFileUrl($path);
+        $this->assertFilePermission($expected, $filename);
+    }
+
+    /**
+     * Assert if file permission match.
+     *
+     * @param string $expected
+     *   The expected file permissions.
+     * @param string $filename
+     *   The valid filename.
+     * @param string $message
+     *   A message to display if failed.
+     */
+    protected function assertFilePermission($expected, $filename, $message = null)
+    {
+        $this->assertFileExists($filename, $message);
+        $this->assertEquals($expected, substr(sprintf('%o', fileperms($filename)), -4), $message);
     }
 }
