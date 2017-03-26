@@ -65,8 +65,7 @@ class DrupalProjectType extends PhpProjectType
             $this->say('Project build process has been aborted! ⛈️');
 
             return;
-        }
-        elseif ($status === static::BUILD_DIRTY) {
+        } elseif ($status === static::BUILD_DIRTY) {
             $this->deleteInstallDirectory();
         } elseif ($status === static::BUILD_FRESH) {
             $this->updateProjectComposer();
