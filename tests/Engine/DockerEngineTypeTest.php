@@ -4,16 +4,13 @@ namespace Droath\ProjectX\Tests\Engine;
 
 use Droath\ProjectX\Engine\DockerEngineType;
 use Droath\ProjectX\ProjectX;
-use Droath\ProjectX\Tests\TestBase;
-use Robo\Robo;
-use Robo\Tasks;
-use Symfony\Component\Console\Output\NullOutput;
+use Droath\ProjectX\Tests\TestTaskBase;
 use org\bovigo\vfs\vfsStream;
 
 /**
  * Define docker engine type test.
  */
-class DockerEngineTypeTest extends TestBase
+class DockerEngineTypeTest extends TestTaskBase
 {
     /**
      * Docker engine object.
@@ -22,17 +19,16 @@ class DockerEngineTypeTest extends TestBase
      */
     protected $dockerEngine;
 
+    /**
+     * {@inheritdoc}
+     */
     public function setUp()
     {
         parent::setUp();
 
-        $container = Robo::createDefaultContainer(null, new NullOutput(), new ProjectX());
-        ProjectX::setDefaultServices($container);
-        $builder = $container->get('collectionBuilder', [new Tasks()]);
-
         $this->dockerEngine = (new DockerEngineType())
-            ->setBuilder($builder)
-            ->setContainer($container)
+            ->setBuilder($this->builder)
+            ->setContainer($this->container)
             ->setProjectXConfigPath($this->getProjectXFilePath());
     }
 
