@@ -2,23 +2,24 @@
 
 namespace Droath\ProjectX\Engine;
 
-use Droath\ProjectX\ProjectXAwareTrait;
-use League\Container\ContainerAwareInterface;
-use League\Container\ContainerAwareTrait;
-use Robo\Common\IO;
-use Robo\Contract\BuilderAwareInterface;
-use Robo\Contract\IOAwareInterface;
-use Robo\LoadAllTasks;
+use Droath\ProjectX\TaskSubType;
 
 /**
  * Define Project-X project type.
  */
-abstract class EngineType implements BuilderAwareInterface, ContainerAwareInterface, IOAwareInterface, EngineTypeInterface
+abstract class EngineType extends TaskSubType implements EngineTypeInterface
 {
-    use IO;
-    use LoadAllTasks;
-    use ContainerAwareTrait;
-    use ProjectXAwareTrait;
+    /**
+     * Engine install path.
+     */
+    const INSTALL_ROOT = null;
+
+    /**
+     * Define engine type identifier.
+     *
+     * @return string
+     */
+    abstract public function getTypeId();
 
     /**
      * {@inheritdoc}
@@ -45,9 +46,12 @@ abstract class EngineType implements BuilderAwareInterface, ContainerAwareInterf
     }
 
     /**
-     * Define engine type identifier.
+     * Get engine install path.
      *
      * @return string
      */
-    abstract public function getTypeId();
+    public function getInstallPath()
+    {
+        return $this->getProjectXRootPath() . static::INSTALL_ROOT;
+    }
 }

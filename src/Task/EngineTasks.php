@@ -50,6 +50,16 @@ class EngineTasks extends TaskBase
     }
 
     /**
+     * Install project engine.
+     */
+    public function engineInstall()
+    {
+        $this->engineInstance()->install();
+
+        return $this;
+    }
+
+    /**
      * Add hostname to hosts file.
      *
      * @param bool $no_browser
