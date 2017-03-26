@@ -27,7 +27,9 @@ abstract class TaskSubType implements BuilderAwareInterface, ContainerAwareInter
      */
     protected function getApplication()
     {
-        return $this->getContainer()->get('application');
+        return $this->getContainer()
+            ->get('application')
+            ->setProjectXConfigPath($this->projectXConfigPath);
     }
 
     /**
@@ -37,7 +39,9 @@ abstract class TaskSubType implements BuilderAwareInterface, ContainerAwareInter
      */
     protected function templateManager()
     {
-        return $this->getContainer()->get('projectXTemplate');
+        return $this->getContainer()
+            ->get('projectXTemplate')
+            ->setProjectXConfigPath($this->projectXConfigPath);
     }
 
     /**
