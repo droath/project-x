@@ -51,7 +51,7 @@ trait ProjectXAwareTrait
     {
         $path = $this->findProjectXConfigPath();
 
-        if (!$path) {
+        if (!isset($path)) {
             throw new \Exception(
                 'Missing project-x.yml file.'
             );
