@@ -113,7 +113,7 @@ class ProjectX extends Application
         foreach ($this->findPHPFilesInRoot() as $file) {
             $token_info = $this->phpFileTokenInfo($file);
 
-            if (strpos($token_info['extends'], 'Tasks') === FALSE) {
+            if (strpos($token_info['extends'], 'Tasks') === false) {
                 continue;
             }
             $file_path = $file->getRealPath();
@@ -167,14 +167,18 @@ class ProjectX extends Application
 
             if ($token === T_CLASS) {
                 $info[$tokens[$i][1]] = $this->findTokenValue(
-                    $tokens, [T_EXTENDS, T_INTERFACE, '{'], $i
+                    $tokens,
+                    [T_EXTENDS, T_INTERFACE, '{'],
+                    $i
                 );
                 continue;
             }
 
             if ($token === T_EXTENDS) {
                 $info[$tokens[$i][1]] = $this->findTokenValue(
-                    $tokens, ['{'], $i
+                    $tokens,
+                    ['{'],
+                    $i
                 );
                 continue;
             }
@@ -198,7 +202,8 @@ class ProjectX extends Application
      * @return string
      *   The PHP token content value.
      */
-    protected function findTokenValue(array $tokens, array $endings, $iteration, $skip_whitespace = true) {
+    protected function findTokenValue(array $tokens, array $endings, $iteration, $skip_whitespace = true)
+    {
         $value = null;
         $count = count($tokens);
 
