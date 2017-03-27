@@ -30,6 +30,7 @@ $formDiscovery = (new FormDiscovery())
     ->discover(APP_ROOT . '/src/Form', '\Droath\ProjectX\Form');
 
 $app = new ProjectX();
+$app->add(new \Droath\ProjectX\Command\Robo());
 $app->add(new \Droath\ProjectX\Command\Initialize());
 $app->getHelperSet()
     ->set(new FormHelper($formDiscovery));
@@ -50,13 +51,15 @@ $commandClasses = $app->hasProjectXConfig()
         ->discover(APP_ROOT . '/src', '\Droath\ProjectX')
     : [];
 
+$projectClasses = $app->loadRoboProjectClasses();
+
 $statusCode = (new Runner())
     ->setContainer($container)
     ->run(
         $input,
         $output,
         $app,
-        $commandClasses
+        array_merge($commandClasses, $projectClasses)
     );
 
 exit($statusCode);

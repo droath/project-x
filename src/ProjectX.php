@@ -4,6 +4,7 @@ namespace Droath\ProjectX;
 
 use League\Container\ContainerAwareTrait;
 use Symfony\Component\Console\Application;
+use Symfony\Component\Finder\Finder;
 
 /**
  * Project-X console CLI application.
@@ -97,6 +98,128 @@ class ProjectX extends Application
         $config = $this->getProjectXConfig();
 
         return strtolower(strtr($config['name'], ' ', '_'));
+    }
+
+    /**
+     * Load Robo classes found in project root.
+     *
+     * @return array
+     *   An array of Robo classes keyed by file path.
+     */
+    public function loadRoboProjectClasses()
+    {
+        $classes = [];
+
+        foreach ($this->findPHPFilesInRoot() as $file) {
+            $token_info = $this->phpFileTokenInfo($file);
+
+            if (strpos($token_info['extends'], 'Tasks') === FALSE) {
+                continue;
+            }
+            $file_path = $file->getRealPath();
+
+            // Load the Robo file so the classname is accessible, and can be
+            // registered.
+            if (file_exists($file_path)) {
+                require_once "$file_path";
+            }
+
+            // Collect the classes that were loaded.
+            $classes[$file_path] = $token_info['class'];
+        }
+
+        return $classes;
+    }
+
+    /**
+     * Find PHP files in project root.
+     *
+     * @return \Symfony\Component\Finder\Finder
+     *   An Symfony finder object.
+     */
+    protected function findPHPFilesInRoot()
+    {
+        return (new Finder())
+            ->name('*.php')
+            ->in($this->getProjectXRootPath())
+            ->depth(0)
+            ->files();
+    }
+
+    /**
+     * Parse a PHP file and extract the token info.
+     *
+     * @param \SplFileInfo $file
+     *   The file object to parse.
+     *
+     * @return array
+     *   An array of token information that was extracted.
+     */
+    protected function phpFileTokenInfo(\SplFileInfo $file)
+    {
+        $info = [];
+        $tokens = token_get_all($file->getContents());
+
+        for ($i = 0; $i < count($tokens); ++$i) {
+            $token = is_array($tokens[$i])
+                ? $tokens[$i][0]
+                : $tokens[$i];
+
+            if ($token === T_CLASS) {
+                $info[$tokens[$i][1]] = $this->findTokenValue(
+                    $tokens, [T_EXTENDS, T_INTERFACE, '{'], $i
+                );
+                continue;
+            }
+
+            if ($token === T_EXTENDS) {
+                $info[$tokens[$i][1]] = $this->findTokenValue(
+                    $tokens, ['{'], $i
+                );
+                continue;
+            }
+        }
+
+        return $info;
+    }
+
+    /**
+     * Find PHP token value.
+     *
+     * @param array $tokens
+     *   An array of PHP tokens.
+     * @param array $endings
+     *   An array of endings that should be searched.
+     * @param int $iteration
+     *   The token iteration count.
+     * @param bool $skip_whitespace
+     *   A flag to determine if whitespace should be skipped.
+     *
+     * @return string
+     *   The PHP token content value.
+     */
+    protected function findTokenValue(array $tokens, array $endings, $iteration, $skip_whitespace = true) {
+        $value = null;
+        $count = count($tokens);
+
+        for ($i = $iteration + 1; $i < $count; ++$i) {
+            $token = is_array($tokens[$i])
+                ? $tokens[$i][0]
+                : $tokens[$i];
+
+            if ($token === T_WHITESPACE
+                && $skip_whitespace) {
+                continue;
+            }
+
+            if (in_array($token, $endings)) {
+                break;
+            }
+
+            $value .= $tokens[$i][1];
+        }
+
+        return $value;
     }
 
     /**
