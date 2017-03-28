@@ -54,11 +54,16 @@ class RoboTest extends TestBase
     {
         $classname = 'TestingRoboFile';
 
+        // Clear the project-x file path, so we can test that
+        // passing along the --path option works as expected.
+        $this->command->setProjectXConfigPath('');
+
         $commandTester = new CommandTester($this->command);
         $commandTester
             ->execute([
                 'command' => $this->command->getName(),
                 '--classname' => $classname,
+                '--path' => $this->projectRoot,
             ]);
 
         $this->assertProjectFileExists("{$classname}.php");
@@ -85,8 +90,6 @@ class RoboTest extends TestBase
             ->execute([
                 'command' => $this->command->getName(),
             ]);
-
-        $display = $commandTester->getDisplay();
 
         $robo_contents = file_get_contents(
             $this->getProjectFileUrl('RoboFile.php')

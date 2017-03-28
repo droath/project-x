@@ -27,10 +27,16 @@ class Robo extends Command
                 'classname',
                 null,
                 InputOption::VALUE_REQUIRED,
-                'Set the name that should be used for the class.',
+                'Set the classname that should be used when generating a Robo file.',
                 'RoboFile'
             )
-            ->setDescription('Generate a RoboFile in project root.');
+            ->addOption(
+                'path',
+                null,
+                InputOption::VALUE_REQUIRED,
+                'Set the path where the generated Robo file should be saved.'
+            )
+            ->setDescription('Generate a Robo file.');
     }
 
     /**
@@ -38,10 +44,13 @@ class Robo extends Command
      */
     public function execute(InputInterface $input, OutputInterface $output)
     {
-        $classname = ucwords($input->getOption('classname'));
-        $file_path = "{$this->getProjectXRootPath()}/{$classname}.php";
+        $path = $input->getOption('path')
+            ?: $this->getDefaultPath();
 
-        if (file_exists($file_path)) {
+        $classname = ucwords($input->getOption('classname'));
+        $classpath = "{$path}/{$classname}.php";
+
+        if (file_exists($classpath)) {
             $question = $this->getHelper('question');
 
             $confirm = $question->ask(
@@ -57,9 +66,21 @@ class Robo extends Command
                 return;
             }
         }
-        file_put_contents($file_path, $this->generateRoboClass($classname));
+        file_put_contents($classpath, $this->generateRoboClass($classname));
 
         $output->writeln("<info>You've successfully created a new Robo file.</info>");
+    }
+
+    /**
+     * Get default path.
+     *
+     * @return string
+     */
+    protected function getDefaultPath()
+    {
+        return $this->hasProjectXFile()
+            ? $this->getProjectXRootPath()
+            : getcwd();
     }
 
     /**
