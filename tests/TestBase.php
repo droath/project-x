@@ -33,6 +33,13 @@ abstract class TestBase extends TestCase
     protected $projectFileName = 'project-x.yml';
 
     /**
+     * Project-X local file name.
+     *
+     * @var string
+     */
+    protected $projectLocalFileName = 'project-x.local.yml';
+
+    /**
      * {@inheritdoc}
      */
     public static function setUpBeforeClass()
@@ -50,11 +57,35 @@ abstract class TestBase extends TestCase
         $this->projectDir = vfsStream::setup('root');
         $this->projectRoot = vfsStream::url('root');
 
+        $this->addProjectXConfigToRoot();
+    }
+
+    /**
+     * Add Project-X config to project root.
+     */
+    protected function addProjectXConfigToRoot()
+    {
         (new YamlFilesystem(
             $this->getProjectXFileContents(),
             $this->projectRoot
         ))
         ->save($this->projectFileName);
+
+        return $this;
+    }
+
+    /**
+     * Add Project-X local config to project root.
+     */
+    protected function addProjecXLocalConfigToRoot()
+    {
+        (new YamlFilesystem(
+            $this->getprojectXLocalFileContents(),
+            $this->projectRoot
+        ))
+        ->save($this->projectLocalFileName);
+
+        return $this;
     }
 
     /**
@@ -71,6 +102,22 @@ abstract class TestBase extends TestCase
             'host' => [
                 'name' => 'local.project-x-test.com',
                 'open_on_startup' => 'true',
+            ],
+        ];
+    }
+
+    /**
+     * The project-X local file contents fixture.
+     *
+     * @return array
+     */
+    protected function getprojectXLocalFileContents()
+    {
+        return [
+            'name' => 'Project-X Local',
+            'type' => 'drupal',
+            'host' => [
+                'open_on_startup' => 'false',
             ],
         ];
     }
