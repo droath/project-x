@@ -26,11 +26,6 @@ class ProjectXTest extends TestBase
             ->setProjectXConfigPath($path);
     }
 
-    public function testHasProjectXConfig()
-    {
-        $this->assertTrue($this->projectX->hasProjectXConfig());
-    }
-
     public function testProjectMachineName()
     {
         $this->assertEquals('project-x_test', $this->projectX->getProjectMachineName());

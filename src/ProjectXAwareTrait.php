@@ -31,15 +31,43 @@ trait ProjectXAwareTrait
      *
      * @return array
      */
-    protected function getProjectXConfig()
+    public function getProjectXConfig()
     {
         $contents = $this->getProjectXRawConfig();
 
         if (!$contents) {
             return [];
         }
+        $configuration = Yaml::parse($contents);
 
-        return Yaml::parse($contents);
+        return array_replace_recursive(
+            $configuration,
+            $this->getProjectXLocalConfig()
+        );
+    }
+
+    /**
+     * Has Project-X configuration file.
+     *
+     * @return bool
+     */
+    public function hasProjectXFile()
+    {
+        if (!isset($this->projectXConfigPath)) {
+            $this->findProjectXConfigPath();
+        }
+
+        return file_exists($this->projectXConfigPath);
+    }
+
+    /**
+     * Has Project-X local configuration file.
+     *
+     * @return bool
+     */
+    public function hasProjectXLocalFile()
+    {
+        return file_exists($this->getProjectXLocalFilePath());
     }
 
     /**
@@ -61,6 +89,22 @@ trait ProjectXAwareTrait
     }
 
     /**
+     * Get Project-X local configurations.
+     *
+     * @return array
+     */
+    protected function getProjectXLocalConfig()
+    {
+        if (!$this->hasProjectXLocalFile()) {
+            return [];
+        }
+
+        return Yaml::parse(
+            file_get_contents($this->getProjectXLocalFilePath())
+        );
+    }
+
+    /**
      * Get Project-X file root path.
      *
      * @return string|null
@@ -70,6 +114,17 @@ trait ProjectXAwareTrait
         $path = $this->findProjectXConfigPath();
 
         return isset($path) ? dirname($path) : null;
+    }
+
+    /**
+     * Get Project-X local file path.
+     *
+     * @return string
+     *   The path to project-x local file.
+     */
+    protected function getProjectXLocalFilePath()
+    {
+        return "{$this->getProjectXRootPath()}/project-x.local.yml";
     }
 
     /**

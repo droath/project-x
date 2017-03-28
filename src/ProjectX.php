@@ -79,16 +79,6 @@ class ProjectX extends Application
     }
 
     /**
-     * Has project-x configuration.
-     *
-     * @return bool
-     */
-    public function hasProjectXConfig()
-    {
-        return $this->findProjectXConfigPath() !== false;
-    }
-
-    /**
      * Get Project-X project machine-name.
      *
      * @return string

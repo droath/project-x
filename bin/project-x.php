@@ -44,7 +44,7 @@ $app->setContainer($container);
 
 // Auto discover the Robo tasks command files if the project contains a
 // project-x configuration.
-$commandClasses = $app->hasProjectXConfig()
+$commandClasses = $app->hasProjectXFile()
     ? (new CommandFileDiscovery())
         ->addSearchLocation('Task')
         ->setSearchPattern('*Tasks.php')
