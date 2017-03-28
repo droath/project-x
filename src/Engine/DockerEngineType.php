@@ -5,6 +5,9 @@ namespace Droath\ProjectX\Engine;
 use Droath\ProjectX\ProjectX;
 use Droath\RoboDockerCompose\Task\loadTasks as dockerComposerTasks;
 use Droath\RoboDockerSync\Task\loadTasks as dockerSyncTasks;
+use Symfony\Component\Console\Helper\Table;
+use Symfony\Component\Console\Helper\TableCell;
+use Symfony\Component\Console\Helper\TableSeparator;
 
 /**
  * Define docker engine type.
@@ -33,6 +36,15 @@ class DockerEngineType extends EngineType
     public function up()
     {
         parent::up();
+
+        // Run open port status report. Display a confirmation message if
+        // warning(s) have been issued. User will need to confirm if they want
+        // to continue or not.
+        $status = $this->runOpenPortStatusReport();
+
+        if (!$status) {
+            return;
+        }
 
         // Startup docker sync if found in project.
         if ($this->hasDockerSync()) {
@@ -151,6 +163,119 @@ class DockerEngineType extends EngineType
         $root = $this->getProjectXRootPath();
 
         return file_exists("{$root}/docker-sync.yml");
+    }
+
+    /**
+     * Run open port status report.
+     *
+     * @return bool
+     *   Return true if warnings have been issued; otherwise false.
+     */
+    protected function runOpenPortStatusReport()
+    {
+        $host = '127.0.0.1';
+        $ports = ['80', '3306'];
+        $status = $this->getPortStatus($host, $ports);
+        $has_warning = isset($status['state']['warning'])
+            && $status['state']['warning'] !== 0
+                ? true
+                : false;
+
+        if ($has_warning) {
+            $this->io()
+                ->caution(
+                    "Another process on your system is using the same port(s).\n" .
+                    'Please review the report below for more details.'
+                );
+        }
+        $table = new Table($this->getOutput());
+        $table
+            ->setHeaders(['Port', 'Status'])
+            ->setRows($this->buildPortStatusRows($status));
+
+        $table->render();
+
+        if ($has_warning) {
+            $confirm = $this->askConfirmQuestion('Do you want to continue?');
+
+            if (!$confirm) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    /**
+     * Build port status rows.
+     *
+     * @param array $status
+     *   An array of the status data.
+     *
+     * @return array
+     *   An array of the rows based on the status.
+     */
+    protected function buildPortStatusRows(array $status)
+    {
+        $rows = [];
+
+        foreach ($status['ports'] as $port => $value) {
+            $row = [
+                $port,
+                $value['status'],
+            ];
+
+            $rows[] = $row;
+        }
+        $warnings = $status['state']['warning'];
+
+        $rows[] = new TableSeparator();
+        $rows[] = [new TableCell(
+            sprintf('There is %d warning(s) on %s!', $warnings, $status['host']),
+            ['colspan' => 2]
+        )];
+
+        return $rows;
+    }
+
+    /**
+     * Get host port status.
+     *
+     * @param string $host
+     *   The hostname to check.
+     * @param array $ports
+     *   An array of ports to check.
+     *
+     * @return array
+     *   An array of port status data.
+     */
+    protected function getPortStatus($host, array $ports)
+    {
+        $status = [];
+        $hostchecker = $this->getContainer()
+            ->get('projectXHostChecker');
+
+        $warning_count = 0;
+
+        foreach ($ports as $port) {
+            $response = $hostchecker
+                ->setHost($host)
+                ->setPort($port)
+                ->isPortOpen();
+
+            $status['ports'][$port] = [
+                'status' => $response ? '❌' : '✅',
+                'is_open' => (int) $response,
+            ];
+
+            if ($response) {
+                ++$warning_count;
+            }
+        }
+        $status['host'] = $host;
+        $status['state']['warning'] = $warning_count;
+
+        return $status;
     }
 
     /**
