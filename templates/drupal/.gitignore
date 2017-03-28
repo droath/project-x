@@ -136,3 +136,6 @@ console
 
 # Docker
 .docker-sync
+
+# Project-X
+.project-x.local.yml
