@@ -98,6 +98,9 @@ class ProjectX extends Application
      */
     public function loadRoboProjectClasses()
     {
+        if (!$this->hasProjectXFile()) {
+            return [];
+        }
         $classes = [];
 
         foreach ($this->findPHPFilesInRoot() as $file) {
@@ -129,9 +132,11 @@ class ProjectX extends Application
      */
     protected function findPHPFilesInRoot()
     {
+        $project_root = $this->getProjectXRootPath();
+
         return (new Finder())
             ->name('*.php')
-            ->in($this->getProjectXRootPath())
+            ->in($project_root)
             ->depth(0)
             ->files();
     }
