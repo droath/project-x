@@ -2,7 +2,6 @@
 
 namespace Droath\ProjectX\Task;
 
-use Droath\ProjectX\ProjectXAwareTrait;
 use Robo\Tasks;
 
 /**
@@ -10,8 +9,6 @@ use Robo\Tasks;
  */
 abstract class TaskBase extends Tasks
 {
-    use ProjectXAwareTrait;
-
     /**
      * Engine type instance.
      *

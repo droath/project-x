@@ -3,7 +3,10 @@
 namespace Droath\ProjectX\Tests;
 
 use Droath\ProjectX\Filesystem\YamlFilesystem;
+use Droath\ProjectX\ProjectX;
 use PHPUnit\Framework\TestCase;
+use Robo\Robo;
+use Symfony\Component\Console\Output\NullOutput;
 use org\bovigo\vfs\vfsStream;
 
 /**
@@ -11,6 +14,20 @@ use org\bovigo\vfs\vfsStream;
  */
 abstract class TestBase extends TestCase
 {
+    /**
+     * Container object.
+     *
+     * @var \League\Container\ContainerInterface
+     */
+    protected $container;
+
+    /**
+     * Project-X.
+     *
+     * @var \Droath\ProjectX\ProjectX
+     */
+    protected $projectX;
+
     /**
      * Project-X directory.
      *
@@ -54,8 +71,17 @@ abstract class TestBase extends TestCase
      */
     public function setUp()
     {
+        $this->projectX = new ProjectX();
         $this->projectDir = vfsStream::setup('root');
         $this->projectRoot = vfsStream::url('root');
+
+        $this->container = Robo::createDefaultContainer(
+            null, new NullOutput(), $this->projectX
+        );
+        $project_path = $this->getProjectXFilePath();
+
+        ProjectX::setProjectPath($project_path);
+        ProjectX::setDefaultServices($this->container);
 
         $this->addProjectXConfigToRoot();
     }

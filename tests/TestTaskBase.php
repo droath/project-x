@@ -40,10 +40,10 @@ abstract class TestTaskBase extends TestBase
     {
         parent::setUp();
 
-        $this->app = new ProjectX();
-        $this->container = Robo::createDefaultContainer(null, new NullOutput(), $this->app);
+        // $this->app = new ProjectX();
+        // $this->container = Robo::createDefaultContainer(null, new NullOutput(), $this->app);
 
-        ProjectX::setDefaultServices($this->container);
+        // ProjectX::setDefaultServices($this->container);
         $this->builder = $this->container->get('collectionBuilder', [new Tasks()]);
     }
 }

@@ -2,7 +2,7 @@
 
 namespace Droath\ProjectX\Command;
 
-use Droath\ProjectX\ProjectXAwareTrait;
+use Droath\ProjectX\ProjectX;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
@@ -14,8 +14,6 @@ use Symfony\Component\Console\Question\ConfirmationQuestion;
  */
 class Robo extends Command
 {
-    use ProjectXAwareTrait;
-
     /**
      * {@inheritdoc}
      */
@@ -34,7 +32,8 @@ class Robo extends Command
                 'path',
                 null,
                 InputOption::VALUE_REQUIRED,
-                'Set the path where the generated Robo file should be saved.'
+                'Set the path where the generated Robo file should be saved.',
+                ProjectX::projectRoot()
             )
             ->setDescription('Generate a Robo file.');
     }
@@ -44,11 +43,8 @@ class Robo extends Command
      */
     public function execute(InputInterface $input, OutputInterface $output)
     {
-        $path = $input->getOption('path')
-            ?: $this->getDefaultPath();
-
         $classname = ucwords($input->getOption('classname'));
-        $classpath = "{$path}/{$classname}.php";
+        $classpath = "{$input->getOption('path')}/{$classname}.php";
 
         if (file_exists($classpath)) {
             $question = $this->getHelper('question');
@@ -69,18 +65,6 @@ class Robo extends Command
         file_put_contents($classpath, $this->generateRoboClass($classname));
 
         $output->writeln("<info>You've successfully created a new Robo file.</info>");
-    }
-
-    /**
-     * Get default path.
-     *
-     * @return string
-     */
-    protected function getDefaultPath()
-    {
-        return $this->hasProjectXFile()
-            ? $this->getProjectXRootPath()
-            : getcwd();
     }
 
     /**

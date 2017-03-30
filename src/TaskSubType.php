@@ -13,12 +13,11 @@ use Symfony\Component\Console\Question\ConfirmationQuestion;
 /**
  * Define the Project-X task subtype class.
  */
-abstract class TaskSubType implements BuilderAwareInterface, ContainerAwareInterface, IOAwareInterface, ProjectXAwareInterface
+abstract class TaskSubType implements BuilderAwareInterface, ContainerAwareInterface, IOAwareInterface
 {
     use IO;
     use LoadAllTasks;
     use ContainerAwareTrait;
-    use ProjectXAwareTrait;
 
     /**
      * Get console application.
@@ -28,8 +27,7 @@ abstract class TaskSubType implements BuilderAwareInterface, ContainerAwareInter
     protected function getApplication()
     {
         return $this->getContainer()
-            ->get('application')
-            ->setProjectXConfigPath($this->projectXConfigPath);
+            ->get('application');
     }
 
     /**
@@ -40,8 +38,7 @@ abstract class TaskSubType implements BuilderAwareInterface, ContainerAwareInter
     protected function templateManager()
     {
         return $this->getContainer()
-            ->get('projectXTemplate')
-            ->setProjectXConfigPath($this->projectXConfigPath);
+            ->get('projectXTemplate');
     }
 
     /**
@@ -81,8 +78,7 @@ abstract class TaskSubType implements BuilderAwareInterface, ContainerAwareInter
         try {
             $filesystem = $this->taskFilesystemStack();
             foreach ($filenames as $template_path => $target_path) {
-                $target_file = $this
-                    ->getProjectXRootPath() . "/{$target_path}";
+                $target_file = ProjectX::projectRoot() . "/{$target_path}";
 
                 $template_file = $this
                     ->templateManager()

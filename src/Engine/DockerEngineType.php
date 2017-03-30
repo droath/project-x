@@ -102,7 +102,7 @@ class DockerEngineType extends EngineType
      */
     public function setupDocker()
     {
-        $project_root = $this->getProjectXRootPath();
+        $project_root = ProjectX::projectRoot();
 
         $this->taskfilesystemStack()
             ->mkdir($this->getInstallPath())
@@ -126,7 +126,7 @@ class DockerEngineType extends EngineType
      */
     public function setupDockerSync()
     {
-        $project_root = $this->getProjectXRootPath();
+        $project_root = ProjectX::projectRoot();
 
         $this->copyTemplateFilesToProject([
             'docker/docker-sync.yml' => 'docker-sync.yml',
@@ -160,9 +160,9 @@ class DockerEngineType extends EngineType
      */
     public function hasDockerSync()
     {
-        $root = $this->getProjectXRootPath();
+        $project_root = ProjectX::projectRoot();
 
-        return file_exists("{$root}/docker-sync.yml");
+        return file_exists("{$project_root}/docker-sync.yml");
     }
 
     /**

@@ -3,6 +3,7 @@
 namespace Droath\ProjectX\Project;
 
 use Boedah\Robo\Task\Drush\loadTasks as drushTasks;
+use Droath\ProjectX\ProjectX;
 
 /**
  * Define Drupal project type.
@@ -35,11 +36,8 @@ class DrupalProjectType extends PhpProjectType
     /**
      * Constructor for the Drupal project type.
      */
-    public function __construct($config_path = null)
+    public function __construct()
     {
-        if (isset($config_path) && file_exists($config_path)) {
-            $this->setProjectXConfigPath($config_path);
-        }
         $install_path = $this->getInstallPath();
 
         // Drupal sites common file/directory locations.
@@ -250,7 +248,7 @@ class DrupalProjectType extends PhpProjectType
      */
     protected function getInstallOptions()
     {
-        $config = $this->getProjectXConfig();
+        $config = ProjectX::getProjectConfig();
 
         $options = isset($config['options']['drupal'])
             ? $config['options']['drupal']
@@ -267,7 +265,7 @@ class DrupalProjectType extends PhpProjectType
      */
     protected function defaultInstallOptions()
     {
-        $config = $this->getProjectXConfig();
+        $config = ProjectX::getProjectConfig();
 
         return [
             'site' => [

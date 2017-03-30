@@ -11,7 +11,6 @@ use Symfony\Component\Finder\Finder;
  */
 class ProjectX extends Application
 {
-    use ProjectXAwareTrait;
     use ContainerAwareTrait;
 
     /**
@@ -25,11 +24,29 @@ class ProjectX extends Application
     const APP_VERSION = '0.0.1-alpha0';
 
     /**
+     * Project-X project path.
+     *
+     * @var string
+     */
+    protected static $projectXPath;
+
+    /**
      * {@inheritdoc}
      */
     public function __construct($name = 'UNKNOWN', $version = 'UNKNOWN')
     {
         parent::__construct($this->printBanner(), static::APP_VERSION);
+    }
+
+    /**
+     * Set Project-X project path.
+     *
+     * @param string $project_path
+     *   The path to the project-x configuration.
+     */
+    public static function setProjectPath($project_path)
+    {
+        self::$projectXPath = $project_path;
     }
 
     /**
@@ -79,13 +96,45 @@ class ProjectX extends Application
     }
 
     /**
+     * Get project root path.
+     *
+     * @return string
+     */
+    public static function projectRoot()
+    {
+        return static::hasProjectConfig()
+            ? dirname(self::$projectXPath)
+            : getcwd();
+    }
+
+    /**
+     * Has Project-X configuration.
+     *
+     * @return bool
+     */
+    public static function hasProjectConfig()
+    {
+        return file_exists(self::$projectXPath);
+    }
+
+    /**
+     * Get Project-X configuration.
+     *
+     * @return \Droath\ProjectX\Config
+     */
+    public static function getProjectConfig()
+    {
+        return new Config(self::$projectXPath);
+    }
+
+    /**
      * Get Project-X project machine-name.
      *
      * @return string
      */
     public function getProjectMachineName()
     {
-        $config = $this->getProjectXConfig();
+        $config = self::getProjectConfig()->getConfig();
 
         return strtolower(strtr($config['name'], ' ', '_'));
     }
@@ -98,9 +147,6 @@ class ProjectX extends Application
      */
     public function loadRoboProjectClasses()
     {
-        if (!$this->hasProjectXFile()) {
-            return [];
-        }
         $classes = [];
 
         foreach ($this->findPHPFilesInRoot() as $file) {
@@ -132,11 +178,9 @@ class ProjectX extends Application
      */
     protected function findPHPFilesInRoot()
     {
-        $project_root = $this->getProjectXRootPath();
-
         return (new Finder())
             ->name('*.php')
-            ->in($project_root)
+            ->in(self::projectRoot())
             ->depth(0)
             ->files();
     }

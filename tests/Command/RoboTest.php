@@ -32,11 +32,8 @@ class RoboTest extends TestBase
     {
         parent::setUp();
 
-        $this->app = new ProjectX();
-        $this->app->add((new Robo())
-            ->setProjectXConfigPath($this->getProjectXFilePath()));
-
-        $this->command = $this->app->find('robo');
+        $this->projectX->add(new Robo());
+        $this->command = $this->projectX->find('robo');
     }
 
     public function testExecute()
@@ -56,7 +53,7 @@ class RoboTest extends TestBase
 
         // Clear the project-x file path, so we can test that
         // passing along the --path option works as expected.
-        $this->command->setProjectXConfigPath('');
+        ProjectX::setProjectPath(null);
 
         $commandTester = new CommandTester($this->command);
         $commandTester
@@ -76,7 +73,7 @@ class RoboTest extends TestBase
             ->at($this->projectDir);
 
         // Mock the question helper to respond to the confirm overwrite question.
-        $this->app->getHelperSet()
+        $this->projectX->getHelperSet()
             ->set($this->questionHelperMock());
 
         $robo_contents = file_get_contents(

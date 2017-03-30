@@ -21,8 +21,7 @@ class ProjectTypeTest extends TestTaskBase
 
         $this->projectType
             ->setBuilder($this->builder)
-            ->setContainer($this->container)
-            ->setProjectXConfigPath($this->getProjectXFilePath());
+            ->setContainer($this->container);
     }
 
     public function testIsBuild()

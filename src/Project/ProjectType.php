@@ -2,6 +2,7 @@
 
 namespace Droath\ProjectX\Project;
 
+use Droath\ProjectX\ProjectX;
 use Droath\ProjectX\TaskSubType;
 
 /**
@@ -128,7 +129,7 @@ abstract class ProjectType extends TaskSubType implements ProjectTypeInterface
     public function setupProjectFilesystem()
     {
         $this->taskFilesystemStack()
-            ->chmod($this->getProjectXRootPath(), 0775)
+            ->chmod(ProjectX::projectRoot(), 0775)
             ->mkdir($this->getInstallPath(), 0775)
             ->run();
 
@@ -253,7 +254,7 @@ abstract class ProjectType extends TaskSubType implements ProjectTypeInterface
      */
     protected function getProjectHostname()
     {
-        $config = $this->getProjectXConfig();
+        $config = ProjectX::getProjectConfig();
 
         return isset($config['host']) ? $config['host']['name'] : 'localhost';
     }
@@ -266,7 +267,7 @@ abstract class ProjectType extends TaskSubType implements ProjectTypeInterface
      */
     protected function getInstallPath()
     {
-        return $this->getProjectXRootPath() . static::INSTALL_ROOT;
+        return ProjectX::projectRoot() . static::INSTALL_ROOT;
     }
 
     /**

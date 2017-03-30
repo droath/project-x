@@ -2,15 +2,13 @@
 
 namespace Droath\ProjectX\Template;
 
-use Droath\ProjectX\ProjectXAwareTrait;
+use Droath\ProjectX\ProjectX;
 
 /**
  * Define Project-X template manager.
  */
 class TemplateManager
 {
-    use ProjectXAwareTrait;
-
     /**
      * Template base directory.
      */
@@ -117,15 +115,15 @@ class TemplateManager
      */
     protected function getTemplatePathByProject()
     {
-        $config = $this->getProjectXConfig();
+        $type = ProjectX::getProjectConfig()->getType();
 
-        if (!isset($config['type'])) {
+        if (!isset($type)) {
             throw new \Exception(
                 'Project missing project type definition.'
             );
         }
 
-        return  $this->templateBasePath() . '/' . $config['type'];
+        return  $this->templateBasePath() . '/' . $type;
     }
 
     /**
@@ -168,6 +166,6 @@ class TemplateManager
      */
     protected function templateProjectPath()
     {
-        return $this->getProjectXRootPath() . static::PROJECT_DIRECTORY;
+        return ProjectX::projectRoot() . static::PROJECT_DIRECTORY;
     }
 }

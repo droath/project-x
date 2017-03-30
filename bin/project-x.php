@@ -4,6 +4,7 @@ use Consolidation\AnnotatedCommand\CommandFileDiscovery;
 use Droath\ConsoleForm\FormDiscovery;
 use Droath\ConsoleForm\FormHelper;
 use Droath\ProjectX\ProjectX;
+use Droath\ProjectX\ProjectXDiscovery;
 use Robo\Config;
 use Robo\Robo;
 use Robo\Runner;
@@ -35,6 +36,9 @@ $app->add(new \Droath\ProjectX\Command\Initialize());
 $app->getHelperSet()
     ->set(new FormHelper($formDiscovery));
 
+$projectPath = (new ProjectXDiscovery())->execute();
+ProjectX::setProjectPath($projectPath);
+
 // Construct the default Robo container.
 $container = Robo::createDefaultContainer($input, $output, $app, new Config());
 ProjectX::setDefaultServices($container);
@@ -44,7 +48,7 @@ $app->setContainer($container);
 
 // Auto discover the Robo tasks command files if the project contains a
 // project-x configuration.
-$commandClasses = $app->hasProjectXFile()
+$commandClasses = ProjectX::hasProjectConfig()
     ? (new CommandFileDiscovery())
         ->addSearchLocation('Task')
         ->setSearchPattern('*Tasks.php')

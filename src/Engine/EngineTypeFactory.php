@@ -3,15 +3,13 @@
 namespace Droath\ProjectX\Engine;
 
 use Droath\ProjectX\FactoryInterface;
-use Droath\ProjectX\ProjectXAwareTrait;
+use Droath\ProjectX\ProjectX;
 
 /**
  * Project-X engine type factory.
  */
 class EngineTypeFactory implements FactoryInterface
 {
-    use ProjectXAwareTrait;
-
     /**
      * Create engine type instance.
      *
@@ -37,7 +35,7 @@ class EngineTypeFactory implements FactoryInterface
      */
     protected function getEngineClass()
     {
-        $config = $this->getProjectXConfig();
+        $config = ProjectX::getProjectConfig();
 
         if (!isset($config['engine'])) {
             throw new \Exception(

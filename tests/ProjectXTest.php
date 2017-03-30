@@ -3,6 +3,7 @@
 namespace Droath\ProjectX\Tests;
 
 use Droath\ProjectX\ProjectX;
+use Robo\Robo;
 use org\bovigo\vfs\vfsStream;
 
 /**
@@ -10,20 +11,21 @@ use org\bovigo\vfs\vfsStream;
  */
 class ProjectXTest extends TestBase
 {
-    /**
-     * Project-X object.
-     *
-     * @var \Droath\ProjectX\ProjectX
-     */
-    protected $projectX;
-
-    public function setUp()
+    public function testProjectRoot()
     {
-        parent::setUp();
+        $this->assertEquals($this->projectRoot, ProjectX::projectRoot());
+    }
 
-        $path = $this->getProjectFileUrl($this->projectFileName);
-        $this->projectX = (new ProjectX())
-            ->setProjectXConfigPath($path);
+    public function testHasProjecConfig()
+    {
+        $this->assertTrue(ProjectX::hasProjectConfig());
+        ProjectX::setProjectPath(null);
+        $this->assertFalse(ProjectX::hasProjectConfig());
+    }
+
+    public function testGetProjectConfig()
+    {
+        $this->assertInstanceOf('\Droath\ProjectX\Config', ProjectX::getProjectConfig());
     }
 
     public function testProjectMachineName()

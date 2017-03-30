@@ -2,6 +2,7 @@
 
 namespace Droath\ProjectX\Tests\Template;
 
+use Droath\ProjectX\Config;
 use Droath\ProjectX\Template\TemplateManager;
 use Droath\ProjectX\Tests\TestBase;
 use org\bovigo\vfs\vfsStream;
@@ -17,8 +18,9 @@ class TemplateManagerTest extends TestBase
     {
         parent::setUp();
 
-        $this->templateManager = (new TemplateManager())
-            ->setProjectXConfigPath($this->getProjectXFilePath());
+        $this->templateManager = new TemplateManager(
+            new Config($this->getProjectXFilePath())
+        );
     }
 
     public function testLoadTemplate()

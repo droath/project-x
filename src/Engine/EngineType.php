@@ -2,6 +2,7 @@
 
 namespace Droath\ProjectX\Engine;
 
+use Droath\ProjectX\ProjectX;
 use Droath\ProjectX\TaskSubType;
 
 /**
@@ -52,6 +53,6 @@ abstract class EngineType extends TaskSubType implements EngineTypeInterface
      */
     public function getInstallPath()
     {
-        return $this->getProjectXRootPath() . static::INSTALL_ROOT;
+        return ProjectX::projectRoot() . static::INSTALL_ROOT;
     }
 }

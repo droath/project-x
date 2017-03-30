@@ -25,8 +25,7 @@ class DrupalProjectTypeTest extends TestTaskBase
     {
         parent::setUp();
 
-        $path = $this->getProjectXFilePath();
-        $this->drupalProject = (new DrupalProjectType($path))
+        $this->drupalProject = (new DrupalProjectType())
             ->setBuilder($this->builder)
             ->setContainer($this->container);
     }

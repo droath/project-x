@@ -28,8 +28,7 @@ class DockerEngineTypeTest extends TestTaskBase
 
         $this->dockerEngine = (new DockerEngineType())
             ->setBuilder($this->builder)
-            ->setContainer($this->container)
-            ->setProjectXConfigPath($this->getProjectXFilePath());
+            ->setContainer($this->container);
     }
 
     public function testSetupDocker()
