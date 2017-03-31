@@ -3,15 +3,13 @@
 namespace Droath\ProjectX\Project;
 
 use Droath\ProjectX\FactoryInterface;
-use Droath\ProjectX\ProjectXAwareTrait;
+use Droath\ProjectX\ProjectX;
 
 /**
  * Project-X project type factory.
  */
 class ProjectTypeFactory implements FactoryInterface
 {
-    use ProjectXAwareTrait;
-
     /**
      * Create project type instance.
      *
@@ -37,15 +35,15 @@ class ProjectTypeFactory implements FactoryInterface
      */
     protected function getProjectClass()
     {
-        $config = $this->getProjectXConfig();
+        $type = ProjectX::getProjectConfig()->getType();
 
-        if (!isset($config['type'])) {
+        if (!isset($type)) {
             throw new \Exception(
                 'Missing project type definition'
             );
         }
 
-        switch ($config['type']) {
+        switch ($type) {
             case 'drupal':
                 return '\Droath\ProjectX\Project\DrupalProjectType';
         }
