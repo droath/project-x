@@ -248,7 +248,8 @@ class DrupalProjectType extends PhpProjectType
      */
     protected function getInstallOptions()
     {
-        $config = ProjectX::getProjectConfig();
+        $config = ProjectX::getProjectConfig()
+            ->getConfig();
 
         $options = isset($config['options']['drupal'])
             ? $config['options']['drupal']
@@ -265,11 +266,12 @@ class DrupalProjectType extends PhpProjectType
      */
     protected function defaultInstallOptions()
     {
-        $config = ProjectX::getProjectConfig();
+        $name = ProjectX::getProjectConfig()
+            ->getName();
 
         return [
             'site' => [
-                'name' => $config['name'],
+                'name' => $name,
                 'profile' => 'standard',
             ],
             'account' => [

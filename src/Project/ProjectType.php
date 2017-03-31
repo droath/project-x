@@ -254,7 +254,8 @@ abstract class ProjectType extends TaskSubType implements ProjectTypeInterface
      */
     protected function getProjectHostname()
     {
-        $config = ProjectX::getProjectConfig();
+        $config = ProjectX::getProjectConfig()
+            ->getConfig();
 
         return isset($config['host']) ? $config['host']['name'] : 'localhost';
     }

@@ -4,6 +4,7 @@ namespace Droath\ProjectX\Task;
 
 use Droath\HostsFileManager\HostsFile;
 use Droath\HostsFileManager\HostsFileWriter;
+use Droath\ProjectX\ProjectX;
 
 /**
  * Define Project-X engine task commands.
@@ -67,7 +68,8 @@ class EngineTasks extends TaskBase
      */
     protected function addHostName($no_browser)
     {
-        $config = $this->getProjectXConfig();
+        $config = ProjectX::getProjectConfig()
+            ->getConfig();
 
         if (isset($config['host'])) {
             $host = $config['host'];
@@ -94,7 +96,8 @@ class EngineTasks extends TaskBase
      */
     protected function removeHostName()
     {
-        $config = $this->getProjectXConfig();
+        $config = ProjectX::getProjectConfig()
+            ->getConfig();
 
         if (isset($config['host'])) {
             $host = $config['host'];

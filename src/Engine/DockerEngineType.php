@@ -301,7 +301,7 @@ class DockerEngineType extends EngineType
             'docker-compose.yml',
         ];
 
-        $root = $this->getProjectXRootPath();
+        $root = ProjectX::projectRoot();
         $path = "{$root}/docker-compose-dev.yml";
 
         if ($this->hasDockerSync() && file_exists($path)) {
