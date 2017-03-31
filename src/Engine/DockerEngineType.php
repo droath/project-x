@@ -80,6 +80,39 @@ class DockerEngineType extends EngineType
     /**
      * {@inheritdoc}
      */
+    public function start()
+    {
+        parent::start();
+
+        $this->taskDockerComposeStart()
+            ->run();
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function restart()
+    {
+        parent::restart();
+
+        $this->taskDockerComposeRestart()
+            ->run();
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function suspend()
+    {
+        parent::suspend();
+
+        $this->taskDockerComposePause()
+            ->run();
+    }
+
+    /**
+     * {@inheritdoc}
+     */
     public function install()
     {
         parent::install();

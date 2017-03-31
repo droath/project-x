@@ -41,6 +41,30 @@ abstract class EngineType extends TaskSubType implements EngineTypeInterface
     /**
      * {@inheritdoc}
      */
+    public function start()
+    {
+        $this->say('Project engine is preparing to start.');
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function restart()
+    {
+        $this->say('Project engine is preparing to restart.');
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function suspend()
+    {
+        $this->say('Project engine is preparing to suspend.');
+    }
+
+    /**
+     * {@inheritdoc}
+     */
     public function install()
     {
         $this->say('Project engine is running the install process. 🤘');

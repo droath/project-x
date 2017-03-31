@@ -51,6 +51,34 @@ class EngineTasks extends TaskBase
     }
 
     /**
+     * Start project engine.
+     */
+    public function engineStart()
+    {
+        $this->engineInstance()->start();
+
+        return $this;
+    }
+
+    /**
+     * Restart project engine.
+     */
+    public function engineRestart()
+    {
+        $this->engineInstance()->restart();
+
+        return $this;
+    }
+
+    /**
+     * Suspend project engine.
+     */
+    public function engineSuspend()
+    {
+        $this->engineInstance()->suspend();
+    }
+
+    /**
      * Install project engine.
      */
     public function engineInstall()
