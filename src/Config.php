@@ -86,7 +86,6 @@ class Config implements ConfigInterface
     {
         if ($this->hasConfig()
             && empty($this->projectXConfig)) {
-
             $config = Yaml::parse($this->getConfigContents());
 
             $this->projectXConfig = array_replace_recursive(
