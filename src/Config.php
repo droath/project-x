@@ -62,6 +62,16 @@ class Config implements ConfigInterface
     /**
      * {@inheritdoc}
      */
+    public function getEngine()
+    {
+        $config = $this->getConfig();
+
+        return isset($config['engine']) ? $config['engine'] : null;
+    }
+
+    /**
+     * {@inheritdoc}
+     */
     public function getOptions()
     {
         $config = $this->getConfig();

@@ -27,6 +27,11 @@ class ConfigTest extends TestBase
         $this->assertEquals('drupal', $this->config->getType());
     }
 
+    public function testGetEngine()
+    {
+        $this->assertEquals('docker', $this->config->getEngine());
+    }
+
     public function testGetOption()
     {
         $this->assertEmpty($this->config->getOptions());

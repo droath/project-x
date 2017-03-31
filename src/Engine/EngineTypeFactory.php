@@ -35,15 +35,15 @@ class EngineTypeFactory implements FactoryInterface
      */
     protected function getEngineClass()
     {
-        $config = ProjectX::getProjectConfig();
+        $engine = ProjectX::getProjectConfig()->getEngine();
 
-        if (!isset($config['engine'])) {
+        if (!isset($engine)) {
             throw new \Exception(
                 'Missing project engine definition'
             );
         }
 
-        switch ($config['engine']) {
+        switch ($engine) {
             case 'docker':
                 return '\Droath\ProjectX\Engine\DockerEngineType';
         }
