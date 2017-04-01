@@ -29,7 +29,7 @@ class ProjectXSetup implements FormInterface
         return (new Form())
             ->addFields([
                 (new TextField('name', 'Project name'))
-                    ->setDefault('Project-X'),
+                    ->setDefault($this->getDefaultName()),
                 (new SelectField('type', 'Project type'))
                     ->setOptions($this->getProjectTypes())
                     ->setDefault('drupal'),
@@ -56,6 +56,13 @@ class ProjectXSetup implements FormInterface
             'drupal' => 'Drupal',
             'php' => 'PHP',
         ];
+    }
+
+    protected function getDefaultName()
+    {
+        $cwd = getcwd();
+
+        return ucwords(strtr(basename($cwd), '-', ' '));
     }
 
     /**
