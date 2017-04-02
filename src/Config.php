@@ -70,6 +70,43 @@ class Config implements ConfigInterface
     }
 
     /**
+     * Get GitHub project URL.
+     *
+     * @return string
+     */
+    public function getGitHubUrl()
+    {
+        $config = $this->getConfig();
+
+        return isset($config['github']['url']) ? $config['github']['url'] : null;
+    }
+
+    /**
+     * Get GitHub project URL info.
+     *
+     * @return array
+     *   An array of account and repository values.
+     */
+    public function getGitHubUrlInfo()
+    {
+        $matches = [];
+        $pattern = '/(?:https?:\/\/github.com\/|git\@.+\:)([\w\/\-\_]+)/';
+
+        if (preg_match($pattern, $this->getGitHubUrl(), $matches)) {
+            list($account, $repo) = explode(
+                DIRECTORY_SEPARATOR, $matches[1]
+            );
+
+            return [
+                'account' => $account,
+                'repository' => $repo,
+            ];
+        }
+
+        return [];
+    }
+
+    /**
      * {@inheritdoc}
      */
     public function getOptions()

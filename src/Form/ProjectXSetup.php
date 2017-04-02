@@ -36,6 +36,14 @@ class ProjectXSetup implements FormInterface
                 (new SelectField('engine', 'Select engine'))
                     ->setOptions($this->getEngines())
                     ->setDefault('docker'),
+                (new BooleanField('github', 'Setup GitHub?'))
+                    ->setSubform(function ($subform, $value) {
+                        if ($value === true) {
+                            $subform->addFields([
+                                (new TextField('url', 'GitHub URL')),
+                            ]);
+                        }
+                    }),
                 (new BooleanField('host', 'Setup host?'))
                     ->setSubform(function ($subform, $value) {
                         if ($value === true) {

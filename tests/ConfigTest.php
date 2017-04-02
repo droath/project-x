@@ -32,6 +32,18 @@ class ConfigTest extends TestBase
         $this->assertEquals('docker', $this->config->getEngine());
     }
 
+    public function testGetGitHubUrl()
+    {
+        $this->assertEquals('https://github.com/droath/project-x', $this->config->getGitHubUrl());
+    }
+
+    public function testGitHubUrlInfo()
+    {
+        $info = $this->config->getGitHubUrlInfo();
+        $this->assertEquals('droath', $info['account']);
+        $this->assertEquals('project-x', $info['repository']);
+    }
+
     public function testGetOption()
     {
         $this->assertEmpty($this->config->getOptions());

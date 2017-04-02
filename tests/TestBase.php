@@ -4,9 +4,11 @@ namespace Droath\ProjectX\Tests;
 
 use Droath\ProjectX\Filesystem\YamlFilesystem;
 use Droath\ProjectX\ProjectX;
+use Droath\ProjectX\Service\GitHubUserAuthStore;
 use PHPUnit\Framework\TestCase;
 use Robo\Robo;
 use Symfony\Component\Console\Output\NullOutput;
+use Symfony\Component\Yaml\Yaml;
 use org\bovigo\vfs\vfsStream;
 
 /**
@@ -115,6 +117,38 @@ abstract class TestBase extends TestCase
     }
 
     /**
+     * Add GitHub user authentication file.
+     */
+    protected function addGithubUserAuthFile()
+    {
+        $contents = Yaml::dump(
+            $this->getGitHubUserAuthContents()
+        );
+
+        vfsStream::create([
+            GitHubUserAuthStore::FILE_DIR => [
+                GitHubUserAuthStore::FILE_NAME => $contents,
+            ],
+        ],
+        $this->projectDir);
+
+        return $this;
+    }
+
+    /**
+     * Get GitHub user authentication contents.
+     *
+     * @return array
+     */
+    protected function getGitHubUserAuthContents()
+    {
+        return [
+            'user' => 'test-user',
+            'token' => '3253523452352',
+        ];
+    }
+
+    /**
      * Get Project-X file contents fixture.
      *
      * @return array
@@ -125,6 +159,9 @@ abstract class TestBase extends TestCase
             'name' => 'Project-X Test',
             'type' => 'drupal',
             'engine' => 'docker',
+            'github' => [
+                'url' => 'https://github.com/droath/project-x',
+            ],
             'host' => [
                 'name' => 'local.project-x-test.com',
                 'open_on_startup' => 'true',
