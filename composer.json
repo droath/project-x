@@ -27,6 +27,7 @@
         "geerlingguy/ping": "^1.1",
         "boedah/robo-drush": "^3.0",
         "droath/console-form": "^0.0.4",
+        "droath/robo-github": "^0.0.1",
         "droath/robo-docker-compose": "^0.0.4",
         "droath/robo-docker-sync": "^0.0.1",
         "droath/hostsfile-manager": "^0.0.1"
