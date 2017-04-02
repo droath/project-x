@@ -94,7 +94,8 @@ class Config implements ConfigInterface
 
         if (preg_match($pattern, $this->getGitHubUrl(), $matches)) {
             list($account, $repo) = explode(
-                DIRECTORY_SEPARATOR, $matches[1]
+                DIRECTORY_SEPARATOR,
+                $matches[1]
             );
 
             return [

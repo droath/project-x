@@ -123,7 +123,6 @@ abstract class GitHubTaskBase extends Tasks
 
         if (isset($config['gitflow prefix'])
             && !empty($config['gitflow prefix'])) {
-
             return true;
         }
 
