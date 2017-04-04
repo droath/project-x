@@ -16,13 +16,6 @@ abstract class EngineType extends TaskSubType implements EngineTypeInterface
     const INSTALL_ROOT = null;
 
     /**
-     * Define engine type identifier.
-     *
-     * @return string
-     */
-    abstract public function getTypeId();
-
-    /**
      * {@inheritdoc}
      */
     public function up()

@@ -55,6 +55,22 @@ class DrupalProjectType extends PhpProjectType
     /**
      * {@inheritdoc}.
      */
+    public function getlabel()
+    {
+        return 'Drupal';
+    }
+
+    /**
+     * {@inheritdoc}.
+     */
+    public function getTypeId()
+    {
+        return 'drupal';
+    }
+
+    /**
+     * {@inheritdoc}.
+     */
     public function build()
     {
         $status = $this->canBuild();

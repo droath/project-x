@@ -25,6 +25,14 @@ class DockerEngineType extends EngineType
     /**
      * {@inheritdoc}.
      */
+    public function getLabel()
+    {
+        return 'Docker';
+    }
+
+    /**
+     * {@inheritdoc}.
+     */
     public function getTypeId()
     {
         return 'docker';

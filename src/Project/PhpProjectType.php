@@ -10,6 +10,22 @@ class PhpProjectType extends ProjectType implements ProjectTypeInterface
     /**
      * {@inheritdoc}
      */
+    public function getLabel()
+    {
+        return 'PHP';
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function getTypeId()
+    {
+        return 'php';
+    }
+
+    /**
+     * {@inheritdoc}
+     */
     public function build()
     {
         parent::build();
