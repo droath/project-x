@@ -96,11 +96,10 @@ class EngineTasks extends TaskBase
      */
     protected function addHostName($no_browser)
     {
-        $config = ProjectX::getProjectConfig()
-            ->getConfig();
+        $host = ProjectX::getProjectConfig()
+            ->getHost();
 
-        if (isset($config['host'])) {
-            $host = $config['host'];
+        if (!empty($host)) {
             $hostsfile = (new HostsFile())
                 ->setLine('127.0.0.1', $host['name']);
 
@@ -124,11 +123,10 @@ class EngineTasks extends TaskBase
      */
     protected function removeHostName()
     {
-        $config = ProjectX::getProjectConfig()
-            ->getConfig();
+        $host = ProjectX::getProjectConfig()
+            ->getHost();
 
-        if (isset($config['host'])) {
-            $host = $config['host'];
+         if (!empty($host)) {
             $hostsfile = (new HostsFile())
                 ->setLine('127.0.0.1', $host['name']);
 

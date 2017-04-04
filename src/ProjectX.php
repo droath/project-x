@@ -2,7 +2,9 @@
 
 namespace Droath\ProjectX;
 
+use Droath\ProjectX\Config\ProjectXConfig;
 use League\Container\ContainerAwareTrait;
+use Robo\Robo;
 use Symfony\Component\Console\Application;
 use Symfony\Component\Finder\Finder;
 
@@ -28,7 +30,14 @@ class ProjectX extends Application
      *
      * @var string
      */
-    protected static $projectXPath;
+    protected static $projectPath;
+
+    /**
+     * Project-X project config.
+     *
+     * @var \Droath\ProjectX\Config\ProjectXConfig
+     */
+    protected static $projectConfig;
 
     /**
      * {@inheritdoc}
@@ -46,7 +55,17 @@ class ProjectX extends Application
      */
     public static function setProjectPath($project_path)
     {
-        self::$projectXPath = $project_path;
+        self::$projectPath = $project_path;
+    }
+
+    /**
+     * Get Project-X container object.
+     *
+     * @return \League\Container\ContainerInterface
+     */
+    public static function getContainer()
+    {
+        return Robo::getContainer();
     }
 
     /**
@@ -105,7 +124,7 @@ class ProjectX extends Application
     public static function projectRoot()
     {
         return static::hasProjectConfig()
-            ? dirname(self::$projectXPath)
+            ? dirname(self::$projectPath)
             : getcwd();
     }
 
@@ -116,17 +135,34 @@ class ProjectX extends Application
      */
     public static function hasProjectConfig()
     {
-        return file_exists(self::$projectXPath);
+        return file_exists(self::$projectPath);
+    }
+
+    /**
+     * Clear Project-X configuration.
+     */
+    public static function clearProjectConfig()
+    {
+        self::$projectConfig = null;
     }
 
     /**
      * Get Project-X configuration.
      *
-     * @return \Droath\ProjectX\Config
+     * @return \Droath\ProjectX\Config\ProjectXConfig
      */
     public static function getProjectConfig()
     {
-        return new Config(self::$projectXPath);
+        if (!isset(self::$projectConfig)) {
+            $config = self::getConfigInstance();
+            $values = self::getLocalConfigValues();
+
+            self::$projectConfig = empty($values)
+                ? $config
+                : $config->update($values);
+        }
+
+        return self::$projectConfig;
     }
 
     /**
@@ -136,9 +172,9 @@ class ProjectX extends Application
      */
     public function getProjectMachineName()
     {
-        $config = self::getProjectConfig()->getConfig();
+        $config = self::getProjectConfig();
 
-        return strtolower(strtr($config['name'], ' ', '_'));
+        return strtolower(strtr($config->getName(), ' ', '_'));
     }
 
     /**
@@ -170,6 +206,43 @@ class ProjectX extends Application
         }
 
         return $classes;
+    }
+
+    /**
+     * Get configuration instance.
+     *
+     * @return \Droath\ProjectX\Config\ProjectXConfig
+     */
+    protected static function getConfigInstance()
+    {
+        if (!self::hasProjectConfig()) {
+            return new ProjectXConfig();
+        }
+
+        return ProjectXConfig::createFromFile(
+            new \SplFileInfo(self::$projectPath)
+        );
+    }
+
+    /**
+     * Get local configuration values.
+     *
+     * @return array
+     */
+    protected static function getLocalConfigValues()
+    {
+        $root = self::projectRoot();
+        $path = "{$root}/project-x.local.yml";
+
+        if (!file_exists($path)) {
+            return [];
+        }
+
+        $instance = ProjectXConfig::createFromFile(
+            new \SplFileInfo($path)
+        );
+
+        return array_filter($instance->toArray());
     }
 
     /**

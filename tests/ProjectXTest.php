@@ -11,6 +11,11 @@ use org\bovigo\vfs\vfsStream;
  */
 class ProjectXTest extends TestBase
 {
+    public function testGetContainer()
+    {
+        $this->assertInstanceOf('\League\Container\ContainerInterface', ProjectX::getContainer());
+    }
+
     public function testProjectRoot()
     {
         $this->assertEquals($this->projectRoot, ProjectX::projectRoot());
@@ -25,7 +30,10 @@ class ProjectXTest extends TestBase
 
     public function testGetProjectConfig()
     {
-        $this->assertInstanceOf('\Droath\ProjectX\Config', ProjectX::getProjectConfig());
+        $this->assertInstanceOf(
+            '\Droath\ProjectX\Config\ProjectXConfig',
+            ProjectX::getProjectConfig()
+        );
     }
 
     public function testProjectMachineName()
@@ -48,6 +56,24 @@ class ProjectXTest extends TestBase
 
         $this->assertNotEmpty($classes);
         $this->assertEquals($classname, $classes[0]);
+    }
+
+    public function testGetConfig()
+    {
+        $config = ProjectX::getProjectConfig();
+        $this->assertEquals('drupal', $config->getType());
+        $this->assertEquals('Project-X Test', $config->getName());
+        $this->assertEquals('true', $config->getHost()['open_on_startup']);
+    }
+
+    public function testGetConfigOverrideLocal()
+    {
+        $this->addProjecXLocalConfigToRoot();
+
+        $config = ProjectX::getProjectConfig();
+        $this->assertEquals('drupal', $config->getType());
+        $this->assertEquals('Project-X Local', $config->getName());
+        $this->assertEquals('false', $config->getHost()['open_on_startup']);
     }
 
     /**

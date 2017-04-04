@@ -264,11 +264,12 @@ class DrupalProjectType extends PhpProjectType
      */
     protected function getInstallOptions()
     {
-        $config = ProjectX::getProjectConfig()
-            ->getConfig();
+        $type_id = $this->getTypeId();
+        $options = ProjectX::getProjectConfig()
+            ->getOptions();
 
-        $options = isset($config['options']['drupal'])
-            ? $config['options']['drupal']
+        $options = isset($options[$type_id])
+            ? $options[$type_id]
             : [];
 
         return array_replace_recursive(

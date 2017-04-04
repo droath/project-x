@@ -66,7 +66,6 @@ abstract class GitHubTaskBase extends Tasks
     public function getAccount()
     {
         $info = $this
-            ->configuration()
             ->getGitHubUrlInfo();
 
         if (!isset($info['account'])) {
@@ -87,9 +86,7 @@ abstract class GitHubTaskBase extends Tasks
      */
     public function getRepository()
     {
-        $info = $this
-            ->configuration()
-            ->getGitHubUrlInfo();
+        $info = $this->getGitHubUrlInfo();
 
         if (!isset($info['repository'])) {
             throw new \RuntimeException(
@@ -98,6 +95,47 @@ abstract class GitHubTaskBase extends Tasks
         }
 
         return $info['repository'];
+    }
+
+    /**
+     * Get GitHub information for URL.
+     *
+     * @return array
+     *   An array of account and repository values.
+     */
+    public function getGitHubUrlInfo()
+    {
+        $info = $this->getGithubInfo();
+
+        if (isset($info['url'])) {
+            $matches = [];
+            $pattern = '/(?:https?:\/\/github.com\/|git\@.+\:)([\w\/\-\_]+)/';
+
+            if (preg_match($pattern, $info['url'], $matches)) {
+                list($account, $repo) = explode(
+                    DIRECTORY_SEPARATOR,
+                    $matches[1]
+                );
+
+                return [
+                    'account' => $account,
+                    'repository' => $repo,
+                ];
+            }
+        }
+
+        return [];
+    }
+
+    /**
+     * Get GitHub project information.
+     *
+     * @return array
+     */
+    protected function getGithubInfo()
+    {
+        return $this->configuration()
+            ->getGithub();
     }
 
     /**

@@ -75,4 +75,11 @@ class GitHubTaskBaseTest extends TestTaskBase
     {
         $this->assertEquals('project-x', $this->gitHubTaskBase->getRepository());
     }
+
+    public function testGitHubUrlInfo()
+    {
+        $info = $this->gitHubTaskBase->getGitHubUrlInfo();
+        $this->assertEquals('droath', $info['account']);
+        $this->assertEquals('project-x', $info['repository']);
+    }
 }

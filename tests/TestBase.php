@@ -82,6 +82,8 @@ abstract class TestBase extends TestCase
         );
         $project_path = $this->getProjectXFilePath();
 
+        ProjectX::clearProjectConfig();
+
         ProjectX::setProjectPath($project_path);
         ProjectX::setDefaultServices($this->container);
 
