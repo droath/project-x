@@ -18,22 +18,27 @@ class GitHubTasks extends GitHubTaskBase
      */
     public function githubAuth()
     {
-        if (!$this->hasAuth()) {
-            $this->say(
-                'GitHub authentication token has already been added.'
+        if ($this->hasAuth()) {
+            $this->io()->warning(
+                'A personal GitHub access token has already been setup.'
             );
 
             return;
         }
-        $user = $this->ask('GitHub username:');
-        $pass = $this->askHidden('GitHub token:');
+        $this->io()->note("A personal GitHub access token is required.\n\n" .
+            'If you need help setting up a access token follow the GitHub guide:' .
+            ' https://help.github.com/articles/creating-a-personal-access-token-for-the-command-line/');
 
-        $status = $gitHubAuth
+        $user = $this->ask('GitHub username:');
+        $pass = $this->askHidden('GitHub token (hidden):');
+
+        $status = $this
+            ->gitHubUserAuth()
             ->saveAuthInfo($user, $pass);
 
         if (!$status) {
-            $this->say(
-                "You've successfully added your GitHub authentication token."
+            $this->io()->success(
+                "You've successfully added your personal GitHub access token."
             );
         }
     }
@@ -60,7 +65,7 @@ class GitHubTasks extends GitHubTaskBase
         $user = $this->getUser();
         $number = array_search($issue, $listings);
 
-        $response = $this
+        $this
             ->taskGitHubIssueAssignees($this->getToken())
             ->setAccount($this->getAccount())
             ->setRepository($this->getRepository())
