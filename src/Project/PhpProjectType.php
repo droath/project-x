@@ -2,10 +2,12 @@
 
 namespace Droath\ProjectX\Project;
 
+use Droath\ProjectX\TaskSubTypeInterface;
+
 /**
  * Define PHP project type.
  */
-class PhpProjectType extends ProjectType implements ProjectTypeInterface
+class PhpProjectType extends ProjectType implements TaskSubTypeInterface, ProjectTypeInterface
 {
     /**
      * {@inheritdoc}

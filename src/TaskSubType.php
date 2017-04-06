@@ -13,7 +13,7 @@ use Symfony\Component\Console\Question\ConfirmationQuestion;
 /**
  * Define the Project-X task subtype class.
  */
-abstract class TaskSubType implements BuilderAwareInterface, ContainerAwareInterface, IOAwareInterface, TaskSubTypeInterface
+abstract class TaskSubType implements BuilderAwareInterface, ContainerAwareInterface, IOAwareInterface
 {
     use IO;
     use LoadAllTasks;

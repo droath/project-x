@@ -126,7 +126,7 @@ class EngineTasks extends TaskBase
         $host = ProjectX::getProjectConfig()
             ->getHost();
 
-         if (!empty($host)) {
+        if (!empty($host)) {
             $hostsfile = (new HostsFile())
                 ->setLine('127.0.0.1', $host['name']);
 

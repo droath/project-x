@@ -3,6 +3,7 @@
 namespace Droath\ProjectX\Engine;
 
 use Droath\ProjectX\ProjectX;
+use Droath\ProjectX\TaskSubTypeInterface;
 use Droath\RoboDockerCompose\Task\loadTasks as dockerComposerTasks;
 use Droath\RoboDockerSync\Task\loadTasks as dockerSyncTasks;
 use Symfony\Component\Console\Helper\Table;
@@ -12,7 +13,7 @@ use Symfony\Component\Console\Helper\TableSeparator;
 /**
  * Define docker engine type.
  */
-class DockerEngineType extends EngineType
+class DockerEngineType extends EngineType implements TaskSubTypeInterface
 {
     /**
      * Engine install path.

@@ -23,7 +23,8 @@ abstract class YamlConfigBase
      *
      * @return self
      */
-    public static function createFromString($string) {
+    public static function createFromString($string)
+    {
         return self::getSerializer()
             ->deserialize($string, get_called_class(), 'yaml');
     }
