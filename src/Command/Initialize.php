@@ -3,11 +3,14 @@
 namespace Droath\ProjectX\Command;
 
 use Droath\ConsoleForm\Form;
-use Droath\ProjectX\Filesystem\YamlFilesystem;
+use Droath\ProjectX\Config\ProjectXConfig;
+use Droath\ProjectX\OptionFormAwareInterface;
+use Droath\ProjectX\ProjectX;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
+use Symfony\Component\Console\Style\SymfonyStyle;
 
 class Initialize extends Command
 {
@@ -44,17 +47,65 @@ class Initialize extends Command
                 'Path does not exist.'
             );
         }
+        $filename = 'project-x.yml';
+        $filepath = "{$path}/{$filename}";
 
-        $form->save(function ($results) use ($input, $output, $path) {
-            $filename = 'project-x.yml';
-            $saved = (new YamlFilesystem($results, $path))
-                ->save($filename);
+        $form->save(function ($results) use ($output, $filepath) {
+            $saved = ProjectXConfig::createFromArray($results)
+                ->save($filepath);
 
             if ($saved) {
                 $output->writeln(
-                    sprintf('🚀  <info>Success, the %s has been generated!</info>', $filename)
+                    sprintf('🚀  <info>Success, the project-x configuration have been saved.</info>')
                 );
+                ProjectX::setProjectPath($filepath);
             }
         });
+
+        $this->initProjectOptionForm($input, $output, $filepath);
+    }
+
+    /**
+     * Initialize the project option form.
+     *
+     * @param \Symfony\Component\Console\Input\InputInterface $input
+     *   The console input.
+     * @param \Symfony\Component\Console\Output\OutputInterface $output
+     *   The console output.
+     * @param string $filepath
+     *   The project-x file path.
+     *
+     * @return self
+     */
+    protected function initProjectOptionForm($input, $output, $filepath)
+    {
+        $project = ProjectX::getContainer()
+            ->get('projectXProject');
+
+        if ($project instanceof OptionFormAwareInterface) {
+            $io = new SymfonyStyle($input, $output);
+            $io->title(sprintf('%s Project Options', $project->getLabel()));
+
+            $form = $project->optionForm();
+            $form
+                ->setInput($input)
+                ->setOutput($output)
+                ->setHelperSet($this->getHelperSet())
+                ->process();
+
+            $options[$project->getTypeId()] = $form->getResults();
+
+            $saved = ProjectX::getProjectConfig()
+                ->setOptions($options)
+                ->save($filepath);
+
+            if ($saved) {
+                $output->writeln(
+                    sprintf('🚀  <info>Success, the %s options have been saved.</info>', $project->getLabel())
+                );
+            }
+        }
+
+        return $this;
     }
 }

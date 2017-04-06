@@ -6,16 +6,15 @@ use Droath\ConsoleForm\FormHelper;
 use Droath\ProjectX\Command\Initialize;
 use Droath\ProjectX\Form\ProjectXSetup;
 use Droath\ProjectX\ProjectX;
-use PHPUnit\Framework\TestCase;
+use Droath\ProjectX\Tests\TestBase;
 use Symfony\Component\Console\Question\Question;
 use Symfony\Component\Console\Tester\CommandTester;
-use Symfony\Component\Yaml\Yaml;
 use org\bovigo\vfs\vfsStream;
 
 /**
  * Define the initialize commend test.
  */
-class InitializeTest extends TestCase
+class InitializeTest extends TestBase
 {
     public function testExecute()
     {
@@ -45,14 +44,14 @@ class InitializeTest extends TestCase
 
         $this->assertTrue($root->hasChild($filename));
 
-        $config = Yaml::parse("{$root_url}/{$filename}");
+        $config = ProjectX::getProjectConfig();
 
-        $this->assertEquals('Project-Test', $config['name']);
-        $this->assertEquals('drupal', $config['type']);
-        $this->assertEquals('docker', $config['engine']);
-        $this->assertEquals('local.testing.com', $config['host']['name']);
-        $this->assertEquals('true', $config['host']['open_on_startup']);
-        $this->assertContains('Success, the project-x.yml has been generated!', $output);
+        $this->assertEquals('Project-Test', $config->getName());
+        $this->assertEquals('drupal', $config->getType());
+        $this->assertEquals('docker', $config->getEngine());
+        $this->assertEquals('local.testing.com', $config->getHost()['name']);
+        $this->assertEquals('true', $config->getHost()['open_on_startup']);
+        $this->assertContains('Success, the project-x configuration have been saved.', $output);
     }
 
     protected function questionHelperMock()
@@ -75,6 +74,10 @@ class InitializeTest extends TestCase
                         return 'drupal';
                     case 'select_engine':
                         return 'docker';
+                    case 'setup_github':
+                        return true;
+                    case 'github_url':
+                        return 'https://github.com/droath/project-x';
                     case 'setup_host':
                         return true;
                     case 'hostname':

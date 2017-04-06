@@ -3,12 +3,17 @@
 namespace Droath\ProjectX\Project;
 
 use Boedah\Robo\Task\Drush\loadTasks as drushTasks;
+use Droath\ConsoleForm\Field\BooleanField;
+use Droath\ConsoleForm\Field\TextField;
+use Droath\ConsoleForm\Form;
+use Droath\ProjectX\OptionFormAwareInterface;
 use Droath\ProjectX\ProjectX;
+use Droath\ProjectX\TaskSubTypeInterface;
 
 /**
  * Define Drupal project type.
  */
-class DrupalProjectType extends PhpProjectType
+class DrupalProjectType extends PhpProjectType implements TaskSubTypeInterface, OptionFormAwareInterface
 {
     use drushTasks;
 
@@ -89,6 +94,49 @@ class DrupalProjectType extends PhpProjectType
         $this
             ->setupProjectFilesystem()
             ->runComposerUpdate();
+    }
+
+    /**
+     * Drupal option form object.
+     *
+     * @return \Droath\ConsoleForm\Form
+     */
+    public function optionForm()
+    {
+        $fields = [];
+        $default = $this->defaultInstallOptions();
+
+        $fields[] = (new BooleanField('site', 'Setup Drupal site options?'))
+            ->setDefault(false)
+            ->setSubform(function ($subform, $value) use ($default) {
+                if ($value === true) {
+                    $subform->addFields([
+                        (new TextField('name', 'Drupal site name?'))
+                            ->setDefault($default['site']['name']),
+                        (new TextField('profile', 'Drupal site profile?'))
+                            ->setDefault($default['site']['profile']),
+                    ]);
+                }
+            });
+
+        $fields[] = (new BooleanField('account', 'Setup Drupal account options?'))
+            ->setDefault(false)
+            ->setSubform(function ($subform, $value) use ($default) {
+                if ($value === true) {
+                    $subform->addFields([
+                        (new TextField('mail', 'Account email:'))
+                            ->setDefault($default['account']['mail']),
+                        (new TextField('name', 'Account username:'))
+                            ->setDefault($default['account']['name']),
+                        (new TextField('pass', 'Account password:'))
+                            ->setHidden(true)
+                            ->setDefault($default['account']['pass']),
+                    ]);
+                }
+            });
+
+        return (new Form())
+            ->addFields($fields);
     }
 
     /**

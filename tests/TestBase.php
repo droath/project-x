@@ -168,6 +168,19 @@ abstract class TestBase extends TestCase
                 'name' => 'local.project-x-test.com',
                 'open_on_startup' => 'true',
             ],
+            'options' => [
+                'drupal' => [
+                    'site' => [
+                        'name' => 'Drupal-X Site',
+                        'profile' => 'standard',
+                    ],
+                    'account' => [
+                        'mail' => 'admin@example-test.com',
+                        'name' => 'admin-testing',
+                        'pass' => 'pass-testing',
+                    ],
+                ],
+            ],
         ];
     }
 
