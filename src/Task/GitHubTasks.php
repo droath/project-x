@@ -3,7 +3,6 @@
 namespace Droath\ProjectX\Task;
 
 use Droath\RoboGitHub\Task\loadTasks as loadGitHubTasks;
-use Robo\Common\IO;
 use Symfony\Component\Console\Helper\Table;
 use Symfony\Component\Console\Question\ChoiceQuestion;
 
@@ -12,7 +11,6 @@ use Symfony\Component\Console\Question\ChoiceQuestion;
  */
 class GitHubTasks extends GitHubTaskBase
 {
-    use IO;
     use loadGitHubTasks;
 
     /**
