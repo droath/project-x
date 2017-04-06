@@ -356,19 +356,7 @@ class DrupalProjectType extends PhpProjectType implements TaskSubTypeInterface, 
     {
         $template = 'composer.json';
 
-        if ($this->useBlt()) {
-            $template = 'blt.composer.json';
-        }
-
         return $template;
-    }
-
-    /**
-     * Use Acquia BLT.
-     */
-    protected function useBlt()
-    {
-        return $this->askConfirmQuestion('Use Acquia BLT?', false);
     }
 
     /**
