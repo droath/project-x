@@ -38,7 +38,7 @@ class ProjectXTest extends TestBase
 
     public function testProjectMachineName()
     {
-        $this->assertEquals('project-x_test', $this->projectX->getProjectMachineName());
+        $this->assertEquals('project-x-test', $this->projectX->getProjectMachineName());
     }
 
     public function testLoadRoboProjectClasses()

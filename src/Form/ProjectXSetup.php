@@ -7,6 +7,7 @@ use Droath\ConsoleForm\Field\SelectField;
 use Droath\ConsoleForm\Field\TextField;
 use Droath\ConsoleForm\Form;
 use Droath\ConsoleForm\FormInterface;
+use Droath\ProjectX\Utility;
 
 /**
  * Define Project-X setup form.
@@ -49,7 +50,7 @@ class ProjectXSetup implements FormInterface
                         if ($value === true) {
                             $subform->addFields([
                                 (new TextField('name', 'Hostname'))
-                                    ->setDefault('local.project-x.com'),
+                                    ->setDefault($this->getDefaultHostname()),
                                 (new BooleanField('open_on_startup', 'Open browser on startup?'))
                                     ->setDefault(true),
                             ]);
@@ -66,11 +67,40 @@ class ProjectXSetup implements FormInterface
         ];
     }
 
+    /**
+     * The current directory.
+     *
+     * @return string
+     */
+    protected function getCurrentDir()
+    {
+        return basename(getcwd());
+    }
+
+    /**
+     * Get default name based on current directory.
+     *
+     * @return string
+     */
     protected function getDefaultName()
     {
-        $cwd = getcwd();
+        $name = str_replace(
+            ['-', '_'], ' ', $this->getCurrentDir()
+        );
 
-        return ucwords(strtr(basename($cwd), '-', ' '));
+        return ucwords($name);
+    }
+
+    /**
+     * Get default hostname based on current directory.
+     *
+     * @return string
+     */
+    protected function getDefaultHostname()
+    {
+        $hostname = Utility::machineName($this->getCurrentDir());
+
+        return "local.{$hostname}.com";
     }
 
     /**

@@ -174,7 +174,7 @@ class ProjectX extends Application
     {
         $config = self::getProjectConfig();
 
-        return strtolower(strtr($config->getName(), ' ', '_'));
+        return Utility::machineName($config->getName());
     }
 
     /**
