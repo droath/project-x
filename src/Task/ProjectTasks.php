@@ -8,12 +8,11 @@ namespace Droath\ProjectX\Task;
 class ProjectTasks extends TaskBase
 {
     /**
-     * Run all project processes.
+     * Run all project setup processes (build, install, etc).
      */
-    public function projectInit()
+    public function projectSetup()
     {
         $this
-            ->projectDependsInstall()
             ->projectBuild()
             ->projectInstall();
     }
@@ -34,16 +33,6 @@ class ProjectTasks extends TaskBase
     public function projectInstall()
     {
         $this->projectInstance()->install();
-
-        return $this;
-    }
-
-    /**
-     * Run project dependencies installation.
-     */
-    public function projectDependsInstall()
-    {
-        // @todo: install local OS dependencies using brew, ruby gems via ansible.
 
         return $this;
     }
