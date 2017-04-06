@@ -12,7 +12,7 @@ use Droath\ProjectX\ProjectX;
 class EngineTasks extends TaskBase
 {
     /**
-     * Startup project engine.
+     * Startup engine environment.
      *
      * @option $no-hostname Don't add hostname to the system hosts file
      *   regardless if it's defined in the project-x config.
@@ -35,7 +35,7 @@ class EngineTasks extends TaskBase
     }
 
     /**
-     * Shutdown project engine.
+     * Shutdown engine environment.
      */
     public function engineDown()
     {
@@ -51,9 +51,9 @@ class EngineTasks extends TaskBase
     }
 
     /**
-     * Start project engine.
+     * Resume halted engine environment.
      */
-    public function engineStart()
+    public function engineResume()
     {
         $this->engineInstance()->start();
 
@@ -61,7 +61,7 @@ class EngineTasks extends TaskBase
     }
 
     /**
-     * Restart project engine.
+     * Restart engine environment.
      */
     public function engineRestart()
     {
@@ -71,15 +71,15 @@ class EngineTasks extends TaskBase
     }
 
     /**
-     * Suspend project engine.
+     * Halt engine environment.
      */
-    public function engineSuspend()
+    public function engineHalt()
     {
         $this->engineInstance()->suspend();
     }
 
     /**
-     * Install project engine.
+     * Install engine configuration setup.
      */
     public function engineInstall()
     {
