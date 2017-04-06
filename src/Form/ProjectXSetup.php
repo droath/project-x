@@ -85,7 +85,9 @@ class ProjectXSetup implements FormInterface
     protected function getDefaultName()
     {
         $name = str_replace(
-            ['-', '_'], ' ', $this->getCurrentDir()
+            ['-', '_'],
+            ' ',
+            $this->getCurrentDir()
         );
 
         return ucwords($name);
