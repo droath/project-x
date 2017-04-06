@@ -134,8 +134,8 @@ atlassian-ide-plugin.xml
 # Drupal console
 console
 
-# Docker
-.docker-sync
+# Docker sync
+.docker-sync/*
 
 # Project-X
 .project-x.local.yml
