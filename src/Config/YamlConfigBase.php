@@ -2,10 +2,12 @@
 
 namespace Droath\ProjectX\Config;
 
-use Symfony\Component\Serializer\Encoder\YamlEncoder;
 use Symfony\Component\Serializer\Normalizer\ObjectNormalizer;
 use Symfony\Component\Serializer\Serializer;
 use Symfony\Component\Yaml\Yaml;
+use Fitbug\SymfonySerializer\YamlEncoderDecoder\YamlDecode;
+use Fitbug\SymfonySerializer\YamlEncoderDecoder\YamlEncode;
+use Fitbug\SymfonySerializer\YamlEncoderDecoder\YamlEncoder;
 
 /**
  * Define YAML based configurations.
@@ -13,8 +15,7 @@ use Symfony\Component\Yaml\Yaml;
 abstract class YamlConfigBase
 {
     const CONTEXT_INLINE = 4;
-    const CONTEXT_INDENT = 0;
-    const CONTEXT_FLAGS = 0;
+    const CONTEXT_INDENT = 2;
 
     /**
      * Create configuration object from string.
@@ -119,15 +120,19 @@ abstract class YamlConfigBase
      */
     protected static function getSerializer()
     {
-        $context = [
-            'yaml_inline' => static::CONTEXT_INLINE,
-            'yaml_indent' => static::CONTEXT_INDENT,
-            'yaml_flags' => static::CONTEXT_FLAGS,
-        ];
+        $decode = new YamlDecode();
+        $encode = new YamlEncode(
+            false,
+            false,
+            false,
+            false,
+            static::CONTEXT_INLINE,
+            static::CONTEXT_INDENT
+        );
 
         return new Serializer(
             [new ObjectNormalizer()],
-            [new YamlEncoder(null, null, $context)]
+            [new YamlEncoder($encode, $decode)]
         );
     }
 }
