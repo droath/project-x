@@ -10,5 +10,5 @@ before_script:
   - composer install --no-interaction --prefer-source
 
 script:
-  - ./bin/phpcs -n --standard=PSR2 ./src
+  - ./bin/phpcs
   - ./bin/phpunit --configuration phpunit.xml.dist
