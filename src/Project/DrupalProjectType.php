@@ -204,7 +204,6 @@ class DrupalProjectType extends PhpProjectType implements TaskSubTypeInterface, 
      *     - Change site permission.
      *     - Creates defaults files directory.
      *     - Copy over default settings.php
-     *     - Copy over example settings.local.php.
      *
      * @return self
      */
@@ -214,7 +213,6 @@ class DrupalProjectType extends PhpProjectType implements TaskSubTypeInterface, 
             ->chmod($this->sitesPath, 0775, 0000, true)
             ->mkdir("{$this->sitesPath}/default/files", 0775, true)
             ->copy("{$this->sitesPath}/default/default.settings.php", $this->settingFile)
-            ->copy("{$this->sitesPath}/example.settings.local.php", $this->settingLocalFile)
             ->run();
 
         return $this;
@@ -249,6 +247,7 @@ class DrupalProjectType extends PhpProjectType implements TaskSubTypeInterface, 
      * Setup Drupal local settings file.
      *
      *   The setup process consist of the following:
+     *     - Copy over example.settings.local.php.
      *     - Appends database connection details.
      *
      * @return self
@@ -258,6 +257,8 @@ class DrupalProjectType extends PhpProjectType implements TaskSubTypeInterface, 
         $local_settings = $this
             ->templateManager()
             ->loadTemplate('settings.local.txt', 'none');
+
+        $this->_copy("{$this->sitesPath}/example.settings.local.php", $this->settingLocalFile);
 
         $this->taskWriteToFile($this->settingLocalFile)
             ->append()
