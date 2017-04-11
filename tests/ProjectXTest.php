@@ -11,6 +11,13 @@ use org\bovigo\vfs\vfsStream;
  */
 class ProjectXTest extends TestBase
 {
+    public function testDiscoverCommands()
+    {
+        $commands = $this->projectX->discoverCommands();
+        $this->assertInstanceOf('\Droath\ProjectX\Command\Robo', $this->projectX->find('robo'));
+        $this->assertInstanceOf('\Droath\ProjectX\Command\Initialize', $this->projectX->find('init'));
+    }
+
     public function testGetContainer()
     {
         $this->assertInstanceOf('\League\Container\ContainerInterface', ProjectX::getContainer());

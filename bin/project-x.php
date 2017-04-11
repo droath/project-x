@@ -31,9 +31,8 @@ $output = new ConsoleOutput();
 $formDiscovery = (new FormDiscovery())
     ->discover(APP_ROOT . '/src/Form', '\Droath\ProjectX\Form');
 
-$app = new ProjectX();
-$app->add(new \Droath\ProjectX\Command\Robo());
-$app->add(new \Droath\ProjectX\Command\Initialize());
+$app = (new ProjectX())
+    ->discoverCommands();
 $app->getHelperSet()
     ->set(new FormHelper($formDiscovery));
 

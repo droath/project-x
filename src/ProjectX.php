@@ -3,6 +3,7 @@
 namespace Droath\ProjectX;
 
 use Droath\ProjectX\Config\ProjectXConfig;
+use Droath\ProjectX\Discovery\PhpClassDiscovery;
 use League\Container\ContainerAwareTrait;
 use Robo\Robo;
 use Symfony\Component\Console\Application;
@@ -45,6 +46,23 @@ class ProjectX extends Application
     public function __construct($name = 'UNKNOWN', $version = 'UNKNOWN')
     {
         parent::__construct($this->printBanner(), static::APP_VERSION);
+    }
+
+    /**
+     * Discover Project-X commands.
+     */
+    public function discoverCommands()
+    {
+        $commands = (new PhpClassDiscovery())
+            ->addSearchLocation(APP_ROOT . '/src/Command')
+            ->matchExtend('Symfony\Component\Console\Command\Command')
+            ->discover();
+
+        foreach ($commands as $classname) {
+            $this->add(new $classname());
+        }
+
+        return $this;
     }
 
     /**
