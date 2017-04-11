@@ -44,7 +44,7 @@ class Robo extends Command
     public function execute(InputInterface $input, OutputInterface $output)
     {
         $classname = ucwords($input->getOption('classname'));
-        $classpath = "{$input->getOption('path')}/{$classname}.php";
+        $classpath = "{$input->getOption('path')}/{$classname}Tasks.php";
 
         if (file_exists($classpath)) {
             $question = $this->getHelper('question');
@@ -84,6 +84,6 @@ class Robo extends Command
             . "\n *"
             . "\n * @see http://robo.li/"
             . "\n */"
-            . "\nclass " . $classname . " extends \\Robo\\Tasks\n{\n    // define public methods as commands\n}";
+            . "\nclass " . $classname . "Tasks extends \\Robo\\Tasks\n{\n    // define public methods as commands\n}";
     }
 }

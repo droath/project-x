@@ -44,7 +44,7 @@ class RoboTest extends TestBase
                 'command' => $this->command->getName(),
             ]);
 
-        $this->assertProjectFileExists('RoboFile.php');
+        $this->assertProjectFileExists('RoboFileTasks.php');
     }
 
     public function testExecuteWithClassNameInputArg()
@@ -63,12 +63,12 @@ class RoboTest extends TestBase
                 '--path' => $this->projectRoot,
             ]);
 
-        $this->assertProjectFileExists("{$classname}.php");
+        $this->assertProjectFileExists("{$classname}Tasks.php");
     }
 
     public function testExecuteWithExistingFile()
     {
-        vfsStream::newFile('RoboFile.php')
+        vfsStream::newFile('RoboFileTasks.php')
             ->setContent("<?php print 'RoboFile contents';")
             ->at($this->projectDir);
 
@@ -77,7 +77,7 @@ class RoboTest extends TestBase
             ->set($this->questionHelperMock());
 
         $robo_contents = file_get_contents(
-            $this->getProjectFileUrl('RoboFile.php')
+            $this->getProjectFileUrl('RoboFileTasks.php')
         );
         // Ensure the file contents exists and has been unchanged.
         $this->assertContains("<?php print 'RoboFile contents';", $robo_contents);
@@ -89,7 +89,7 @@ class RoboTest extends TestBase
             ]);
 
         $robo_contents = file_get_contents(
-            $this->getProjectFileUrl('RoboFile.php')
+            $this->getProjectFileUrl('RoboFileTasks.php')
         );
 
         // Check if file contents has been update to match the generated Robo

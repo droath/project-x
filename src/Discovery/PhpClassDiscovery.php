@@ -341,7 +341,8 @@ class PhpClassDiscovery
 
                     // Resolve the class fully qualified namespace.
                     $info[$tokens[$i][1]] = $this->resolveNamespace(
-                        $info, $classname
+                        $info,
+                        $classname
                     );
 
                     continue;
@@ -355,7 +356,8 @@ class PhpClassDiscovery
 
                     // Resolve the extends class fully qualified namespace.
                     $info[$tokens[$i][1]] = $this->resolveNamespace(
-                        $info, $classname
+                        $info,
+                        $classname
                     );
 
                     continue;
@@ -369,7 +371,8 @@ class PhpClassDiscovery
 
                     // Resolve the interface fully qualified namespace.
                     $info[$tokens[$i][1]][] = $this->resolveNamespace(
-                        $info, $interface
+                        $info,
+                        $interface
                     );
 
                     continue;
