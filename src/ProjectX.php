@@ -83,12 +83,12 @@ class ProjectX extends Application
         $container
             ->add('projectXHostChecker', \Droath\ProjectX\Service\HostChecker::class);
         $container
-            ->share('projectXEngine', function () {
+            ->add('projectXEngine', function () {
                 return (new \Droath\ProjectX\Engine\EngineTypeFactory())
                     ->createInstance();
             });
         $container
-            ->share('projectXProject', function () {
+            ->add('projectXProject', function () {
                 return (new \Droath\ProjectX\Project\ProjectTypeFactory())
                     ->createInstance();
             });

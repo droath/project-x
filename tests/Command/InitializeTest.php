@@ -52,6 +52,12 @@ class InitializeTest extends TestBase
         $this->assertEquals('local.testing.com', $config->getHost()['name']);
         $this->assertEquals('true', $config->getHost()['open_on_startup']);
         $this->assertContains('Success, the project-x configuration have been saved.', $output);
+        $this->assertEquals('standard', $config->getOptions()['drupal']['site']['profile']);
+        $this->assertEquals('Whatever you Say!!!!', $config->getOptions()['drupal']['site']['name']);
+        $this->assertEquals('testing@example.com', $config->getOptions()['drupal']['account']['mail']);
+        $this->assertEquals('hacker123', $config->getOptions()['drupal']['account']['name']);
+        $this->assertEquals('secret', $config->getOptions()['drupal']['account']['pass']);
+        $this->assertContains('Success, the Drupal options have been saved.', $output);
     }
 
     protected function questionHelperMock()
@@ -74,17 +80,26 @@ class InitializeTest extends TestBase
                         return 'drupal';
                     case 'select_engine':
                         return 'docker';
-                    case 'setup_github':
-                        return true;
                     case 'github_url':
                         return 'https://github.com/droath/project-x';
-                    case 'setup_host':
-                        return true;
                     case 'hostname':
                         return 'local.testing.com';
-                    case 'open_browser_on_startup':
-                        return true;
+                    case 'drupal_site_name':
+                        return 'Whatever you Say!!!!';
+                    case 'drupal_site_profile':
+                        return 'standard';
+                    case 'account_email':
+                        return 'testing@example.com';
+                    case 'account_username':
+                        return 'hacker123';
+                    case 'account_password':
+                        return 'secret';
+                    case 'setup_host':
+                    case 'setup_github':
                     case 'save_results':
+                    case 'open_browser_on_startup':
+                    case 'setup_drupal_site_options':
+                    case 'setup_drupal_account_options':
                         return true;
                 }
             }));

@@ -58,6 +58,7 @@ class Initialize extends Command
                 $output->writeln(
                     sprintf('🚀  <info>Success, the project-x configuration have been saved.</info>')
                 );
+                ProjectX::clearProjectConfig();
                 ProjectX::setProjectPath($filepath);
             }
         });
@@ -79,8 +80,7 @@ class Initialize extends Command
      */
     protected function initProjectOptionForm($input, $output, $filepath)
     {
-        $project = ProjectX::getContainer()
-            ->get('projectXProject');
+        $project = ProjectX::getProjectType();
 
         if ($project instanceof OptionFormAwareInterface) {
             $io = new SymfonyStyle($input, $output);
