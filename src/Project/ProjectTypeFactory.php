@@ -37,15 +37,11 @@ class ProjectTypeFactory implements FactoryInterface
     {
         $type = ProjectX::getProjectConfig()->getType();
 
-        if (!isset($type)) {
-            throw new \Exception(
-                'Missing project type definition'
-            );
-        }
-
         switch ($type) {
             case 'drupal':
-                return '\Droath\ProjectX\Project\DrupalProjectType';
+                return 'Droath\ProjectX\Project\DrupalProjectType';
+            default:
+                return 'Droath\ProjectX\Project\NullProjectType';
         }
     }
 }
