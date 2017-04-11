@@ -76,6 +76,14 @@ class DrupalProjectType extends PhpProjectType implements TaskSubTypeInterface, 
     /**
      * {@inheritdoc}.
      */
+    public function taskDirectory()
+    {
+        return APP_ROOT . '/src/Project/Task/Drupal';
+    }
+
+    /**
+     * {@inheritdoc}.
+     */
     public function build()
     {
         $status = $this->canBuild();

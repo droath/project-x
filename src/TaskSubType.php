@@ -20,6 +20,17 @@ abstract class TaskSubType implements BuilderAwareInterface, ContainerAwareInter
     use ContainerAwareTrait;
 
     /**
+     * Sub-type task directory.
+     *
+     * @return string
+     *   The path to the sub-type task directory.
+     */
+    public function taskDirectory()
+    {
+        return null;
+    }
+
+    /**
      * Get console application.
      *
      * @return \Symfony\Component\Console\Application
