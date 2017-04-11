@@ -16,6 +16,15 @@ class ProjectXTest extends TestBase
         $this->assertInstanceOf('\League\Container\ContainerInterface', ProjectX::getContainer());
     }
 
+    public function testTaskLocations()
+    {
+        $locations = ProjectX::taskLocations();
+
+        $this->assertEquals($this->projectRoot, $locations[0]);
+        $this->assertEquals('./src/Project/Task/Drupal', $locations[1]);
+        $this->assertEquals('./src/Task', $locations[2]);
+    }
+
     public function testProjectRoot()
     {
         $this->assertEquals($this->projectRoot, ProjectX::projectRoot());
@@ -26,6 +35,11 @@ class ProjectXTest extends TestBase
         $this->assertTrue(ProjectX::hasProjectConfig());
         ProjectX::setProjectPath(null);
         $this->assertFalse(ProjectX::hasProjectConfig());
+    }
+
+    public function testGetProjectType()
+    {
+        $this->assertInstanceOf('\Droath\ProjectX\Project\DrupalProjectType', ProjectX::getProjectType());
     }
 
     public function testGetProjectConfig()
@@ -39,23 +53,6 @@ class ProjectXTest extends TestBase
     public function testProjectMachineName()
     {
         $this->assertEquals('project-x-test', $this->projectX->getProjectMachineName());
-    }
-
-    public function testLoadRoboProjectClasses()
-    {
-        $classes = $this->projectX->loadRoboProjectClasses();
-        $this->assertEmpty($classes);
-
-        // Create a RoboFileTest.php in project directory.
-        $classname = 'RoboFileTest';
-        vfsStream::newFile("{$classname}.php")
-            ->setContent($this->generateRoboClass($classname))
-            ->at($this->projectDir);
-
-        $classes = $this->projectX->loadRoboProjectClasses();
-
-        $this->assertNotEmpty($classes);
-        $this->assertEquals($classname, $classes[0]);
     }
 
     public function testGetConfig()

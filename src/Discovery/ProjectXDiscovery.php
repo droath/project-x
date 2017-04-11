@@ -1,6 +1,6 @@
 <?php
 
-namespace Droath\ProjectX;
+namespace Droath\ProjectX\Discovery;
 
 /**
  * Define Project-X discovery service.

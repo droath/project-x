@@ -3,8 +3,9 @@
 use Consolidation\AnnotatedCommand\CommandFileDiscovery;
 use Droath\ConsoleForm\FormDiscovery;
 use Droath\ConsoleForm\FormHelper;
+use Droath\ProjectX\Discovery\PhpClassDiscovery;
+use Droath\ProjectX\Discovery\ProjectXDiscovery;
 use Droath\ProjectX\ProjectX;
-use Droath\ProjectX\ProjectXDiscovery;
 use Robo\Config;
 use Robo\Robo;
 use Robo\Runner;
@@ -48,14 +49,11 @@ $app->setContainer($container);
 
 // Auto discover the Robo tasks command files if the project contains a
 // project-x configuration.
-$commandClasses = ProjectX::hasProjectConfig()
-    ? (new CommandFileDiscovery())
-        ->addSearchLocation('Task')
-        ->setSearchPattern('*Tasks.php')
-        ->discover(APP_ROOT . '/src', '\Droath\ProjectX')
-    : [];
-
-$projectClasses = $app->loadRoboProjectClasses();
+$commandClasses = (new PhpClassDiscovery())
+    ->loadClasses()
+    ->setSearchPattern('*Tasks.php')
+    ->addSearchLocations(ProjectX::taskLocations())
+    ->discover();
 
 $statusCode = (new Runner())
     ->setContainer($container)
@@ -63,7 +61,7 @@ $statusCode = (new Runner())
         $input,
         $output,
         $app,
-        array_merge($commandClasses, $projectClasses)
+        $commandClasses
     );
 
 exit($statusCode);
