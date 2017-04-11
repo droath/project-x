@@ -22,11 +22,6 @@ class ProjectX extends Application
     const APP_NAME = 'Project-X';
 
     /**
-     * Application version.
-     */
-    const APP_VERSION = '0.0.1-alpha0';
-
-    /**
      * Project-X project path.
      *
      * @var string
@@ -45,7 +40,7 @@ class ProjectX extends Application
      */
     public function __construct($name = 'UNKNOWN', $version = 'UNKNOWN')
     {
-        parent::__construct($this->printBanner(), static::APP_VERSION);
+        parent::__construct($this->printBanner(), $this->printVersion());
     }
 
     /**
@@ -262,6 +257,16 @@ class ProjectX extends Application
         );
 
         return array_filter($instance->toArray());
+    }
+
+    /**
+     * Print application version.
+     */
+    private function printVersion()
+    {
+        return file_get_contents(
+            dirname(__DIR__) . '/VERSION'
+        );
     }
 
     /**
