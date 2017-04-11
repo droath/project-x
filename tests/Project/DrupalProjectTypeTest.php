@@ -67,7 +67,6 @@ class DrupalProjectTypeTest extends TestTaskBase
                     'default' => [
                         'default.settings.php' => '<?php print "settings";',
                     ],
-                     'example.settings.local.php' => '<?php print "settings local";',
                 ],
             ],
         ], $this->projectDir);
@@ -77,7 +76,6 @@ class DrupalProjectTypeTest extends TestTaskBase
         $this->assertProjectFilePermission('0775', 'docroot/sites');
         $this->assertProjectFileExists('docroot/sites/default/files');
         $this->assertProjectFileExists('docroot/sites/default/settings.php');
-        $this->assertProjectFileExists('docroot/sites/default/settings.local.php');
     }
 
     public function testSetupDrupalSettings()
@@ -104,9 +102,7 @@ class DrupalProjectTypeTest extends TestTaskBase
         $directory = vfsStream::create([
             'docroot' => [
                 'sites' => [
-                    'default' => [
-                        'settings.local.php' => "<?php print 'local settings';\n\n",
-                    ],
+                    'example.settings.local.php' => "<?php print 'local settings';\n\n",
                 ],
             ],
         ], $this->projectDir);
@@ -115,6 +111,7 @@ class DrupalProjectTypeTest extends TestTaskBase
 
         $settings_local_url = $this->getProjectFileUrl('docroot/sites/default/settings.local.php');
 
+        $this->assertProjectFileExists('docroot/sites/default/settings.local.php');
         $this->assertRegExp('/\$databases\[.+\]/', file_get_contents($settings_local_url));
     }
 }
