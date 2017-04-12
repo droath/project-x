@@ -59,7 +59,7 @@ class ProjectXTest extends TestBase
 
     public function testProjectMachineName()
     {
-        $this->assertEquals('project-x-test', $this->projectX->getProjectMachineName());
+        $this->assertEquals('project-x-test', ProjectX::getProjectMachineName());
     }
 
     public function testGetConfig()

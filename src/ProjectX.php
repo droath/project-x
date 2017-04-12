@@ -215,7 +215,7 @@ class ProjectX extends Application
      *
      * @return string
      */
-    public function getProjectMachineName()
+    public static function getProjectMachineName()
     {
         $config = self::getProjectConfig();
 

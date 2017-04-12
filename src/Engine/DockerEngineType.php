@@ -182,8 +182,7 @@ class DockerEngineType extends EngineType implements TaskSubTypeInterface
             ->place('HOST_IP_ADDRESS', ProjectX::clientHostIP())
             ->run();
 
-        $project_name = $this->getApplication()
-            ->getProjectMachineName();
+        $project_name = ProjectX::getProjectMachineName();
 
         $sync_name = uniqid("$project_name-", false);
 
