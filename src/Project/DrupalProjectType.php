@@ -192,7 +192,7 @@ class DrupalProjectType extends PhpProjectType implements TaskSubTypeInterface, 
      */
     public function setupProject()
     {
-        $this->copyTemplateFileToProject('.gitignore');
+        $this->copyTemplateFileToProject('.gitignore', true);
 
         return $this;
     }
