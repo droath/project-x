@@ -146,7 +146,7 @@ class DockerEngineType extends EngineType implements TaskSubTypeInterface
     {
         $project_root = ProjectX::projectRoot();
 
-        $this->taskfilesystemStack()
+        $this->taskFilesystemStack()
             ->mkdir($this->getInstallPath())
             ->mirror($this->getTemplateFilePath('docker/services'), "{$this->getInstallPath()}")
             ->copy($this->getTemplateFilePath('docker/docker-compose.yml'), "{$project_root}/docker-compose.yml")
