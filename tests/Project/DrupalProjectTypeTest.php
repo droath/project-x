@@ -59,6 +59,29 @@ class DrupalProjectTypeTest extends TestTaskBase
         $this->assertTrue($this->projectDir->hasChild('.gitignore'));
     }
 
+    public function testSetupDrush()
+    {
+        $this->drupalProject->setupDrush();
+        $this->assertProjectFileExists('drush.wrapper');
+        $this->assertTrue($this->projectDir->hasChild('drush'));
+    }
+
+    public function testSetupDrushAlias()
+    {
+        $this->drupalProject
+            ->setupDrush()
+            ->setupDrushAlias();
+
+        $contents = file_get_contents(
+            $this->getProjectFileUrl('drush/site-aliases/local.aliases.drushrc.php')
+        );
+
+        $this->assertProjectFileExists('drush/site-aliases/local.aliases.drushrc.php');
+        $this->assertRegExp('/\$aliases\[\'project-x-test\'\]/', $contents);
+        $this->assertRegExp('/\'uri\'\s?=>\s?\'local\.project-x-test\.com\',/', $contents);
+        $this->assertRegExp('/\'root\'\s?=>\s?\'vfs:\/\/root\/docroot\'/', $contents);
+    }
+
     public function testSetupDrupalFilesystem()
     {
         $directory = vfsStream::create([

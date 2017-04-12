@@ -99,6 +99,12 @@ class DrupalProjectType extends PhpProjectType implements TaskSubTypeInterface, 
         }
         parent::build();
 
+        if ($this->askConfirmQuestion('Use Drush?', true)) {
+            $this
+                ->setupDrush()
+                ->setupDrushAlias();
+        }
+
         $this
             ->setupProjectFilesystem()
             ->runComposerUpdate();
@@ -193,6 +199,53 @@ class DrupalProjectType extends PhpProjectType implements TaskSubTypeInterface, 
     public function setupProject()
     {
         $this->copyTemplateFileToProject('.gitignore', true);
+
+        return $this;
+    }
+
+    /**
+     * Setup Drupal drush.
+     *
+     * The setup process consist of the following:
+     *   - Copy the template drush directory into the project root.
+     *
+     * @return self
+     */
+    public function setupDrush()
+    {
+        $project_root = ProjectX::projectRoot();
+
+        $this->taskFilesystemStack()
+            ->mirror($this->getTemplateFilePath('drush'), "$project_root/drush")
+            ->copy($this->getTemplateFilePath('drush.wrapper'), "$project_root/drush.wrapper")
+            ->run();
+
+        return $this;
+    }
+
+    /**
+     * Setup Drush aliases.
+     *
+     * The setup process consist of the following:
+     *   - Copy the Drush example template to the local drush alias
+     *   configuration. Replace all placeholders with project related values.
+     *
+     * @return self
+     */
+    public function setupDrushAlias()
+    {
+        $config = ProjectX::getProjectConfig();
+        $project_root = ProjectX::projectRoot();
+
+        $alias_directory = "$project_root/drush/site-aliases";
+        $local_alias_file = "$alias_directory/local.aliases.drushrc.php";
+
+        $this->taskWriteToFile($local_alias_file)
+            ->textFromFile("$alias_directory/local.aliases.example.drushrc.php")
+            ->place('HOSTNAME', $config->getHost()['name'])
+            ->place('MACHINE_NAME', ProjectX::getProjectMachineName())
+            ->place('INSTALL_ROOT', $this->getInstallPath())
+            ->run();
 
         return $this;
     }
