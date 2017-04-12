@@ -68,9 +68,12 @@ class DrupalProjectTypeTest extends TestTaskBase
 
     public function testSetupDrushAlias()
     {
-        $this->drupalProject
-            ->setupDrush()
-            ->setupDrushAlias();
+        vfsStream::copyFromFileSystem(
+            __DIR__ . '/../../templates/drupal/drush',
+            vfsStream::newDirectory('drush')
+                ->at($this->projectDir)
+        );
+        $this->drupalProject->setupDrushAlias();
 
         $contents = file_get_contents(
             $this->getProjectFileUrl('drush/site-aliases/local.aliases.drushrc.php')
