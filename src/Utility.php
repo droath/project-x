@@ -60,16 +60,7 @@ class Utility
     }
 
    /**
-    * Returns a string of highly randomized bytes (over the full 8-bit range).
-    *
-    * This function is better than simply calling mt_rand() or any other built-in
-    * PHP function because it can return a long string of bytes (compared to < 4
-    * bytes normally from mt_rand()) and uses the best available pseudo-random
-    * source.
-    *
-    * In PHP 7 and up, this uses the built-in PHP function random_bytes().
-    * In older PHP versions, this uses the random_bytes() function provided by
-    * the random_compat library, or the fallback hash-based generator.
+    * Returns a string of highly randomized bytes.
     *
     * @param int $count
     *   The number of characters (bytes) to return in the string.
@@ -82,27 +73,9 @@ class Utility
         try {
             return random_bytes($count);
         } catch (\Exception $e) {
-            static $random_state, $bytes;
-
-            if (strlen($bytes) < $count) {
-                if (!isset($random_state)) {
-                    $random_state = print_r($_SERVER, true);
-
-                    if (function_exists('getmypid')) {
-                        $random_state .= getmypid();
-                    }
-                    $bytes = '';
-                    mt_srand();
-                }
-                do {
-                    $random_state = hash('sha256', microtime() . mt_rand() . $random_state);
-                    $bytes .= hash('sha256', mt_rand() . $random_state, true);
-                } while (strlen($bytes) < $count);
-            }
-            $output = substr($bytes, 0, $count);
-            $bytes = substr($bytes, $count);
-
-            return $output;
+            throw new \Exception(
+                'Unable to generate a random byte.'
+            );
         }
     }
 }

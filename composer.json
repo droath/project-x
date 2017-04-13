@@ -33,6 +33,7 @@
         "droath/robo-docker-compose": "^0.0.4",
         "droath/robo-docker-sync": "^0.0.1",
         "droath/hostsfile-manager": "^0.0.1",
+        "paragonie/random_compat": "^2.0",
         "fitbug/symfony-yaml-serializer-encoder-decoder": "^0.1.1"
     },
     "require-dev": {
