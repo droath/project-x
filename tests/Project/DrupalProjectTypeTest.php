@@ -90,9 +90,7 @@ class DrupalProjectTypeTest extends TestTaskBase
         $directory = vfsStream::create([
             'docroot' => [
                 'sites' => [
-                    'default' => [
-                        'default.settings.php' => '<?php print "settings";',
-                    ],
+                    'default' => [],
                 ],
             ],
         ], $this->projectDir);
@@ -101,16 +99,17 @@ class DrupalProjectTypeTest extends TestTaskBase
 
         $this->assertProjectFilePermission('0775', 'docroot/sites');
         $this->assertProjectFileExists('docroot/sites/default/files');
-        $this->assertProjectFileExists('docroot/sites/default/settings.php');
     }
 
     public function testSetupDrupalSettings()
     {
-        $directory = vfsStream::create([
+        $settings_content = file_get_contents(APP_ROOT . '/tests/fixtures/default.settings.php');
+
+         vfsStream::create([
             'docroot' => [
                 'sites' => [
                     'default' => [
-                        'settings.php' => "<?php print 'settings';\n\n",
+                        'settings.php' => $settings_content,
                     ],
                 ],
             ],
@@ -119,8 +118,13 @@ class DrupalProjectTypeTest extends TestTaskBase
         $this->drupalProject->setupDrupalSettings();
 
         $settings_url = $this->getProjectFileUrl('docroot/sites/default/settings.php');
+        $settings_content = file_get_contents($settings_url);
 
-        $this->assertRegExp('/(include.+\/settings.local.php\'\;)\n\}/', file_get_contents($settings_url));
+        $this->assertProjectFileExists('salt.txt');
+        $this->assertProjectFileExists('docroot/sites/default/settings.php');
+        $this->assertGreaterThan(10, filesize($this->getProjectFileUrl('salt.txt')));
+        $this->assertRegExp('/include.+\/settings\.local\.php\"\;/', $settings_content);
+        $this->assertRegExp('/\$settings\[\'hash_salt\'].+\/salt\.txt\'\)\;/', $settings_content);
     }
 
     public function testSetupDrupalLocalSettings()

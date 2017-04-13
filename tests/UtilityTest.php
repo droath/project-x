@@ -32,6 +32,13 @@ class UtilityTest extends TestCase
         $this->assertEquals($expected, Utility::machineName($string));
     }
 
+    public function testRandomBytes()
+    {
+        $this->assertTrue(
+            preg_match('~[^\x20-\x7E\t\r\n]~', Utility::randomBytes(10)) > 0
+        );
+    }
+
     public function stringCleanProvider()
     {
         return [

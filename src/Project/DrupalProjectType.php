@@ -9,6 +9,7 @@ use Droath\ConsoleForm\Form;
 use Droath\ProjectX\OptionFormAwareInterface;
 use Droath\ProjectX\ProjectX;
 use Droath\ProjectX\TaskSubTypeInterface;
+use Droath\ProjectX\Utility;
 
 /**
  * Define Drupal project type.
@@ -170,10 +171,10 @@ class DrupalProjectType extends PhpProjectType implements TaskSubTypeInterface, 
         $this
             ->setupProject()
             ->setupDrupalFilesystem()
-            ->projectEngineUp()
-            ->setupDrupalInstall()
             ->setupDrupalSettings()
             ->setupDrupalLocalSettings()
+            ->projectEngineUp()
+            ->setupDrupalInstall()
             ->projectLaunchBrowser();
 
         return $this;
@@ -260,7 +261,6 @@ class DrupalProjectType extends PhpProjectType implements TaskSubTypeInterface, 
      *   The setup process consist of the following:
      *     - Change site permission.
      *     - Creates defaults files directory.
-     *     - Copy over default settings.php
      *
      * @return self
      */
@@ -269,7 +269,6 @@ class DrupalProjectType extends PhpProjectType implements TaskSubTypeInterface, 
         $this->taskFilesystemStack()
             ->chmod($this->sitesPath, 0775, 0000, true)
             ->mkdir("{$this->sitesPath}/default/files", 0775, true)
-            ->copy("{$this->sitesPath}/default/default.settings.php", $this->settingFile)
             ->run();
 
         return $this;
@@ -278,22 +277,46 @@ class DrupalProjectType extends PhpProjectType implements TaskSubTypeInterface, 
     /**
      * Setup Drupal settings file.
      *
-     *   The setup process consist of the following:
-     *     - Appends PHP include statement for local settings.
+     * The setup process consist of the following:
+     *   - Copy over default settings.php.
+     *   - Create the Drupal config directory.
+     *   - Generate salt and place text file outside docroot.
+     *   - Replace commented local.settings include statement.
+     *   - Replace $config_directories with a config directory outside docroot.
+     *   - Replace $settings['hash_salt'] with path to generated the salt text file.
      *
      * @return self
      */
     public function setupDrupalSettings()
     {
-        $include = $this
-            ->templateManager()
-            ->loadTemplate('settings.txt', 'none');
+        $this->_copy(
+            "{$this->sitesPath}/default/default.settings.php",
+            $this->settingFile
+        );
+        $project_root = ProjectX::projectRoot();
+
+        $this->taskWriteToFile("{$project_root}/salt.txt")
+            ->line(Utility::randomHash())
+            ->run();
+
+        $this->taskFilesystemStack()
+            ->mkdir("{$project_root}/config", 0775)
+            ->chmod("{$project_root}/salt.txt", 0775)
+            ->run();
 
         $this->taskWriteToFile($this->settingFile)
             ->append()
-            ->appendUnlessMatches(
-                "/(include.+\/settings.local.php\'\;)\n\}/",
-                $include
+            ->regexReplace(
+                '/\#\sif.+\/settings\.local\.php.+\n#.+\n\#\s}/',
+                $this->uncommentedIfSettingsLocal()
+            )
+            ->replace(
+                '$config_directories = array();',
+                '$config_directories[\'sync\'] = dirname(DRUPAL_ROOT) . \'\config\';'
+            )
+            ->replace(
+                '$settings[\'hash_salt\'] = \'\';',
+                '$settings[\'hash_salt\'] = file_get_contents(dirname(DRUPAL_ROOT) . \'/salt.txt\');'
             )
             ->run();
 
@@ -436,5 +459,19 @@ class DrupalProjectType extends PhpProjectType implements TaskSubTypeInterface, 
             ->update();
 
         return $this;
+    }
+
+    /**
+     * The uncommented if statement for settings local.
+     *
+     * @return string
+     *   The php statement code output.
+     */
+    protected function uncommentedIfSettingsLocal()
+    {
+        $string = 'if (file_exists("{$app_root}/{$site_path}/settings.local.php"))' . " {\n  ";
+        $string .= 'include "{$app_root}/{$site_path}/settings.local.php";' . "\n}";
+
+        return $string;
     }
 }
