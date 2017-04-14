@@ -23,16 +23,30 @@ class DrupalTasks extends Tasks
 
     /**
      * Setup local environment for already built projects.
+     *
+     * @param array $opts
+     * @option bool $no-engine Don't start local development engine.
+     * @option bool $no-browser Don't launch a browser window after setup is complete.
      */
-    public function drupalLocalSetup()
+    public function drupalLocalSetup($opts = ['no-engine' => false, 'no-browser' => false])
     {
-        $this->getProjectInstance()
-            ->projectEngineUp()
-            ->setupDrupalLocalSettings()
-            ->setupDrupalInstall()
-            ->projectLaunchBrowser();
+        $instance = $this
+            ->getProjectInstance()
+            ->setupDrupalLocalSettings();
+
+        if (!$opts['no-engine']) {
+            $instance->projectEngineUp();
+        }
+
+        $instance->setupDrupalInstall();
+
+        if (!$opts['no-browser']) {
+            $instance->projectLaunchBrowser();
+        }
 
         $this->drupalDrushAlias();
+
+        return $this;
     }
 
     /**
