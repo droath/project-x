@@ -326,23 +326,47 @@ class DrupalProjectType extends PhpProjectType implements TaskSubTypeInterface, 
     /**
      * Setup Drupal local settings file.
      *
-     *   The setup process consist of the following:
-     *     - Copy over example.settings.local.php.
-     *     - Appends database connection details.
+     * The setup process consist of the following:
+     *   - Copy over example.settings.local.php.
+     *   - Appends database connection details.
+     *
+     * @param string $db_name
+     *   The database name.
+     * @param string $db_user
+     *   The database username.
+     * @param string $db_pass
+     *   The database password.
+     * @param string $db_host
+     *   The database host.
+     * @param bool $running_docker
+     *   A flag to determine if docker is hosting the project.
      *
      * @return self
      */
-    public function setupDrupalLocalSettings()
-    {
+    public function setupDrupalLocalSettings(
+        $db_name = 'drupal',
+        $db_user = 'admin',
+        $db_pass = 'root',
+        $db_host = '127.0.0.1',
+        $running_docker = true
+    ) {
         $local_settings = $this
             ->templateManager()
             ->loadTemplate('settings.local.txt', 'none');
 
         $this->_copy("{$this->sitesPath}/example.settings.local.php", $this->settingLocalFile);
 
+        if ($running_docker) {
+            $db_host = 'mysql';
+        }
+
         $this->taskWriteToFile($this->settingLocalFile)
             ->append()
             ->appendUnlessMatches('/\$databases\[.+\]/', $local_settings)
+            ->place('DB_NAME', $db_name)
+            ->place('DB_USER', $db_user)
+            ->place('DB_PASS', $db_pass)
+            ->place('DB_HOST', $db_host)
             ->run();
 
         return $this;
@@ -351,23 +375,31 @@ class DrupalProjectType extends PhpProjectType implements TaskSubTypeInterface, 
     /**
      * Setup Drupal install.
      *
-     *   The setup process consist of the following:
-     *     - Check if project database is available.
-     *     - Install Drupal using the drush executable.
-     *     - Update install path permissions recursively.
+     * The setup process consist of the following:
+     *   - Check if project database is available.
+     *   - Install Drupal using the drush executable.
+     *   - Update install path permissions recursively.
+     *
+     * @param string $db_name The database name.
+     * @param string $db_user The database username.
+     * @param string $db_pass The database password.
+     * @param string $db_host The database host.
      *
      * @return self
      */
-    public function setupDrupalInstall()
-    {
-        $this->say('Waiting on engine database to become available...');
+    public function setupDrupalInstall(
+        $db_name = 'drupal',
+        $db_user = 'admin',
+        $db_pass = 'root',
+        $db_host = '127.0.0.1'
+    ) {
+        $this->say('Waiting on Drupal database to become available...');
 
-        $db_host = '127.0.0.1';
         $db_connection = $this->hasDatabaseConnection($db_host);
 
         if (!$db_connection) {
             throw new \Exception(
-                sprintf('Unable to connection to engine database %s', $db_host)
+                sprintf('Unable to connection to Drupal database %s', $db_host)
             );
         }
         $options = $this->getInstallOptions();
@@ -385,7 +417,7 @@ class DrupalProjectType extends PhpProjectType implements TaskSubTypeInterface, 
             ->accountMail($options['account']['mail'])
             ->accountName($options['account']['name'])
             ->accountPass($options['account']['pass'])
-            ->mysqlDbUrl("admin:root@$db_host:3306/drupal")
+            ->mysqlDbUrl("$db_user:$db_pass@$db_host:3306/$db_name")
             ->siteInstall($options['site']['profile'])
             ->run();
 

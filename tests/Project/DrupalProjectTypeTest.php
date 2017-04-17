@@ -129,19 +129,37 @@ class DrupalProjectTypeTest extends TestTaskBase
 
     public function testSetupDrupalLocalSettings()
     {
-        $directory = vfsStream::create([
-            'docroot' => [
-                'sites' => [
-                    'example.settings.local.php' => "<?php print 'local settings';\n\n",
-                ],
-            ],
-        ], $this->projectDir);
-
-        $this->drupalProject->setupDrupalLocalSettings();
-
-        $settings_local_url = $this->getProjectFileUrl('docroot/sites/default/settings.local.php');
+        $this->drupalProject
+            ->setupDrupalLocalSettings(
+                'drupal-test',
+                'drupal-admin',
+                'drupal-pass',
+                'drupal-host',
+                false
+            );
+        $local_url = $this->getProjectFileUrl('docroot/sites/default/settings.local.php');
+        $local_content = file_get_contents($local_url);
 
         $this->assertProjectFileExists('docroot/sites/default/settings.local.php');
-        $this->assertRegExp('/\$databases\[.+\]/', file_get_contents($settings_local_url));
+        $this->assertRegExp('/\$databases\[.+\]/', $local_content);
+        $this->assertRegExp('/\'database\'\s?=>\s?\'drupal-test\'\,/', $local_content);
+        $this->assertRegExp('/\'username\'\s?=>\s?\'drupal-admin\'\,/', $local_content);
+        $this->assertRegExp('/\'password\'\s?=>\s?\'drupal-pass\'\,/', $local_content);
+        $this->assertRegExp('/\'host\'\s?=>\s?\'drupal-host\'\,/', $local_content);
+    }
+
+    public function testSetupDrupalLocalSettingsDefault()
+    {
+        $this->drupalProject->setupDrupalLocalSettings();
+
+        $local_url = $this->getProjectFileUrl('docroot/sites/default/settings.local.php');
+        $local_content = file_get_contents($local_url);
+
+        $this->assertProjectFileExists('docroot/sites/default/settings.local.php');
+        $this->assertRegExp('/\$databases\[.+\]/', $local_content);
+        $this->assertRegExp('/\'database\'\s?=>\s?\'drupal\'\,/', $local_content);
+        $this->assertRegExp('/\'username\'\s?=>\s?\'admin\'\,/', $local_content);
+        $this->assertRegExp('/\'password\'\s?=>\s?\'root\'\,/', $local_content);
+        $this->assertRegExp('/\'host\'\s?=>\s?\'mysql\'\,/', $local_content);
     }
 }
