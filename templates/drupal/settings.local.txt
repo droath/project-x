@@ -65,5 +65,8 @@ if (php_sapi_name() === 'cli'
  * example.org, with all subdomains included.
  */
 $settings['trusted_host_patterns'] = [
+  '^localhost$',
+  '^127\.0\.0\.1$',
   '^local\..+\.\w+$',
+  '^.+\.probo.build$',
 ];
