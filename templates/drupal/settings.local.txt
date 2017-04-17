@@ -22,6 +22,7 @@ $databases['default']['default'] = array(
  * to execute their command(s) within the environment.
  */
 if (php_sapi_name() === 'cli'
+  && isset($_SERVER['USER'])
   && $_SERVER['USER'] !== 'www-data') {
 
   $databases['default']['default']['host'] = '127.0.0.1';
