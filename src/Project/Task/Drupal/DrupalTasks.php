@@ -65,7 +65,8 @@ class DrupalTasks extends Tasks
         $db_host = $opts['db-host'];
 
         $instance = $this
-            ->drupalLocalSettings(
+            ->getProjectInstance()
+            ->setupDrupalLocalSettings(
                 $db_name,
                 $db_user,
                 $db_pass,
