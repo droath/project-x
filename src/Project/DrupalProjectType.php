@@ -258,9 +258,9 @@ class DrupalProjectType extends PhpProjectType implements TaskSubTypeInterface, 
     /**
      * Setup Drupal filesystem.
      *
-     *   The setup process consist of the following:
-     *     - Change site permission.
-     *     - Creates defaults files directory.
+     * The setup process consist of the following:
+     *   - Change site permission.
+     *   - Creates defaults files directory.
      *
      * @return self
      */

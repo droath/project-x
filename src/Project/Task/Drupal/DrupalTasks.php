@@ -66,6 +66,7 @@ class DrupalTasks extends Tasks
 
         $instance = $this
             ->getProjectInstance()
+            ->setupDrupalFilesystem()
             ->setupDrupalLocalSettings(
                 $db_name,
                 $db_user,
