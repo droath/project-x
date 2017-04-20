@@ -107,7 +107,8 @@ abstract class ConfigBase
     public function toArray()
     {
         return call_user_func_array(
-            static::toArrayCallback(), array_merge([$this->toFormat()], static::toArrayArgs())
+            static::toArrayCallback(),
+            array_merge([$this->toFormat()], static::toArrayArgs())
         );
     }
 
@@ -122,7 +123,8 @@ abstract class ConfigBase
     protected static function toString(array $array)
     {
         return call_user_func_array(
-            static::toStringCallback(), array_merge([$array], static::toStringArgs())
+            static::toStringCallback(),
+            array_merge([$array], static::toStringArgs())
         );
     }
 
