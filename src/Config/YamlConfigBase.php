@@ -2,137 +2,53 @@
 
 namespace Droath\ProjectX\Config;
 
-use Symfony\Component\Serializer\Normalizer\ObjectNormalizer;
-use Symfony\Component\Serializer\Serializer;
-use Symfony\Component\Yaml\Yaml;
 use Fitbug\SymfonySerializer\YamlEncoderDecoder\YamlDecode;
 use Fitbug\SymfonySerializer\YamlEncoderDecoder\YamlEncode;
 use Fitbug\SymfonySerializer\YamlEncoderDecoder\YamlEncoder;
+use Symfony\Component\Yaml\Yaml;
 
 /**
  * Define YAML based configurations.
  */
-abstract class YamlConfigBase
+abstract class YamlConfigBase extends ConfigBase
 {
     const CONTEXT_INLINE = 4;
     const CONTEXT_INDENT = 2;
+    const CONFIG_FORMAT = 'yaml';
 
     /**
-     * Create configuration object from string.
-     *
-     * @param string $string
-     *
-     * @return self
+     * {@inheritdoc}
      */
-    public static function createFromString($string)
+    public static function toArrayCallback()
     {
-        return self::getSerializer()
-            ->deserialize($string, get_called_class(), 'yaml');
+        return [Yaml::class, 'parse'];
     }
 
     /**
-     * Create configuration object from array.
-     *
-     * @param array $array
-     *
-     * @return self
+     * {@inheritdoc}
      */
-    public static function createFromArray(array $array)
+    public static function toStringCallback()
     {
-        return self::createFromString(Yaml::dump($array));
+        return [Yaml::class, 'dump'];
     }
 
     /**
-     * Create configuration object from file.
-     *
-     * @param \SplFileInfo $file_info
-     *
-     * @return self
+     * {@inheritdoc}
      */
-    public static function createFromFile(\SplFileInfo $file_info)
+    protected static function encoders()
     {
-        $contents = file_get_contents($file_info);
-
-        if (!$contents) {
-            throw new \RuntimeException(
-                sprintf(
-                    'Unable to retrieve contents from file (%s).',
-                    $file_info->getRealPath()
-                )
-            );
-        }
-
-        return self::createFromString($contents);
-    }
-
-    /**
-     * Render config contents as array.
-     *
-     * @return array
-     */
-    public function toArray()
-    {
-        return Yaml::parse($this->toYaml());
-    }
-
-    /**
-     * Render config contents as YAML.
-     *
-     * @return string
-     */
-    public function toYaml()
-    {
-        return self::getSerializer()->serialize($this, 'yaml');
-    }
-
-    /**
-     * Update instance based on updated values.
-     *
-     * @param array $values
-     *
-     * @return self
-     */
-    public function update(array $values)
-    {
-        return self::createFromArray(array_replace_recursive(
-            $this->toArray(),
-            $values
-        ));
-    }
-
-    /**
-     * Save instance to filesystem.
-     *
-     * @param string $filename
-     *   The full path to the filename.
-     *
-     * @return int|bool
-     */
-    public function save($filename)
-    {
-        return file_put_contents($filename, $this->toYaml());
-    }
-
-    /**
-     * Get serializer object.
-     *
-     * @return \Symfony\Component\Serializer\Serializer
-     */
-    protected static function getSerializer()
-    {
-        $decode = new YamlDecode();
-        $encode = new YamlEncode(
-            false,
-            false,
-            false,
-            false,
-            static::CONTEXT_INLINE,
-            static::CONTEXT_INDENT
-        );
-
-        return new Serializer(
-            [new ObjectNormalizer()],
-            [new YamlEncoder($encode, $decode)]
-        );
+        return [
+            new YamlEncoder(
+                new YamlEncode(
+                    false,
+                    false,
+                    false,
+                    false,
+                    static::CONTEXT_INLINE,
+                    static::CONTEXT_INDENT
+                ),
+                new YamlDecode()
+            ),
+        ];
     }
 }
