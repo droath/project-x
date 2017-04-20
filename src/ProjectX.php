@@ -87,12 +87,9 @@ class ProjectX extends Application
     public static function setDefaultServices($container)
     {
         $container
-            ->add('projectXComposer', \Droath\ProjectX\Composer::class)
-            ->withArgument('projectXTemplate');
+            ->share('projectXTemplate', \Droath\ProjectX\Template\TemplateManager::class);
         $container
             ->share('projectXGitHubUserAuth', \Droath\ProjectX\Service\GitHubUserAuthStore::class);
-        $container
-            ->share('projectXTemplate', \Droath\ProjectX\Template\TemplateManager::class);
         $container
             ->add('projectXHostChecker', \Droath\ProjectX\Service\HostChecker::class);
         $container

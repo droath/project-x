@@ -22,8 +22,20 @@ class TemplateManagerTest extends TestBase
 
     public function testLoadTemplate()
     {
+        $composer_json = json_encode([
+            'require' => [
+                'drupal/core' => '^8.1'
+            ]
+        ]);
+
+        vfsStream::create([
+            'project-x' => [
+                'composer.json' => $composer_json
+            ]
+        ], $this->projectDir);
+
         $contents = $this->templateManager
-            ->loadTemplate('composer/composer.json');
+            ->loadTemplate('composer.json', 'json');
 
         $this->assertArrayHasKey('drupal/core', $contents['require']);
     }
@@ -57,14 +69,12 @@ class TemplateManagerTest extends TestBase
         $this->assertEquals(vfsStream::url("root$expected"), $path);
     }
 
-    /**
-     * @expectedException \Exception
-     * @expectedExceptionMessage Unable to locate the template file (nothing.yml).
-     */
-    public function testTemplateFilePathExecption()
+    public function testTemplateFilePathNonExistent()
     {
-        $this->templateManager
+        $path = $this->templateManager
             ->getTemplateFilePath('nothing.yml');
+
+        $this->assertFalse($path);
     }
 
     public function testHasProjectTemplateDirectoryDoesNotExist()

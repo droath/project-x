@@ -27,10 +27,11 @@ class TemplateManager
      * @param string $format
      *   The format to use to decode the contents.
      *
-     * @return array|string
-     *   The decoded contents if format was found; otherwise raw content.
+     * @return string|array
+     *   The templates raw contents; if format was provided the decoded contents
+     *   is returned.
      */
-    public function loadTemplate($filename, $format = 'json')
+    public function loadTemplate($filename, $format = null)
     {
         $contents = $this->getTemplateContent($filename);
 
@@ -50,17 +51,16 @@ class TemplateManager
      * @param string $filename
      *   The file name.
      *
-     * @return string
-     *   The path to the particular template file.
+     * @return string|bool
+     *   The path to the particular template file; otherwise false if the
+     *   path doesn't exist.
      */
     public function getTemplateFilePath($filename)
     {
         $filepath = $this->locateTemplateFilePath($filename);
 
         if (!file_exists($filepath)) {
-            throw new \Exception(
-                sprintf('Unable to locate the template file (%s).', $filename)
-            );
+            return false;
         }
 
         return $filepath;
@@ -132,16 +132,21 @@ class TemplateManager
      * @param string $filename
      *   The template filename.
      *
-     * @return array
+     * @return string
+     *   The raw template file contents.
      */
     protected function getTemplateContent($filename)
     {
-        $contents = file_get_contents(
-            $this->getTemplateFilePath($filename)
-        );
+        $filepath = $this->getTemplateFilePath($filename);
+
+        if (!$filepath) {
+            return null;
+        }
+
+        $contents = file_get_contents($filepath);
 
         if (!$contents) {
-            return [];
+            return null;
         }
 
         return $contents;

@@ -16,6 +16,10 @@ use Droath\ProjectX\Utility;
  */
 class DrupalProjectType extends PhpProjectType implements TaskSubTypeInterface, OptionFormAwareInterface
 {
+    const DRUSH_VERSION = '^8.1';
+    const DRUPAL_8_VERSION = '^8.3';
+
+
     use drushTasks;
 
     /**
@@ -44,6 +48,8 @@ class DrupalProjectType extends PhpProjectType implements TaskSubTypeInterface, 
      */
     public function __construct()
     {
+        parent::__construct();
+
         $install_path = $this->getInstallPath();
 
         // Drupal sites common file/directory locations.
@@ -93,22 +99,20 @@ class DrupalProjectType extends PhpProjectType implements TaskSubTypeInterface, 
             $this->say('Project build process has been aborted! ⛈️');
 
             return;
-        } elseif ($status === static::BUILD_DIRTY) {
+        }
+
+        // Remove install directory if build is dirty.
+        if ($status === static::BUILD_DIRTY) {
             $this->deleteInstallDirectory();
-        } elseif ($status === static::BUILD_FRESH) {
-            $this->updateProjectComposer();
         }
         parent::build();
 
-        if ($this->askConfirmQuestion('Use Drush?', true)) {
-            $this
-                ->setupDrush()
-                ->setupDrushAlias();
-        }
-
         $this
+            ->setupProjectComposer()
             ->setupProjectFilesystem()
-            ->runComposerUpdate();
+            ->askDrush()
+            ->saveComposer()
+            ->updateComposer();
     }
 
     /**
@@ -209,10 +213,79 @@ class DrupalProjectType extends PhpProjectType implements TaskSubTypeInterface, 
     }
 
     /**
+     * Setup project composer requirements.
+     *
+     * @return self
+     */
+    public function setupProjectComposer()
+    {
+        $this->mergeProjectComposerTemplate();
+
+        $this->composer
+            ->setType('project')
+            ->setPreferStable(true)
+            ->setMinimumStability('dev')
+            ->addRepository('drupal', [
+                'type' => 'composer',
+                'url' =>  'https://packages.drupal.org/8'
+            ])
+            ->addRequires([
+                'drupal/core' => static::DRUPAL_8_VERSION,
+                'composer/installers' => '^1.1',
+                'cweagans/composer-patches' =>  '^1.5',
+                'drupal-composer/drupal-scaffold' => '^2.0'
+            ])
+            ->addExtra('drupal-scaffold', [
+                'excludes' => [
+                    'robot.txt'
+                ],
+                'initial' => [
+                    'sites/development.services.yml' => 'sites/development.services.yml',
+                    'sites/example.settings.local.php' => 'sites/example.settings.local.php'
+                ],
+                'omit-defaults' => false
+            ])
+            ->addExtra('installer-paths', [
+                'docroot/core' => ['type:drupal-core'],
+                'docroot/modules/contrib/{$name}' => ['type:drupal-module'],
+                'docroot/profiles/custom/{$name}' => ['type:drupal-profile'],
+                'docroot/themes/contrib/{$name}'=> ['type:drupal-theme'],
+                'drush/contrib/{$name}'=> ['type:drupal-drush']
+            ]);
+
+        if ($this->hasBehat()) {
+            $this->composer->addDevRequire('drupal/drupal-extension', '^3.2');
+        }
+
+        if ($this->hasPhpCodeSniffer()) {
+            $this->composer->addDevRequire('drupal/coder', '^8.2');
+        }
+
+        return $this;
+    }
+
+    /**
+     * Ask Drush to run setup.
+     *
+     * @return self
+     */
+    public function askDrush()
+    {
+        if ($this->askConfirmQuestion('Use Drush?', true)) {
+            $this
+                ->setupDrush()
+                ->setupDrushAlias();
+        }
+
+        return $this;
+    }
+
+    /**
      * Setup Drupal drush.
      *
      * The setup process consist of the following:
      *   - Copy the template drush directory into the project root.
+     *   - Add drush/drush to the composer.json.
      *
      * @return self
      */
@@ -224,6 +297,9 @@ class DrupalProjectType extends PhpProjectType implements TaskSubTypeInterface, 
             ->mirror($this->getTemplateFilePath('drush'), "$project_root/drush")
             ->copy($this->getTemplateFilePath('drush.wrapper'), "$project_root/drush.wrapper")
             ->run();
+
+        $this->composer
+            ->addDevRequire('drush/drush', static::DRUSH_VERSION);
 
         return $this;
     }
@@ -352,7 +428,7 @@ class DrupalProjectType extends PhpProjectType implements TaskSubTypeInterface, 
     ) {
         $local_settings = $this
             ->templateManager()
-            ->loadTemplate('settings.local.txt', 'none');
+            ->loadTemplate('settings.local.txt');
 
         $this->_copy("{$this->sitesPath}/example.settings.local.php", $this->settingLocalFile);
 
@@ -466,31 +542,6 @@ class DrupalProjectType extends PhpProjectType implements TaskSubTypeInterface, 
                 'pass' => 'admin',
             ],
         ];
-    }
-
-    /**
-     * Get composer template file.
-     *
-     * @return string
-     */
-    protected function getComposerTemplate()
-    {
-        $template = 'composer.json';
-
-        return $template;
-    }
-
-    /**
-     * Update project composer.json.
-     */
-    protected function updateProjectComposer()
-    {
-        $template = $this->getComposerTemplate();
-        $this->composer()
-            ->mergeWithTemplate($template)
-            ->update();
-
-        return $this;
     }
 
     /**

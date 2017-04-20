@@ -64,6 +64,20 @@ abstract class TaskSubType implements BuilderAwareInterface, ContainerAwareInter
     }
 
     /**
+     * Load template contents.
+     *
+     * @param string $filename
+     *
+     * @return string|array
+     *   The templates raw contents; if format was provided the decoded contents
+     *   is returned.
+     */
+    protected function loadTemplateContents($filename, $format = null)
+    {
+        return $this->templateManager()->loadTemplate($filename, $format);
+    }
+
+    /**
      * Copy template file to project root.
      *
      * @param string $filename

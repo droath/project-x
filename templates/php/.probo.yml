@@ -10,11 +10,6 @@ steps:
       - composer self-update
       - composer install
 
-  - name: Setup Drupal local setup
-    plugin: Script
-    script:
-      - $SRC_DIR/vendor/bin/project-x drupal:local-setup --db-user=root --db-pass=strongpassword --no-interaction --no-docker --no-engine --no-browser
-
   - name: Setup Probo environment
     plugin: Script
     script:

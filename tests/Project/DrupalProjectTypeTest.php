@@ -32,7 +32,7 @@ class DrupalProjectTypeTest extends TestTaskBase
 
     public function testOnEngineUp()
     {
-        $directory = vfsStream::create([
+        vfsStream::create([
             'docroot' => [
                 'sites' => [
                     'default' => [
@@ -53,6 +53,34 @@ class DrupalProjectTypeTest extends TestTaskBase
         $this->assertFilePermission('0775', "{$files_url}/images", 'chmod should be done recursively.');
     }
 
+    public function testSetupProjectComposer()
+    {
+        $composer_json = json_encode([
+            'require' => [
+                'drupal/devel' => '^8.1'
+            ]
+        ]);
+
+        vfsStream::create([
+            'project-x' => [
+                'composer.json' => $composer_json
+            ]
+        ], $this->projectDir);
+
+        $this->drupalProject->setupProjectComposer();
+        $composer = $this->drupalProject
+            ->getComposer();
+
+        $this->assertEquals('project', $composer->getType());
+        $this->assertTrue($composer->getPreferStable());
+        $this->assertEquals('dev', $composer->getMinimumStability());
+        $this->assertArrayHasKey('drupal', $composer->getRepositories());
+        $this->assertArrayHasKey('drupal/core', $composer->getRequire());
+        $this->assertArrayHasKey('drupal/devel', $composer->getRequire());
+        $this->assertArrayHasKey('drupal-scaffold', $composer->getExtra());
+        $this->assertArrayHasKey('installer-paths', $composer->getExtra());
+    }
+
     public function testSetupProject()
     {
         $this->drupalProject->setupProject();
@@ -64,6 +92,7 @@ class DrupalProjectTypeTest extends TestTaskBase
         $this->drupalProject->setupDrush();
         $this->assertProjectFileExists('drush.wrapper');
         $this->assertTrue($this->projectDir->hasChild('drush'));
+        $this->assertArrayHasKey('drush/drush', $this->drupalProject->getComposer()->getRequireDev());
     }
 
     public function testSetupDrushAlias()
@@ -87,7 +116,7 @@ class DrupalProjectTypeTest extends TestTaskBase
 
     public function testSetupDrupalFilesystem()
     {
-        $directory = vfsStream::create([
+        vfsStream::create([
             'docroot' => [
                 'sites' => [
                     'default' => [],
@@ -105,7 +134,7 @@ class DrupalProjectTypeTest extends TestTaskBase
     {
         $settings_content = file_get_contents(APP_ROOT . '/tests/fixtures/default.settings.php');
 
-         vfsStream::create([
+        vfsStream::create([
             'docroot' => [
                 'sites' => [
                     'default' => [

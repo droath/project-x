@@ -1,0 +1,15 @@
+<?xml version="1.0"?>
+<ruleset name="PHP Coding Standards">
+<description>PHP coding standards.</description>
+
+<!-- Set PHP memory limit to 64 MB -->
+<ini name="memory_limit" value="64M"/>
+
+<!-- Run code sniffer on Drupal modules directory. -->
+<file>./docroot</file>
+
+<!-- Exclude tests/* and Drupal contrib modules from code sniffer. -->
+<exclude-pattern>*/tests/*</exclude-pattern>
+
+<rule ref="PSR2"/>
+</ruleset>

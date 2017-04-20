@@ -40,17 +40,14 @@ before_script:
 
 script:
 
-  # Run project-x to setup a local Drupal site.
-  - vendor/bin/project-x drupal:local-setup --no-interaction --no-engine --no-browser
-
   # Run project level code sniffer.
-  - if [ -e "vendor/bin/phpcs" ]; then "vendor/bin/phpcs" -n; fi
+  # - vendor/bin/phpcs -n
 
   # Run project level PHPUnit tests.
-  - if [ -e "vendor/bin/phpunit" ]; then "vendor/bin/phpunit"; fi
+  # - vendor/bin/phpunit
 
   # Run project level Behat tests.
-  - if [ -e "vendor/bin/behat" ]; then "vendor/bin/behat" -c "tests/Behat/behat.yml"; fi
+  # - vendor/bin/behat -c tests/Behat/behat.yml
 
 # addons:
 #   # Add hostname to /ets/hosts file.
