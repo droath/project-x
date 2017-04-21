@@ -172,6 +172,7 @@ abstract class PhpProjectType extends ProjectType
         $this->taskFilesystemStack()
             ->mkdir("{$root_path}/tests/PHPunit", 0775)
             ->copy($this->getTemplateFilePath('tests/bootstrap.php'), "{$root_path}/tests/bootstrap.php")
+            ->copy($this->getTemplateFilePath('tests/phpunit.xml.dist'), "{$root_path}/phpunit.xml.dist")
             ->run();
 
         $this->composer->addRequires([

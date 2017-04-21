@@ -60,6 +60,7 @@ class PhpProjectTypeTest extends TestTaskBase
         $this->phpProject->setupPhpUnit();
 
         $this->assertProjectFileExists('tests/bootstrap.php');
+        $this->assertProjectFileExists('phpunit.xml.dist');
         $this->assertFilePermission('0775', $this->getProjectFileUrl('tests/PHPunit'));
 
         $this->assertTrue($this->phpProject->hasPhpUnit());
