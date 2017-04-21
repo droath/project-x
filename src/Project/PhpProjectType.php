@@ -46,6 +46,16 @@ abstract class PhpProjectType extends ProjectType
     }
 
     /**
+     * {@inheritdoc}
+     */
+    public function install()
+    {
+        parent::install();
+
+        $this->initBehat();
+    }
+
+    /**
      * Ask to setup TravisCI configurations.
      *
      * @return self
@@ -136,6 +146,26 @@ abstract class PhpProjectType extends ProjectType
         $this->composer->addRequires([
             'behat/behat' => static::BEHAT_VERSION,
         ], true);
+
+        return $this;
+    }
+
+    /**
+     * Initialize Behat for the project.
+     *
+     * @return self
+     */
+    public function initBehat()
+    {
+        $root_path = ProjectX::projectRoot();
+
+        if ($this->hasBehat()
+            && !file_exists("$root_path/tests/Behat/features")) {
+            $this->taskBehat()
+                ->option('init')
+                ->option('config', "{$root_path}/tests/Behat/behat.yml")
+                ->run();
+        }
 
         return $this;
     }
