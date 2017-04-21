@@ -66,20 +66,6 @@ abstract class PhpProjectType extends ProjectType
     }
 
     /**
-     * Ask to setup TravisCI configurations.
-     *
-     * @return self
-     */
-    public function askTravisCi()
-    {
-        if ($this->askConfirmQuestion('Setup TravisCI?', true)) {
-            $this->setupTravisCi();
-        }
-
-        return $this;
-    }
-
-    /**
      * Setup TravisCi configurations.
      *
      * The setup steps consist of the following:
@@ -93,20 +79,6 @@ abstract class PhpProjectType extends ProjectType
     }
 
     /**
-     * Ask to setup ProboCI configurations.
-     *
-     * @return self
-     */
-    public function askProboCi()
-    {
-        if ($this->askConfirmQuestion('Setup ProboCI?', true)) {
-            $this->setupProboCi();
-        }
-
-        return $this;
-    }
-
-    /**
      * Setup ProboCi configurations.
      *
      * The setup steps consist of the following:
@@ -115,20 +87,6 @@ abstract class PhpProjectType extends ProjectType
     public function setupProboCi()
     {
         $this->copyTemplateFileToProject('.probo.yml');
-
-        return $this;
-    }
-
-    /**
-     * Ask to setup Behat.
-     *
-     * @return self
-     */
-    public function askBehat()
-    {
-        if ($this->askConfirmQuestion('Setup Behat?', true)) {
-            $this->setupBehat();
-        }
 
         return $this;
     }
@@ -189,20 +147,6 @@ abstract class PhpProjectType extends ProjectType
     }
 
     /**
-     * Ask to setup PHPunit.
-     *
-     * @return self
-     */
-    public function askPhpUnit()
-    {
-        if ($this->askConfirmQuestion('Setup PHPUnit?', true)) {
-            $this->setupPhpUnit();
-        }
-
-        return $this;
-    }
-
-    /**
      * Setup PHPunit configurations.
      */
     public function setupPhpUnit()
@@ -218,6 +162,8 @@ abstract class PhpProjectType extends ProjectType
         $this->composer->addRequires([
             'phpunit/phpunit' => static::PHPUNIT_VERSION,
         ], true);
+
+        return $this;
     }
 
     /**
@@ -226,20 +172,6 @@ abstract class PhpProjectType extends ProjectType
     public function hasPhpUnit()
     {
         return $this->hasComposerPackage('phpunit/phpunit', true);
-    }
-
-    /**
-     * Ask to setup PHP code sniffer.
-     *
-     * @return self
-     */
-    public function askPhpCodeSniffer()
-    {
-        if ($this->askConfirmQuestion('Setup PHP code sniffer?', true)) {
-            $this->setupPhpCodeSniffer();
-        }
-
-        return $this;
     }
 
     /**
@@ -256,6 +188,8 @@ abstract class PhpProjectType extends ProjectType
         $this->composer->addRequires([
             'squizlabs/php_codesniffer' => static::PHPCS_VERSION,
         ], true);
+
+        return $this;
     }
 
     /**
@@ -300,6 +234,76 @@ abstract class PhpProjectType extends ProjectType
     {
         $this->taskComposerUpdate()
             ->run();
+
+        return $this;
+    }
+
+   /**
+     * Ask to setup TravisCI configurations.
+     *
+     * @return self
+     */
+    protected function askTravisCi()
+    {
+        if ($this->askConfirmQuestion('Setup TravisCI?', true)) {
+            $this->setupTravisCi();
+        }
+
+        return $this;
+    }
+
+    /**
+     * Ask to setup ProboCI configurations.
+     *
+     * @return self
+     */
+    protected function askProboCi()
+    {
+        if ($this->askConfirmQuestion('Setup ProboCI?', true)) {
+            $this->setupProboCi();
+        }
+
+        return $this;
+    }
+
+   /**
+     * Ask to setup Behat.
+     *
+     * @return self
+     */
+    protected function askBehat()
+    {
+        if ($this->askConfirmQuestion('Setup Behat?', true)) {
+            $this->setupBehat();
+        }
+
+        return $this;
+    }
+
+    /**
+     * Ask to setup PHPunit.
+     *
+     * @return self
+     */
+    protected function askPhpUnit()
+    {
+        if ($this->askConfirmQuestion('Setup PHPUnit?', true)) {
+            $this->setupPhpUnit();
+        }
+
+        return $this;
+    }
+
+    /**
+     * Ask to setup PHP code sniffer.
+     *
+     * @return self
+     */
+    protected function askPhpCodeSniffer()
+    {
+        if ($this->askConfirmQuestion('Setup PHP code sniffer?', true)) {
+            $this->setupPhpCodeSniffer();
+        }
 
         return $this;
     }

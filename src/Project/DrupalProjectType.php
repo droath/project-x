@@ -200,6 +200,36 @@ class DrupalProjectType extends PhpProjectType implements TaskSubTypeInterface, 
     }
 
     /**
+     * {@inheritdoc}
+     */
+    public function setupBehat()
+    {
+        parent::setupBehat();
+
+        if ($this->hasBehat()) {
+            $this->composer
+                ->addDevRequire('drupal/drupal-extension', '^3.2');
+        }
+
+        return $this;
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function setupPhpCodeSniffer()
+    {
+        parent::setupPhpCodeSniffer();
+
+        if ($this->hasPhpCodeSniffer()) {
+            $this->composer
+                ->addDevRequire('drupal/coder', '^8.2');
+        }
+
+        return $this;
+    }
+
+    /**
      * Setup project.
      *
      * The setup process consist of the following:
@@ -258,14 +288,6 @@ class DrupalProjectType extends PhpProjectType implements TaskSubTypeInterface, 
                 'docroot/themes/contrib/{$name}'=> ['type:drupal-theme'],
                 'drush/contrib/{$name}'=> ['type:drupal-drush']
             ]);
-
-        if ($this->hasBehat()) {
-            $this->composer->addDevRequire('drupal/drupal-extension', '^3.2');
-        }
-
-        if ($this->hasPhpCodeSniffer()) {
-            $this->composer->addDevRequire('drupal/coder', '^8.2');
-        }
 
         return $this;
     }
