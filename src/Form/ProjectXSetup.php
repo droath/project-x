@@ -7,6 +7,8 @@ use Droath\ConsoleForm\Field\SelectField;
 use Droath\ConsoleForm\Field\TextField;
 use Droath\ConsoleForm\Form;
 use Droath\ConsoleForm\FormInterface;
+use Droath\ProjectX\Project\DrupalProjectType;
+use Droath\ProjectX\Project\NullProjectType;
 use Droath\ProjectX\Utility;
 
 /**
@@ -34,6 +36,14 @@ class ProjectXSetup implements FormInterface
                 (new SelectField('type', 'Project type'))
                     ->setOptions($this->getProjectTypes())
                     ->setDefault('drupal'),
+                (new SelectField('version', 'Project version'))
+                    ->setFieldCallback(function ($field, $results) {
+                        $classname = $this->projectTypeClassname($results['type']);
+                        $field->setOptions(
+                            $classname::SUPPORTED_VERSIONS
+                        )
+                        ->setDefault($classname::DEFAULT_VERSION);
+                    }),
                 (new SelectField('engine', 'Select engine'))
                     ->setOptions($this->getEngines())
                     ->setDefault('docker'),
@@ -59,12 +69,38 @@ class ProjectXSetup implements FormInterface
             ]);
     }
 
+    /**
+     * Get project types.
+     *
+     * @todo This should be pulled dynamically somehow. Remove once we have
+     * a discovery/plugin system in place to find a variation of project types.
+     *
+     * @return array
+     */
     protected function getProjectTypes()
     {
         return [
             'drupal' => 'Drupal',
-            'php' => 'PHP',
         ];
+    }
+
+    /**
+     * Get project type classname.
+     *
+     * @param string $type
+     *   The project type identifier.
+     *
+     * @return array
+     */
+    protected function projectTypeClassname($type)
+    {
+        switch ($type) {
+            case 'drupal':
+                return DrupalProjectType::class;
+
+            default:
+                return NullProjectType::class;
+        }
     }
 
     /**

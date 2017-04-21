@@ -31,6 +31,16 @@ abstract class ProjectType extends TaskSubType implements ProjectTypeInterface
     const BUILD_DIRTY = 2;
 
     /**
+     * Project default version.
+     */
+    const DEFAULT_VERSION = 0;
+
+    /**
+     * Project support versions.
+     */
+    const SUPPORTED_VERSIONS = [];
+
+    /**
      * Project type supports docker.
      *
      * @var bool
@@ -244,6 +254,19 @@ abstract class ProjectType extends TaskSubType implements ProjectTypeInterface
     protected function getHostChecker()
     {
         return $this->getContainer()->get('projectXHostChecker');
+    }
+
+    /**
+     * Get project version.
+     *
+     * @return string
+     *   The project version defined in the project-x config; otherwise set to
+     *   the project default version.
+     */
+    protected function getProjectVersion()
+    {
+        return ProjectX::getProjectConfig()->getVersion()
+            ?: static::DEFAULT_VERSION;
     }
 
     /**

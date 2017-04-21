@@ -48,6 +48,7 @@ class InitializeTest extends TestBase
 
         $this->assertEquals('Project-Test', $config->getName());
         $this->assertEquals('drupal', $config->getType());
+        $this->assertEquals(8, $config->getVersion());
         $this->assertEquals('docker', $config->getEngine());
         $this->assertEquals('local.testing.com', $config->getHost()['name']);
         $this->assertEquals('true', $config->getHost()['open_on_startup']);
@@ -78,6 +79,8 @@ class InitializeTest extends TestBase
                         return 'Project-Test';
                     case 'project_type':
                         return 'drupal';
+                    case 'project_version':
+                        return 8;
                     case 'select_engine':
                         return 'docker';
                     case 'github_url':

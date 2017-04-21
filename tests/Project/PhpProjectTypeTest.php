@@ -20,7 +20,7 @@ class PhpProjectTypeTest extends TestTaskBase
     {
         parent::setUp();
 
-        $this->phpProject = (new PhpProjectType())
+        $this->phpProject = $this->getMockForAbstractClass('\Droath\ProjectX\Project\PhpProjectType')
             ->setBuilder($this->builder)
             ->setContainer($this->container);
     }

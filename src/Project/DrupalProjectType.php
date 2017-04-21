@@ -18,7 +18,11 @@ class DrupalProjectType extends PhpProjectType implements TaskSubTypeInterface, 
 {
     const DRUSH_VERSION = '^8.1';
     const DRUPAL_8_VERSION = '^8.3';
-
+    const DEFAULT_VERSION = 8;
+    const SUPPORTED_VERSIONS = [
+        7 => 7,
+        8 => 8
+    ];
 
     use drushTasks;
 

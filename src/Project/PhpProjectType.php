@@ -9,7 +9,7 @@ use Droath\ProjectX\TaskSubTypeInterface;
 /**
  * Define PHP project type.
  */
-class PhpProjectType extends ProjectType implements TaskSubTypeInterface, ProjectTypeInterface
+abstract class PhpProjectType extends ProjectType
 {
     const PHPCS_VERSION = '2.*';
     const BEHAT_VERSION = '^3.1';
@@ -28,22 +28,6 @@ class PhpProjectType extends ProjectType implements TaskSubTypeInterface, Projec
     public function __construct()
     {
         $this->composer = $this->composer();
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function getLabel()
-    {
-        return 'PHP';
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function getTypeId()
-    {
-        return 'php';
     }
 
     /**
@@ -333,8 +317,6 @@ class PhpProjectType extends ProjectType implements TaskSubTypeInterface, Projec
         return file_exists($composer_file)
             ? ComposerConfig::createFromFile($composer_file)
             : new ComposerConfig();
-
-        return $instance;
     }
 
     /**

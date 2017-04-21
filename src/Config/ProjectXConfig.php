@@ -22,6 +22,13 @@ class ProjectXConfig extends YamlConfigBase
     protected $type;
 
     /**
+     * Project type version.
+     *
+     * @var string
+     */
+    protected $version;
+
+    /**
      * Project engine.
      *
      * @var string
@@ -71,6 +78,18 @@ class ProjectXConfig extends YamlConfigBase
     public function getType()
     {
         return $this->type;
+    }
+
+    public function setVersion($version)
+    {
+        $this->version = $version;
+
+        return $version;
+    }
+
+    public function getVersion()
+    {
+        return $this->version;
     }
 
     public function setEngine($engine)
