@@ -134,11 +134,10 @@ class ProjectX extends Application
      */
     public static function taskLocations()
     {
-        $locations = [
-            self::projectRoot(),
-        ];
-        $locations[] = self::getProjectType()
-            ->taskDirectory();
+        $locations = array_merge(
+            [self::projectRoot()],
+            self::getProjectType()->taskDirectories()
+        );
 
         if (self::hasProjectConfig()) {
             $locations[] = APP_ROOT . '/src/Task';

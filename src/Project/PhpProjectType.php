@@ -56,6 +56,16 @@ abstract class PhpProjectType extends ProjectType
     }
 
     /**
+     * {@inheritdoc}
+     */
+    public function taskDirectories()
+    {
+        return array_merge([
+            APP_ROOT . '/src/Project/Task/PHP'
+        ], parent::taskDirectories());
+    }
+
+    /**
      * Ask to setup TravisCI configurations.
      *
      * @return self

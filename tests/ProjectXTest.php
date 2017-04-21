@@ -29,7 +29,8 @@ class ProjectXTest extends TestBase
 
         $this->assertEquals($this->projectRoot, $locations[0]);
         $this->assertEquals('./src/Project/Task/Drupal', $locations[1]);
-        $this->assertEquals('./src/Task', $locations[2]);
+        $this->assertEquals('./src/Project/Task/PHP', $locations[2]);
+        $this->assertEquals('./src/Task', $locations[3]);
     }
 
     public function testProjectRoot()

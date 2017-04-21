@@ -20,14 +20,14 @@ abstract class TaskSubType implements BuilderAwareInterface, ContainerAwareInter
     use ContainerAwareTrait;
 
     /**
-     * Sub-type task directory.
+     * Sub-type task directories.
      *
-     * @return string
-     *   The path to the sub-type task directory.
+     * @return []
+     *   An array of sub-type task directories.
      */
-    public function taskDirectory()
+    public function taskDirectories()
     {
-        return null;
+        return [];
     }
 
     /**
