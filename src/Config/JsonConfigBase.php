@@ -2,13 +2,14 @@
 
 namespace Droath\ProjectX\Config;
 
+use Droath\ProjectX\Config\ConfigInterface;
 use Symfony\Component\Serializer\Encoder\JsonEncode;
 use Symfony\Component\Serializer\Encoder\JsonEncoder;
 
 /**
  * Define JSON configuration base.
  */
-abstract class JsonConfigBase extends ConfigBase
+abstract class JsonConfigBase extends ConfigBase implements ConfigInterface
 {
     const CONFIG_FORMAT = 'json';
     const CONFIG_CONTEXT = [

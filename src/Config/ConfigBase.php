@@ -142,7 +142,6 @@ abstract class ConfigBase
         ];
     }
 
-
     /**
      * Get serializer object.
      *
@@ -154,6 +153,16 @@ abstract class ConfigBase
             static::normalizers(),
             static::encoders()
         );
+    }
+
+    /**
+     * Serializer encoders.
+     *
+     * @return array
+     */
+    protected static function encoders()
+    {
+        return [];
     }
 
     /**
@@ -205,27 +214,4 @@ abstract class ConfigBase
     {
         return null;
     }
-
-    /**
-     * Define to array callback.
-     *
-     * @return array|string
-     *   An array or string that's passed along to the call_user_func_array().
-     */
-    abstract public static function toArrayCallback();
-
-    /**
-     * Define to string callback.
-     *
-     * @return array|string
-     *   An array or string that's passed along to the call_user_func_array().
-     */
-    abstract public static function toStringCallback();
-
-    /**
-     * Serializer encoders.
-     *
-     * @return array
-     */
-    abstract protected static function encoders();
 }

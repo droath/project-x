@@ -2,6 +2,7 @@
 
 namespace Droath\ProjectX\Config;
 
+use Droath\ProjectX\Config\ConfigInterface;
 use Fitbug\SymfonySerializer\YamlEncoderDecoder\YamlDecode;
 use Fitbug\SymfonySerializer\YamlEncoderDecoder\YamlEncode;
 use Fitbug\SymfonySerializer\YamlEncoderDecoder\YamlEncoder;
@@ -10,7 +11,7 @@ use Symfony\Component\Yaml\Yaml;
 /**
  * Define YAML based configurations.
  */
-abstract class YamlConfigBase extends ConfigBase
+abstract class YamlConfigBase extends ConfigBase implements ConfigInterface
 {
     const CONTEXT_INLINE = 4;
     const CONTEXT_INDENT = 2;
