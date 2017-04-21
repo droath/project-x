@@ -128,6 +128,9 @@ class DrupalProjectTypeTest extends TestTaskBase
 
         $this->assertProjectFilePermission('0775', 'docroot/sites');
         $this->assertProjectFileExists('docroot/sites/default/files');
+        $this->assertProjectFileExists('docroot/profile/custom');
+        $this->assertProjectFileExists('docroot/modules/custom');
+        $this->assertProjectFileExists('docroot/modules/contrib');
     }
 
     public function testSetupDrupalSettings()

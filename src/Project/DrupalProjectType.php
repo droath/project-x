@@ -351,6 +351,16 @@ class DrupalProjectType extends PhpProjectType implements TaskSubTypeInterface, 
             ->mkdir("{$this->sitesPath}/default/files", 0775, true)
             ->run();
 
+        if ($this->getProjectVersion() === 8) {
+            $install_path = $this->getInstallPath();
+
+            $this->taskFilesystemStack()
+                ->mkdir("{$install_path}/profile/custom", 0775, true)
+                ->mkdir("{$install_path}/modules/custom", 0775, true)
+                ->mkdir("{$install_path}/modules/contrib", 0775, true)
+                ->run();
+        }
+
         return $this;
     }
 
