@@ -83,8 +83,11 @@ class Initialize extends Command
         $project = ProjectX::getProjectType();
 
         if ($project instanceof OptionFormAwareInterface) {
+            $classname =  get_class($project);
+            $label = $classname::getLabel();
+
             $io = new SymfonyStyle($input, $output);
-            $io->title(sprintf('%s Project Options', $project->getLabel()));
+            $io->title(sprintf('%s Project Options', $label));
 
             $form = $project->optionForm();
             $form
@@ -93,7 +96,7 @@ class Initialize extends Command
                 ->setHelperSet($this->getHelperSet())
                 ->process();
 
-            $options[$project->getTypeId()] = $form->getResults();
+            $options[$classname::getTypeId()] = $form->getResults();
 
             $saved = ProjectX::getProjectConfig()
                 ->setOptions($options)
@@ -101,7 +104,7 @@ class Initialize extends Command
 
             if ($saved) {
                 $output->writeln(
-                    sprintf('🚀  <info>Success, the %s options have been saved.</info>', $project->getLabel())
+                    sprintf('🚀  <info>Success, the %s options have been saved.</info>', $label)
                 );
             }
         }

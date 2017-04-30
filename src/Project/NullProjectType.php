@@ -13,7 +13,7 @@ class NullProjectType extends ProjectType implements TaskSubTypeInterface
     /**
      * {@inheritdoc}
      */
-    public function getLabel()
+    public static function getLabel()
     {
         return 'Null';
     }
@@ -21,7 +21,7 @@ class NullProjectType extends ProjectType implements TaskSubTypeInterface
     /**
      * {@inheritdoc}
      */
-    public function getTypeId()
+    public static function getTypeId()
     {
         return 'null';
     }

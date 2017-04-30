@@ -71,7 +71,7 @@ class DrupalProjectType extends PhpProjectType implements TaskSubTypeInterface, 
     /**
      * {@inheritdoc}.
      */
-    public function getlabel()
+    public static function getlabel()
     {
         return 'Drupal';
     }
@@ -79,7 +79,7 @@ class DrupalProjectType extends PhpProjectType implements TaskSubTypeInterface, 
     /**
      * {@inheritdoc}.
      */
-    public function getTypeId()
+    public static function getTypeId()
     {
         return 'drupal';
     }

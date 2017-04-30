@@ -12,12 +12,12 @@ interface TaskSubTypeInterface
      *
      * @return string
      */
-    public function getLabel();
+    public static function getLabel();
 
     /**
      * Define a type identifier.
      *
      * @return string
      */
-    public function getTypeId();
+    public static function getTypeId();
 }

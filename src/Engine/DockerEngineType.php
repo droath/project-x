@@ -26,7 +26,7 @@ class DockerEngineType extends EngineType implements TaskSubTypeInterface
     /**
      * {@inheritdoc}.
      */
-    public function getLabel()
+    public static function getLabel()
     {
         return 'Docker';
     }
@@ -34,7 +34,7 @@ class DockerEngineType extends EngineType implements TaskSubTypeInterface
     /**
      * {@inheritdoc}.
      */
-    public function getTypeId()
+    public static function getTypeId()
     {
         return 'docker';
     }
