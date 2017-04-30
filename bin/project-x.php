@@ -28,13 +28,8 @@ if (file_exists(APP_ROOT . '/../../vendor/autoload.php')) {
 $input = new ArgvInput($_SERVER['argv']);
 $output = new ConsoleOutput();
 
-$formDiscovery = (new FormDiscovery())
-    ->discover(APP_ROOT . '/src/Form', '\Droath\ProjectX\Form');
-
 $app = (new ProjectX())
     ->discoverCommands();
-$app->getHelperSet()
-    ->set(new FormHelper($formDiscovery));
 
 $projectPath = (new ProjectXDiscovery())->execute();
 ProjectX::setProjectPath($projectPath);
@@ -45,6 +40,11 @@ ProjectX::setDefaultServices($container);
 
 // Set the Robo container inside the project-x app.
 $app->setContainer($container);
+
+$formDiscovery = (new FormDiscovery())
+    ->discover(APP_ROOT . '/src/Form', '\Droath\ProjectX\Form');
+$app->getHelperSet()
+    ->set(new FormHelper($formDiscovery));
 
 // Auto discover the Robo tasks command files if the project contains a
 // project-x configuration.
