@@ -141,4 +141,5 @@ console
 .docker-sync/*
 
 # Project-X
+.project-x/*
 .project-x.local.yml
