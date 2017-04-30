@@ -7,8 +7,10 @@ use Droath\ConsoleForm\Field\SelectField;
 use Droath\ConsoleForm\Field\TextField;
 use Droath\ConsoleForm\Form;
 use Droath\ConsoleForm\FormInterface;
+use Droath\ProjectX\ProjectX;
 use Droath\ProjectX\Project\DrupalProjectType;
 use Droath\ProjectX\Project\NullProjectType;
+use Droath\ProjectX\Project\ProjectTypeResolver;
 use Droath\ProjectX\Utility;
 
 /**
@@ -34,18 +36,18 @@ class ProjectXSetup implements FormInterface
                 (new TextField('name', 'Project name'))
                     ->setDefault($this->getDefaultName()),
                 (new SelectField('type', 'Project type'))
-                    ->setOptions($this->getProjectTypes())
+                    ->setOptions($this->getTypeOptions())
                     ->setDefault('drupal'),
                 (new SelectField('version', 'Project version'))
                     ->setFieldCallback(function ($field, $results) {
-                        $classname = $this->projectTypeClassname($results['type']);
+                        $classname = $this->getTypeClassname($results['type']);
                         $field->setOptions(
                             $classname::SUPPORTED_VERSIONS
                         )
                         ->setDefault($classname::DEFAULT_VERSION);
                     }),
                 (new SelectField('engine', 'Select engine'))
-                    ->setOptions($this->getEngines())
+                    ->setOptions($this->getEngineOptions())
                     ->setDefault('docker'),
                 (new BooleanField('github', 'Setup GitHub?'))
                     ->setSubform(function ($subform, $value) {
@@ -70,18 +72,15 @@ class ProjectXSetup implements FormInterface
     }
 
     /**
-     * Get project types.
-     *
-     * @todo This should be pulled dynamically somehow. Remove once we have
-     * a discovery/plugin system in place to find a variation of project types.
+     * Get project type options.
      *
      * @return array
      */
-    protected function getProjectTypes()
+    protected function getTypeOptions()
     {
-        return [
-            'drupal' => 'Drupal',
-        ];
+        return ProjectX::getContainer()
+            ->get('projectXProjectResolver')
+            ->getOptions();
     }
 
     /**
@@ -90,17 +89,13 @@ class ProjectXSetup implements FormInterface
      * @param string $type
      *   The project type identifier.
      *
-     * @return array
+     * @return string
      */
-    protected function projectTypeClassname($type)
+    protected function getTypeClassname($type)
     {
-        switch ($type) {
-            case 'drupal':
-                return DrupalProjectType::class;
-
-            default:
-                return NullProjectType::class;
-        }
+        return ProjectX::getContainer()
+            ->get('projectXProjectResolver')
+            ->getClassname($type);
     }
 
     /**
@@ -142,14 +137,14 @@ class ProjectXSetup implements FormInterface
     }
 
     /**
-     * Get available engines.
+     * Get engine type options.
      *
      * @return array
      */
-    protected function getEngines()
+    protected function getEngineOptions()
     {
-        return [
-            'docker' => 'Docker',
-        ];
+        return ProjectX::getContainer()
+            ->get('projectXEngineResolver')
+            ->getOptions();
     }
 }
