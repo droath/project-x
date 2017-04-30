@@ -6,6 +6,7 @@ use Droath\ProjectX\Config\ProjectXConfig;
 use Droath\ProjectX\Discovery\PhpClassDiscovery;
 use League\Container\ContainerAwareTrait;
 use Robo\Robo;
+use Symfony\Component\Cache\Adapter\FilesystemAdapter;
 use Symfony\Component\Console\Application;
 use Symfony\Component\Finder\Finder;
 
@@ -86,22 +87,29 @@ class ProjectX extends Application
      */
     public static function setDefaultServices($container)
     {
+        $project_root = self::projectRoot();
+
         $container
             ->share('projectXTemplate', \Droath\ProjectX\Template\TemplateManager::class);
         $container
             ->share('projectXGitHubUserAuth', \Droath\ProjectX\Service\GitHubUserAuthStore::class);
         $container
-            ->add('projectXHostChecker', \Droath\ProjectX\Service\HostChecker::class);
+            ->share('projectXHostChecker', \Droath\ProjectX\Service\HostChecker::class);
         $container
-            ->add('projectXEngine', function () {
-                return (new \Droath\ProjectX\Engine\EngineTypeFactory())
-                    ->createInstance();
-            });
+            ->share('projectXEngineFactory', \Droath\ProjectX\Engine\EngineTypeFactory::class)
+            ->withArgument('projectXEngineResolver');
         $container
-            ->add('projectXProject', function () {
-                return (new \Droath\ProjectX\Project\ProjectTypeFactory())
-                    ->createInstance();
-            });
+            ->share('projectXEngineResolver', \Droath\ProjectX\Engine\EngineTypeResolver::class)
+            ->withArgument('projectXFilesystemCache');
+        $container
+            ->share('projectXProjectFactory', \Droath\ProjectX\Project\ProjectTypeFactory::class)
+            ->withArgument('projectXProjectResolver');
+        $container
+            ->share('projectXProjectResolver', \Droath\ProjectX\Project\ProjectTypeResolver::class)
+            ->withArgument('projectXFilesystemCache');
+        $container
+            ->share('projectXFilesystemCache', \Symfony\Component\Cache\Adapter\FilesystemAdapter::class)
+            ->withArguments(['', 0, "$project_root/.project-x/cache"]);
     }
 
     /**
@@ -184,7 +192,8 @@ class ProjectX extends Application
     public static function getProjectType()
     {
         return self::getContainer()
-            ->get('projectXProject');
+            ->get('projectXProjectFactory')
+            ->createInstance();
     }
 
     /**

@@ -1,6 +1,6 @@
 <?php
 
-namespace Droath\ProjectX\Engine;
+namespace Droath\ProjectX\Project;
 
 use Droath\ProjectX\Project\ProjectTypeFactory;
 use Droath\ProjectX\Tests\TestBase;
@@ -20,7 +20,8 @@ class ProjectTypeFactoryTest extends TestBase
     public function setUp()
     {
         parent::setUp();
-        $this->factory = new ProjectTypeFactory();
+        $this->factory = $this->container
+            ->get('projectXProjectFactory');
     }
 
     public function testCreateInstance()

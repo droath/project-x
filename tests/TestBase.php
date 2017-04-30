@@ -78,16 +78,17 @@ abstract class TestBase extends TestCase
         $this->projectRoot = vfsStream::url('root');
 
         $this->container = Robo::createDefaultContainer(
-            null, new NullOutput(), $this->projectX
+            null,
+            new NullOutput(),
+            $this->projectX
         );
+        $this->addProjectXConfigToRoot();
         $project_path = $this->getProjectXFilePath();
 
         ProjectX::clearProjectConfig();
 
         ProjectX::setProjectPath($project_path);
         ProjectX::setDefaultServices($this->container);
-
-        $this->addProjectXConfigToRoot();
     }
 
     /**

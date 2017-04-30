@@ -17,7 +17,8 @@ abstract class TaskBase extends Tasks
     protected function engineInstance()
     {
         return $this->container
-            ->get('projectXEngine')
+            ->get('projectXEngineFactory')
+            ->createInstance()
             ->setBuilder($this->getBuilder());
     }
 
@@ -29,7 +30,8 @@ abstract class TaskBase extends Tasks
     protected function projectInstance()
     {
         return $this->container
-            ->get('projectXProject')
+            ->get('projectXProjectFactory')
+            ->createInstance()
             ->setBuilder($this->getBuilder());
     }
 }

@@ -2,6 +2,7 @@
 
 namespace Droath\ProjectX\Engine;
 
+use Droath\ProjectX\Engine\EngineTypeResolver;
 use Droath\ProjectX\FactoryInterface;
 use Droath\ProjectX\ProjectX;
 
@@ -11,13 +12,28 @@ use Droath\ProjectX\ProjectX;
 class EngineTypeFactory implements FactoryInterface
 {
     /**
+     * Engine type resolver.
+     *
+     * @var \Droath\ProjectX\TaskSubTypeResolver
+     */
+    protected $resolver;
+
+    /**
+     * Engine type factor constructor.
+     */
+    public function __construct(EngineTypeResolver $resolver)
+    {
+        $this->resolver = $resolver;
+    }
+
+    /**
      * Create engine type instance.
      *
      * @return \Droath\ProjectX\Engine\EngineTypeInterface
      */
     public function createInstance()
     {
-        $classname = $this->getEngineClass();
+        $classname = $this->getEngineClassname();
 
         if (!class_exists($classname)) {
             throw new \Exception(
@@ -33,19 +49,10 @@ class EngineTypeFactory implements FactoryInterface
      *
      * @return \Droath\ProjectX\Engine\EngineTypeInterface
      */
-    protected function getEngineClass()
+    protected function getEngineClassname()
     {
-        $engine = ProjectX::getProjectConfig()->getEngine();
-
-        if (!isset($engine)) {
-            throw new \Exception(
-                'Missing project engine definition'
-            );
-        }
-
-        switch ($engine) {
-            case 'docker':
-                return '\Droath\ProjectX\Engine\DockerEngineType';
-        }
+        return $this->resolver->getClassname(
+            ProjectX::getProjectConfig()->getEngine()
+        );
     }
 }

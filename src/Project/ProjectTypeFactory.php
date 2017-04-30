@@ -4,6 +4,7 @@ namespace Droath\ProjectX\Project;
 
 use Droath\ProjectX\FactoryInterface;
 use Droath\ProjectX\ProjectX;
+use Droath\ProjectX\Project\ProjectTypeResolver;
 
 /**
  * Project-X project type factory.
@@ -11,13 +12,28 @@ use Droath\ProjectX\ProjectX;
 class ProjectTypeFactory implements FactoryInterface
 {
     /**
+     * Project type resolver.
+     *
+     * @var \Droath\ProjectX\TaskSubTypeResolver
+     */
+    protected $resolver;
+
+    /**
+     * Project type factor constructor.
+     */
+    public function __construct(ProjectTypeResolver $resolver)
+    {
+        $this->resolver = $resolver;
+    }
+
+    /**
      * Create project type instance.
      *
      * @return \Droath\ProjectX\Project\ProjectTypeInterface
      */
     public function createInstance()
     {
-        $classname = $this->getProjectClass();
+        $classname = $this->getProjectClassname();
 
         if (!class_exists($classname)) {
             throw new \Exception(
@@ -33,15 +49,10 @@ class ProjectTypeFactory implements FactoryInterface
      *
      * @return \Droath\ProjectX\Project\ProjectTypeInterface
      */
-    protected function getProjectClass()
+    protected function getProjectClassname()
     {
-        $type = ProjectX::getProjectConfig()->getType();
-
-        switch ($type) {
-            case 'drupal':
-                return 'Droath\ProjectX\Project\DrupalProjectType';
-            default:
-                return 'Droath\ProjectX\Project\NullProjectType';
-        }
+        return $this->resolver->getClassname(
+            ProjectX::getProjectConfig()->getType()
+        );
     }
 }

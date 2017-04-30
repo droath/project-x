@@ -19,7 +19,8 @@ class EngineTypeFactoryTest extends TestBase
     public function setUp()
     {
         parent::setUp();
-        $this->factory = new EngineTypeFactory();
+        $this->factory = $this->container
+            ->get('projectXEngineFactory');
     }
 
     public function testCreateInstance()

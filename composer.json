@@ -20,6 +20,7 @@
     },
     "require": {
         "php": ">=5.5",
+        "symfony/cache": "^3.2",
         "symfony/yaml": ">=2.8 <3.0",
         "symfony/serializer": ">=2.8 <3.0",
         "symfony/property-access": ">=2.8 <3.0",
