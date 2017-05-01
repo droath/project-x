@@ -2,6 +2,7 @@
 
 namespace Droath\ProjectX\Engine;
 
+use Droath\ProjectX\Engine\EngineTypeFactory;
 use Droath\ProjectX\Tests\TestBase;
 
 /**
@@ -19,8 +20,9 @@ class EngineTypeFactoryTest extends TestBase
     public function setUp()
     {
         parent::setUp();
-        $this->factory = $this->container
-            ->get('projectXEngineFactory');
+        $this->factory = new EngineTypeFactory(
+            $this->container->get('projectXEngineResolver')
+        );
     }
 
     public function testCreateInstance()

@@ -20,8 +20,9 @@ class ProjectTypeFactoryTest extends TestBase
     public function setUp()
     {
         parent::setUp();
-        $this->factory = $this->container
-            ->get('projectXProjectFactory');
+        $this->factory = new ProjectTypeFactory(
+            $this->container->get('projectXProjectResolver')
+        );
     }
 
     public function testCreateInstance()

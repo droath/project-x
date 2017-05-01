@@ -96,14 +96,20 @@ class ProjectX extends Application
         $container
             ->share('projectXHostChecker', \Droath\ProjectX\Service\HostChecker::class);
         $container
-            ->share('projectXEngineFactory', \Droath\ProjectX\Engine\EngineTypeFactory::class)
-            ->withArgument('projectXEngineResolver');
+            ->add('projectXEngine', function () use ($container) {
+                return (new \Droath\ProjectX\Engine\EngineTypeFactory(
+                    $container->get('projectXEngineResolver')
+                ))->createInstance();
+            });
         $container
             ->share('projectXEngineResolver', \Droath\ProjectX\Engine\EngineTypeResolver::class)
             ->withArgument('projectXFilesystemCache');
         $container
-            ->share('projectXProjectFactory', \Droath\ProjectX\Project\ProjectTypeFactory::class)
-            ->withArgument('projectXProjectResolver');
+            ->add('projectXProject', function () use ($container) {
+                return (new \Droath\ProjectX\Project\ProjectTypeFactory(
+                    $container->get('projectXProjectResolver')
+                ))->createInstance();
+            });
         $container
             ->share('projectXProjectResolver', \Droath\ProjectX\Project\ProjectTypeResolver::class)
             ->withArgument('projectXFilesystemCache');
@@ -192,8 +198,7 @@ class ProjectX extends Application
     public static function getProjectType()
     {
         return self::getContainer()
-            ->get('projectXProjectFactory')
-            ->createInstance();
+            ->get('projectXProject');
     }
 
     /**
