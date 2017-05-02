@@ -21,14 +21,16 @@ class EngineTasks extends TaskBase
      */
     public function engineUp($opts = ['no-hostname' => false, 'no-browser' => false])
     {
-        $this->engineInstance()->up();
+        $status = $this->engineInstance()->up();
 
-        // Allow projects to react to the engine startup.
-        $this->projectInstance()->onEngineUp();
+        if ($status) {
+            // Allow projects to react to the engine startup.
+            $this->projectInstance()->onEngineUp();
 
-        // Add hostname to the system hosts file.
-        if (!$opts['no-hostname']) {
-            $this->addHostName($opts['no-browser']);
+            // Add hostname to the system hosts file.
+            if (!$opts['no-hostname']) {
+                $this->addHostName($opts['no-browser']);
+            }
         }
 
         return $this;
