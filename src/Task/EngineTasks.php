@@ -23,7 +23,7 @@ class EngineTasks extends TaskBase
     {
         $status = $this->engineInstance()->up();
 
-        if ($status) {
+        if ($status !== false) {
             // Allow projects to react to the engine startup.
             $this->projectInstance()->onEngineUp();
 
