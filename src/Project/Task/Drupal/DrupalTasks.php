@@ -41,6 +41,7 @@ class DrupalTasks extends Tasks
      * Setup local environment for already built projects.
      *
      * @param array $opts
+     * @option string $scope Set the module-sync scope.
      * @option string $db-name Set the database name.
      * @option string $db-user Set the database user.
      * @option string $db-pass Set the database password.
@@ -50,6 +51,7 @@ class DrupalTasks extends Tasks
      * @option bool $no-browser Don't launch a browser window after setup is complete.
      */
     public function drupalLocalSetup($opts = [
+        'scope' => 'local',
         'db-name' => 'drupal',
         'db-user' => 'admin',
         'db-pass' => 'root',
@@ -89,8 +91,43 @@ class DrupalTasks extends Tasks
         if (!$opts['no-browser']) {
             $instance->projectLaunchBrowser();
         }
+        $this
+            ->drupalDrushAlias()
+            ->drupalModuleSync(['scope' => $opts['scope']]);
 
-        $this->drupalDrushAlias();
+        return $this;
+    }
+
+    /**
+     * Drupal module sync.
+     *
+     * @option string $scope Set the module-sync scope.
+     */
+    public function drupalModuleSync($opts = [
+        'scope' => 'local',
+    ])
+    {
+        $instance = $this->getProjectInstance();
+
+        if (!$instance->hasDrushModuleSync()) {
+            $continue = $this->askConfirmQuestion(
+                "Drush module-sync hasn't been setup for this project.\n"
+                . "\nDo you want run the Drush module-sync setup?",
+                true
+            );
+
+            if (!$continue) {
+                return $this;
+            }
+
+            $instance
+                ->setupDrushModuleSync()
+                ->saveComposer()
+                ->updateComposer()
+                ->setupDrushModuleSyncConfig();
+        }
+
+        $instance->syncModules($opts['scope'], true);
 
         return $this;
     }
@@ -110,7 +147,7 @@ class DrupalTasks extends Tasks
             );
 
             if (!$continue) {
-                return;
+                return $this;
             }
 
             $this->getProjectInstance()
@@ -119,6 +156,8 @@ class DrupalTasks extends Tasks
 
         $this->getProjectInstance()
             ->setupDrushAlias();
+
+        return $this;
     }
 
     /**

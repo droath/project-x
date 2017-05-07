@@ -114,6 +114,35 @@ class DrupalProjectTypeTest extends TestTaskBase
         $this->assertRegExp('/\'root\'\s?=>\s?\'vfs:\/\/root\/docroot\'/', $contents);
     }
 
+    public function testSetupDrushModuleSync()
+    {
+        $this->drupalProject->setupDrushModuleSync();
+        $this->assertTrue($this->drupalProject->hasDrushModuleSync());
+    }
+
+    /**
+     * @expectedException \RuntimeException
+     */
+    public function testSetupDrushModuleSyncConfig()
+    {
+        $this->drupalProject->setupDrushModuleSyncConfig();
+        // we're unable to test drush interactions.
+    }
+
+    /**
+     * @expectedException \RuntimeException
+     */
+    public function testSyncModule()
+    {
+        $this->drupalProject->syncModules()();
+        // we're unable to test drush interactions.
+    }
+
+    public function testHasDrushModuleSync()
+    {
+        $this->assertFalse($this->drupalProject->hasDrushModuleSync());
+    }
+
     public function testSetupDrupalFilesystem()
     {
         vfsStream::create([
