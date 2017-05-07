@@ -134,7 +134,7 @@ class DrupalProjectTypeTest extends TestTaskBase
      */
     public function testSyncModule()
     {
-        $this->drupalProject->syncModules()();
+        $this->drupalProject->syncModules();
         // we're unable to test drush interactions.
     }
 
