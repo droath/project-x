@@ -16,15 +16,13 @@ use Droath\ProjectX\Utility;
  */
 class DrupalProjectType extends PhpProjectType implements TaskSubTypeInterface, OptionFormAwareInterface
 {
+    const DRUSH_VERSION = '^8.1';
     const DEFAULT_VERSION = 8;
     const DRUPAL_8_VERSION = '^8.3';
     const SUPPORTED_VERSIONS = [
         7 => 7,
         8 => 8
     ];
-
-    const DRUSH_VERSION = '^8.1';
-    const DRUSH_MODULE_SYNC = '^0.0.3';
 
     use drushTasks;
 
@@ -187,7 +185,6 @@ class DrupalProjectType extends PhpProjectType implements TaskSubTypeInterface, 
             ->setupDrupalLocalSettings()
             ->projectEngineUp()
             ->setupDrupalInstall()
-            ->setupDrushModuleSyncConfig()
             ->projectLaunchBrowser();
 
         return $this;
@@ -317,8 +314,7 @@ class DrupalProjectType extends PhpProjectType implements TaskSubTypeInterface, 
             ->addDevRequire('drush/drush', static::DRUSH_VERSION);
 
         $this
-            ->setupDrushAlias()
-            ->setupDrushModuleSync();
+            ->setupDrushAlias();
 
         return $this;
     }
@@ -345,46 +341,6 @@ class DrupalProjectType extends PhpProjectType implements TaskSubTypeInterface, 
             ->place('HOSTNAME', $config->getHost()['name'])
             ->place('MACHINE_NAME', ProjectX::getProjectMachineName())
             ->place('INSTALL_ROOT', $this->getInstallPath())
-            ->run();
-
-        return $this;
-    }
-
-    /**
-     * Setup Drush module sync.
-     *
-     * The setup process consist of the following:
-     *   - Add droath/module-sync to the composer.json
-     *
-     * @return self
-     */
-    public function setupDrushModuleSync()
-    {
-        $this->composer
-            ->addDevRequire('droath/drush-module-sync', static::DRUSH_MODULE_SYNC);
-
-        return $this;
-    }
-
-    /**
-     * Setup Drush module sync configuration.
-     *
-     * @return self
-     */
-    public function setupDrushModuleSyncConfig(array $scopes = [], $auto_confirm = true)
-    {
-        if (!$this->hasDrushModuleSync()) {
-            throw new \RuntimeException(
-                'Missing Drush module-sync command.'
-            );
-        }
-        $scopes = !empty($scopes) ? implode(',', $scopes) : 'local,stage,prod';
-        $project_root = ProjectX::projectRoot();
-
-        $this->taskDrushStack()
-            ->drupalRootDirectory($this->getInstallPath())
-            ->clearCache('drush')
-            ->drush("module-sync-generate --scopes='$scopes' --path='$project_root' --exclude-profile", $auto_confirm)
             ->run();
 
         return $this;
@@ -571,41 +527,6 @@ class DrupalProjectType extends PhpProjectType implements TaskSubTypeInterface, 
         $this->_chmod($install_path, 0775, 0000, true);
 
         return $this;
-    }
-
-    /**
-     * Sync Drupal modules.
-     *
-     * @param string $scope
-     *   The scope on which to sync against.
-     *
-     * @return self
-     */
-    public function syncModules($scope = 'local', $auto_confirm = true)
-    {
-        if (!$this->hasDrushModuleSync()) {
-            throw new \RuntimeException(
-                'Missing Drush module-sync command.'
-            );
-        }
-        $project_root = ProjectX::projectRoot();
-
-        $this->taskDrushStack()
-            ->drupalRootDirectory($this->getInstallPath())
-            ->drush("module-sync --scope='$scope' --config-path='$project_root'", $auto_confirm)
-            ->run();
-
-        return $this;
-    }
-
-    /**
-     * Has module sync defined.
-     *
-     * @return boolean
-     */
-    public function hasDrushModuleSync()
-    {
-        return $this->hasComposerPackage('droath/drush-module-sync', true);
     }
 
     /**
