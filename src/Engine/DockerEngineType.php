@@ -362,4 +362,20 @@ class DockerEngineType extends EngineType implements TaskSubTypeInterface
             ->completion($this->taskDockerSyncDaemonClean())
             ->run();
     }
+
+    /**
+     * Write host IP address to file. Append if it doesn't exsit
+     * or update the value if it does exist.
+     */
+    protected function updateHostIPAddress()
+    {
+        $host_ip = ProjectX::clientHostIP();
+        $project_root = ProjectX::projectRoot();
+
+        $this->taskWriteToFile("$project_root/.env")
+            ->append()
+            ->regexReplace('/HOST_IP_ADDRESS=.*/', "HOST_IP_ADDRESS={$host_ip}")
+            ->appendUnlessMatches('/HOST_IP_ADDRESS=.*/', "\nHOST_IP_ADDRESS={$host_ip}")
+            ->run();
+    }
 }
