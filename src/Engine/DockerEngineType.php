@@ -61,6 +61,9 @@ class DockerEngineType extends EngineType implements TaskSubTypeInterface
                 ->run();
         }
 
+        // Write host IP address to .env file for xdebug
+        $this->updateHostIPAddress();
+
         // Startup docker compose.
         $this->taskDockerComposeUp()
             ->files($this->getDockerComposeFiles())
