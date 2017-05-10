@@ -178,13 +178,6 @@ class DockerEngineType extends EngineType implements TaskSubTypeInterface
             'docker/docker-compose-dev.yml' => 'docker-compose-dev.yml',
         ]);
 
-        // Update the docker compose development configuration to replace
-        // the placeholder variables with the valid host IP.
-        $this->taskWriteToFile("$project_root/docker-compose-dev.yml")
-            ->append()
-            ->place('HOST_IP_ADDRESS', ProjectX::clientHostIP())
-            ->run();
-
         $project_name = ProjectX::getProjectMachineName();
 
         $sync_name = uniqid("$project_name-", false);
