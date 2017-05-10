@@ -194,6 +194,8 @@ class DockerEngineType extends EngineType implements TaskSubTypeInterface
             ->append()
             ->appendUnlessMatches('/SYNC_NAME=\w+/', "SYNC_NAME=$sync_name")
             ->run();
+
+        $this->updateHostIPAddress();
     }
 
     /**
