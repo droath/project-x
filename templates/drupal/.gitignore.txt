@@ -143,3 +143,6 @@ console
 # Project-X
 .project-x/*
 .project-x.local.yml
+
+# Environment Variables
+.env
