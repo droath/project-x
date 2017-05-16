@@ -49,6 +49,11 @@ class InitializeTest extends TestBase
         $this->assertEquals('Project-Test', $config->getName());
         $this->assertEquals('drupal', $config->getType());
         $this->assertEquals(8, $config->getVersion());
+        $this->assertEquals('stg', $config->getRemote()['environments'][0]['realm']);
+        $this->assertEquals('Development', $config->getRemote()['environments'][0]['name']);
+        $this->assertEquals('/var/www/html/docroot', $config->getRemote()['environments'][0]['path']);
+        $this->assertEquals('dev.project-x.com', $config->getRemote()['environments'][0]['uri']);
+        $this->assertEquals('admin@dev.project-x.com', $config->getRemote()['environments'][0]['ssh_url']);
         $this->assertEquals('docker', $config->getEngine());
         $this->assertEquals('local.testing.com', $config->getHost()['name']);
         $this->assertEquals('true', $config->getHost()['open_on_startup']);
@@ -97,8 +102,25 @@ class InitializeTest extends TestBase
                         return 'hacker123';
                     case 'account_password':
                         return 'secret';
+                    case 'remote_name':
+                        return 'Development';
+                    case 'remote_path':
+                        return '/var/www/html/docroot';
+                    case 'remote_uri':
+                        return 'dev.project-x.com';
+                    case 'remote_ssh_url':
+                        return 'admin@dev.project-x.com';
+                    case 'remote_realm':
+                        static $index = 0;
+
+                        if ($index >= 1) {
+                            return null;
+                        }
+                        $index++;
+                        return 'stg';
                     case 'setup_host':
                     case 'setup_github':
+                    case 'setup_remote':
                     case 'save_results':
                     case 'open_browser_on_startup':
                     case 'setup_drupal_site_options':

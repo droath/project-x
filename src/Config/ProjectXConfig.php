@@ -36,6 +36,13 @@ class ProjectXConfig extends YamlConfigBase
     protected $engine;
 
     /**
+     * Project remote.
+     *
+     * @var array
+     */
+    protected $remote = [];
+
+    /**
      * Project host information.
      *
      * @var array
@@ -111,6 +118,13 @@ class ProjectXConfig extends YamlConfigBase
         return $this;
     }
 
+    public function setRemote(array $remote)
+    {
+        $this->remote = $remote;
+
+        return $this;
+    }
+
     public function getGithub()
     {
         return $this->github;
@@ -126,6 +140,11 @@ class ProjectXConfig extends YamlConfigBase
     public function getHost()
     {
         return $this->host;
+    }
+
+    public function getRemote()
+    {
+        return $this->remote;
     }
 
     public function setOptions(array $values)

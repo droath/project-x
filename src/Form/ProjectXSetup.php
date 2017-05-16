@@ -5,6 +5,7 @@ namespace Droath\ProjectX\Form;
 use Droath\ConsoleForm\Field\BooleanField;
 use Droath\ConsoleForm\Field\SelectField;
 use Droath\ConsoleForm\Field\TextField;
+use Droath\ConsoleForm\FieldGroup;
 use Droath\ConsoleForm\Form;
 use Droath\ConsoleForm\FormInterface;
 use Droath\ProjectX\ProjectX;
@@ -49,6 +50,40 @@ class ProjectXSetup implements FormInterface
                 (new SelectField('engine', 'Select engine'))
                     ->setOptions($this->getEngineOptions())
                     ->setDefault('docker'),
+                (new BooleanField('remote', 'Setup Remote?'))
+                    ->setSubform(function ($subform, $value) {
+                        if ($value === true) {
+                            $subform->addFields([
+                                (new FieldGroup('environments'))
+                                    ->addFields([
+                                        (new SelectField('realm', 'Remote Realm'))
+                                            ->setOptions([
+                                                'stg' => 'stg',
+                                                'prd' => 'prd',
+                                                'dev' => 'dev',
+                                            ])
+                                            ->setRequired(false),
+                                        (new TextField('name', 'Remote Name'))
+                                            ->setCondition('realm', null, '!='),
+                                        (new TextField('path', 'Remote Path'))
+                                            ->setDefault('/var/www/html')
+                                            ->setCondition('realm', null, '!='),
+                                        (new TextField('uri', 'Remote URI'))
+                                            ->setCondition('realm', null, '!='),
+                                        (new TextField('ssh_url', 'Remote SSH URL'))
+                                            ->setCondition('realm', null, '!='),
+                                    ])
+                                    ->setLoopUntil(function ($result) {
+                                        if (!isset($result['realm'])) {
+                                            return false;
+                                        }
+                                        $this->printInfoMessage('Leave remote realm empty to exit.');
+
+                                        return true;
+                                    })
+                            ]);
+                        }
+                    }),
                 (new BooleanField('github', 'Setup GitHub?'))
                     ->setSubform(function ($subform, $value) {
                         if ($value === true) {
@@ -146,5 +181,16 @@ class ProjectXSetup implements FormInterface
         return ProjectX::getContainer()
             ->get('projectXEngineResolver')
             ->getOptions();
+    }
+
+    /**
+     * Print info message.
+     *
+     * @param string $message
+     *   The message to display on the output.
+     */
+    protected function printInfoMessage($message)
+    {
+        echo "\n\033[33m[info] $message\033[0m\n\n";
     }
 }

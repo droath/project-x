@@ -221,6 +221,31 @@ class ProjectX extends Application
     }
 
     /**
+     * Get Project-X remote environments.
+     *
+     * @return array
+     *   An array of remote environments, keyed by realm.
+     */
+    public static function getRemoteEnvironments()
+    {
+        $environments = [];
+
+        foreach (self::getProjectConfig()->getRemote() as $remote) {
+            foreach ($remote as $environment) {
+                if (!isset($environment['realm'])) {
+                    continue;
+                }
+                $realm = $environment['realm'];
+                unset($environment['realm']);
+
+                $environments[$realm][] = $environment;
+            }
+        }
+
+        return $environments;
+    }
+
+    /**
      * Get Project-X project machine-name.
      *
      * @return string
