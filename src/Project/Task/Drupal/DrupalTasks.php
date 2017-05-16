@@ -100,6 +100,86 @@ class DrupalTasks extends Tasks
     }
 
     /**
+     * Push local environment database to remote origin (use with caution).
+     */
+    public function drupalRemotePush()
+    {
+        $this
+            ->io()
+            ->warning("This command will push the local database to the remote " .
+                "origin. Remote data will be destroyed. This is a dangerous " .
+                "action which should be thought about for a good minute prior to " .
+                "continuing. You've been warned!");
+
+        $continue = $this->askConfirmQuestion('Shall we continue?');
+
+        if (!$continue) {
+            return $this;
+        }
+        $local_alias = $this->determineDrushLocalAlias();
+        $remote_alias = $this->determineDrushRemoteAlias();
+
+        if (isset($local_alias) && isset($remote_alias)) {
+            $drupal = $this->getProjectInstance();
+            $version = $drupal->getProjectVersion();
+
+            if ($version === 8) {
+                $drush_stack = $this->taskDrushStack()
+                    ->drupalRootDirectory($drupal->getInstallPath())
+                    ->drush("drush sql-sync '@$local_alias' '@$remote_alias'", true)
+                    ->drush('cr')
+                    ->run();
+            }
+        }
+
+        return $this;
+    }
+
+    /**
+     * Refresh the local environment with remote data and configuration changes.
+     */
+    public function drupalLocalSync()
+    {
+        $local_alias = $this->determineDrushLocalAlias();
+        $remote_alias = $this->determineDrushRemoteAlias();
+
+        if (isset($local_alias) && isset($remote_alias)) {
+            $drupal = $this->getProjectInstance();
+            $version = $drupal->getProjectVersion();
+
+            if ($version === 8) {
+                // Drupal 8 tables to skip when syncing or dumping SQL.
+                $skip_tables = implode(',', [
+                    'cache_bootstrap',
+                    'cache_config',
+                    'cache_container',
+                    'cache_data',
+                    'cache_default',
+                    'cache_discovery',
+                    'cache_dynamic_page_cache',
+                    'cache_entity',
+                    'cache_menu',
+                    'cache_render',
+                    'history',
+                    'search_index',
+                    'sessions',
+                    'watchdog'
+                ]);
+
+                $this->taskDrushStack()
+                    ->drupalRootDirectory($drupal->getInstallPath())
+                    ->drush("drush sql-sync --sanitize --skip-tables-key='$skip_tables' '@$remote_alias' '@$local_alias'", true)
+                    ->drush('cim')
+                    ->drush('updb --entity-updates')
+                    ->drush('cr')
+                    ->run();
+            }
+        }
+
+        return $this;
+    }
+
+    /**
      * Setup local project drush alias.
      *
      * @option bool $exclude-remote Don't render remote drush aliases.
