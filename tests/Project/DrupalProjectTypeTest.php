@@ -170,7 +170,7 @@ class DrupalProjectTypeTest extends TestTaskBase
         $this->assertGreaterThan(10, filesize($this->getProjectFileUrl('salt.txt')));
         $this->assertRegExp('/include.+\/settings\.local\.php\"\;/', $settings_content);
         $this->assertRegExp('/\$settings\[\'hash_salt\'].+\/salt\.txt\'\)\;/', $settings_content);
-        $this->assertRegExp('/\$config_directories\[\'CONFIG_SYNC_DIRECTORY\'].+\/config.+\;/', $settings_content);
+        $this->assertRegExp('/\$config_directories\[CONFIG_SYNC_DIRECTORY].+\/config.+\;/', $settings_content);
     }
 
     public function testSetupDrupalLocalSettings()

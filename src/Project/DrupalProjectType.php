@@ -492,7 +492,7 @@ class DrupalProjectType extends PhpProjectType implements TaskSubTypeInterface, 
             )
             ->replace(
                 '$config_directories = array();',
-                '$config_directories[\'CONFIG_SYNC_DIRECTORY\'] = dirname(DRUPAL_ROOT) . \'/config\';'
+                '$config_directories[CONFIG_SYNC_DIRECTORY] = dirname(DRUPAL_ROOT) . \'/config\';'
             )
             ->replace(
                 '$settings[\'hash_salt\'] = \'\';',
