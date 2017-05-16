@@ -269,7 +269,7 @@ class DrupalTasks extends Tasks
         $aliases = $this->loadDrushAliasesByRelam($realm);
         $alias_keys = array_keys($aliases);
 
-        array_walk($alias_keys, function(&$key) use ($realm) {
+        array_walk($alias_keys, function (&$key) use ($realm) {
             $key = "$realm.$key";
         });
 
