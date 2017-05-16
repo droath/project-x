@@ -61,7 +61,7 @@ class DockerEngineType extends EngineType implements TaskSubTypeInterface
                 ->run();
         }
 
-        // Write host IP address to .env file for xdebug
+        // Write host IP address to .env file.
         $this->updateHostIPAddress();
 
         // Startup docker compose.
@@ -362,8 +362,9 @@ class DockerEngineType extends EngineType implements TaskSubTypeInterface
     }
 
     /**
-     * Write host IP address to file. Append if it doesn't exsit
-     * or update the value if it does exist.
+     * Update host IP address in the environment file.
+     *
+     * The IP address if appended if it doesn't exist, otherwise it's updated.
      */
     protected function updateHostIPAddress()
     {
