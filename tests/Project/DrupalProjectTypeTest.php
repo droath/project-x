@@ -95,14 +95,9 @@ class DrupalProjectTypeTest extends TestTaskBase
         $this->assertArrayHasKey('drush/drush', $this->drupalProject->getComposer()->getRequireDev());
     }
 
-    public function testSetupDrushAlias()
+    public function testSetupDrushLocalAlias()
     {
-        vfsStream::copyFromFileSystem(
-            __DIR__ . '/../../templates/drupal/drush',
-            vfsStream::newDirectory('drush')
-                ->at($this->projectDir)
-        );
-        $this->drupalProject->setupDrushAlias();
+        $this->drupalProject->setupDrushLocalAlias();
 
         $contents = file_get_contents(
             $this->getProjectFileUrl('drush/site-aliases/local.aliases.drushrc.php')
@@ -112,6 +107,24 @@ class DrupalProjectTypeTest extends TestTaskBase
         $this->assertRegExp('/\$aliases\[\'project-x-test\'\]/', $contents);
         $this->assertRegExp('/\'uri\'\s?=>\s?\'local\.project-x-test\.com\',/', $contents);
         $this->assertRegExp('/\'root\'\s?=>\s?\'vfs:\/\/root\/docroot\'/', $contents);
+    }
+
+    public function testSetupDrushRemoteAliases()
+    {
+        $this->drupalProject->setupDrushRemoteAliases();
+
+        $dev_content = file_get_contents(
+            $this->getProjectFileUrl('drush/site-aliases/dev.aliases.drushrc.php')
+        );
+        $this->assertProjectFileExists('drush/site-aliases/dev.aliases.drushrc.php');
+        $this->assertRegExp('/\$aliases\[\'development\'\]/', $dev_content);
+
+        $stage_content = file_get_contents(
+            $this->getProjectFileUrl('drush/site-aliases/stg.aliases.drushrc.php')
+        );
+        $this->assertProjectFileExists('drush/site-aliases/dev.aliases.drushrc.php');
+        $this->assertRegExp('/\$aliases\[\'stage-one\'\]/', $stage_content);
+        $this->assertRegExp('/\$aliases\[\'stage-two\'\]/', $stage_content);
     }
 
     public function testSetupDrupalFilesystem()

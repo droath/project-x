@@ -323,25 +323,103 @@ class DrupalProjectType extends PhpProjectType implements TaskSubTypeInterface, 
      * Setup Drush aliases.
      *
      * The setup process consist of the following:
-     *   - Copy the Drush example template to the local drush alias
-     *   configuration. Replace all placeholders with project related values.
+     *
      *
      * @return self
      */
-    public function setupDrushAlias()
+    public function setupDrushAlias($exclude_remote = false)
+    {
+        $this->setupDrushLocalAlias();
+
+        if (!$exclude_remote) {
+            $this->setupDrushRemoteAliases();
+        }
+
+        return $this;
+    }
+
+    /**
+     * Setup Drupal local alias.
+     *
+     * The setup process consist of the following:
+     *   - Create the local.aliases.drushrc.php file based on the local .
+     *
+     * @return self
+     */
+    public function setupDrushLocalAlias($alias_name = null)
     {
         $config = ProjectX::getProjectConfig();
+
+        $alias_name = isset($alias_name)
+            ? Utiltiy::machineName($alias_name)
+            : ProjectX::getProjectMachineName();
+
+        $alias_content = $this->drushAliasFileContent(
+            $alias_name,
+            $config->getHost()['name'],
+            $this->getInstallPath()
+        );
         $project_root = ProjectX::projectRoot();
 
-        $alias_directory = "$project_root/drush/site-aliases";
-        $local_alias_file = "$alias_directory/local.aliases.drushrc.php";
-
-        $this->taskWriteToFile($local_alias_file)
-            ->textFromFile("$alias_directory/local.aliases.example.drushrc.php")
-            ->place('HOSTNAME', $config->getHost()['name'])
-            ->place('MACHINE_NAME', ProjectX::getProjectMachineName())
-            ->place('INSTALL_ROOT', $this->getInstallPath())
+        $this
+            ->taskWriteToFile("$project_root/drush/site-aliases/local.aliases.drushrc.php")
+            ->line($alias_content)
             ->run();
+
+        return $this;
+    }
+
+    /**
+     * Setup Drush remote aliases.
+     *
+     * The setup process consist of the following:
+     *   - Write the remote $aliases[] into a drush alias file; which is
+     *   based off the remote realm.
+     *
+     * @return self
+     */
+    public function setupDrushRemoteAliases()
+    {
+        $project_root = ProjectX::projectRoot();
+        $drush_aliases_dir = "$project_root/drush/site-aliases";
+
+        foreach (ProjectX::getRemoteEnvironments() as $realm => $environment) {
+            $file_task = $this
+                ->taskWriteToFile("$drush_aliases_dir/$realm.aliases.drushrc.php");
+
+            $has_content = false;
+            for ($i = 0; $i < count($environment); $i++) {
+                $instance = $environment[$i];
+
+                if (!isset($instance['name'])
+                    || !isset($instance['path'])
+                    || !isset($instance['uri'])
+                    || !isset($instance['ssh_url'])) {
+                    continue;
+                }
+                list($ssh_user, $ssh_host) = explode('@', $instance['ssh_url']);
+
+                $options = [
+                    'remote_user' => $ssh_user,
+                    'remote_host' => $ssh_host
+                ];
+
+                $content = $this->drushAliasFileContent(
+                    $instance['name'],
+                    $instance['uri'],
+                    $instance['path'],
+                    $options,
+                    $i === 0
+                );
+                $has_content = true;
+
+                $file_task->line($content);
+            }
+
+            if ($has_content) {
+                $file_task->run();
+            }
+        }
 
         return $this;
     }
@@ -567,6 +645,52 @@ class DrupalProjectType extends PhpProjectType implements TaskSubTypeInterface, 
                 'pass' => 'admin',
             ],
         ];
+    }
+
+    /**
+     * Drupal alias PHP file content.
+     *
+     * @param string $name
+     *   The alias name.
+     * @param string $uri
+     *   The drush alias URI.
+     * @param string $root
+     *   The root to the drupal project.
+     * @param array $options
+     *   An array of optional options.
+     * @param boolean $include_opentag
+     *   A flag to determine if the opening php tag should be rendered.
+     *
+     * @return string
+     *   A string representation of the drush $aliases array.
+     */
+    protected function drushAliasFileContent($name, $uri, $root, array $options = [], $include_opentag = true)
+    {
+        $name = Utility::machineName($name);
+
+        $content = $include_opentag ?  "<?php\n\n" : '';
+        $content .= "\$aliases['$name'] = [";
+        $content .= "\n\t'uri' => '$uri',";
+        $content .= "\n\t'root' => '$root',";
+
+        // Add remote host to output if defined.
+        if (isset($options['remote_host'])
+            && $remote_host = $options['remote_host']) {
+            $content .= "\n\t'remote-host' => '$remote_host',";
+        }
+
+        // Add remote user to output if defined.
+        if (isset($options['remote_user'])
+            && $remote_user = $options['remote_user']) {
+            $content .= "\n\t'remote-user' => '$remote_user',";
+        }
+
+        $content .= "\n\t'path-aliases' => [";
+        $content .= "\n\t\t'%dump-dir' => '/tmp',";
+        $content .= "\n\t]";
+        $content .= "\n];";
+
+        return $content;
     }
 
     /**

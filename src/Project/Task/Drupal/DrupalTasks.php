@@ -2,9 +2,11 @@
 
 namespace Droath\ProjectX\Task\Drupal;
 
+use Boedah\Robo\Task\Drush\loadTasks as drushTasks;
 use Droath\ProjectX\ProjectX;
 use Droath\ProjectX\Project\DrupalProjectType;
 use Robo\Tasks;
+use Symfony\Component\Console\Question\ChoiceQuestion;
 use Symfony\Component\Console\Question\ConfirmationQuestion;
 
 /**
@@ -12,6 +14,8 @@ use Symfony\Component\Console\Question\ConfirmationQuestion;
  */
 class DrupalTasks extends Tasks
 {
+    use drushTasks;
+
     /**
      * Install Drupal on the current environment.
      *
@@ -97,8 +101,10 @@ class DrupalTasks extends Tasks
 
     /**
      * Setup local project drush alias.
+     *
+     * @option bool $exclude-remote Don't render remote drush aliases.
      */
-    public function drupalDrushAlias()
+    public function drupalDrushAlias($opts = ['exclude-remote' => false])
     {
         $project_root = ProjectX::projectRoot();
 
@@ -118,9 +124,129 @@ class DrupalTasks extends Tasks
         }
 
         $this->getProjectInstance()
-            ->setupDrushAlias();
+            ->setupDrushAlias($opts['exclude-remote']);
 
         return $this;
+    }
+
+    /**
+     * Determine Drush local alias.
+     *
+     * @return string
+     *   The Drush local alias.
+     */
+    protected function determineDrushLocalAlias()
+    {
+        return $this->determineDrushAlias(
+            'local',
+            $this->getDrushAliasKeys('local')
+        );
+    }
+
+    /**
+     * Determine Drush remote alias.
+     *
+     * @return string
+     *   The Drush remote alias.
+     */
+    protected function determineDrushRemoteAlias()
+    {
+        return $this->determineDrushAlias(
+            'remote',
+            $this->getDrushRemoteOptions()
+        );
+    }
+
+    /**
+     * Get Drush remote options.
+     *
+     * Defaults to using the dev realm to retrieve drush alias options.
+     * Otherwise, the "stg" realm will be used.
+     *
+     * @return array
+     *   An array of drush remote options.
+     */
+    protected function getDrushRemoteOptions()
+    {
+        $options = $this->getDrushAliasKeys('dev');
+
+        return !empty($options)
+            ? $options
+            : $this->getDrushAliasKeys('stg');
+    }
+
+    /**
+     * Get Drush alias keys.
+     *
+     * @param string $realm
+     *   The environment realm.
+     *
+     * @return array
+     *   An array of Drush alias keys.
+     */
+    protected function getDrushAliasKeys($realm)
+    {
+        $aliases = $this->loadDrushAliasesByRelam($realm);
+
+        return array_keys($aliases);
+    }
+
+    /**
+     * Determine what Drush alias to use, ask if more then one option.
+     *
+     * @param string $realm
+     *   The environment realm
+     * @param array $options
+     *   An an array of options.
+     *
+     * @return string
+     *   The Drush alias chosen.
+     */
+    protected function determineDrushAlias($realm, array $options)
+    {
+        if (count($options) > 1) {
+            return $this->askChoiceQuestion(
+                sprintf('Select the %s drush alias that should be used:', $realm),
+                $options,
+                0
+            );
+        }
+
+        return reset($options) ?: null;
+    }
+
+    /**
+     * Load Drush local aliases.
+     *
+     * @return array
+     *   An array of the loaded defined alias.
+     */
+    protected function loadDrushAliasesByRelam($realm)
+    {
+        static $cached = [];
+
+        if (empty($cached[$realm])) {
+            $project_root = ProjectX::projectRoot();
+
+            if (!file_exists("$project_root/drush")) {
+                return [];
+            }
+            $drush_alias_dir = "$project_root/drush/site-aliases";
+
+            if (!file_exists($drush_alias_dir)) {
+                return [];
+            }
+
+            if (!file_exists("$drush_alias_dir/$realm.aliases.drushrc.php")) {
+                return [];
+            }
+
+            include_once "$drush_alias_dir/$realm.aliases.drushrc.php";
+
+            $cached[$realm] = $aliases;
+        }
+
+        return $cached[$realm];
     }
 
     /**
@@ -158,5 +284,22 @@ class DrupalTasks extends Tasks
         $question = "☝️  $text (y/n) [$default_text] ";
 
         return $this->doAsk(new ConfirmationQuestion($question, $default));
+    }
+
+    /**
+     * Ask choice question.
+     *
+     * @param string $question
+     *   The question text.
+     * @param array $options
+     *   The question choice options.
+     * @param string $default
+     *   The default answer.
+     *
+     * @return string
+     */
+    protected function askChoiceQuestion($question, $options, $default = null)
+    {
+        return $this->doAsk(new ChoiceQuestion($question, $options, $default));
     }
 }

@@ -1,8 +1,6 @@
 <?php
 
-// Use the following alias as a guide for creating a local alias.
-
-$aliases['{MACHINE_NAME}'] = [
+$aliases['{ALIAS_NAME}'] = [
   'uri' => '{HOSTNAME}',
   'root' => '{INSTALL_ROOT}',
   'path-aliases' => [

@@ -162,6 +162,31 @@ abstract class TestBase extends TestCase
             'name' => 'Project-X Test',
             'type' => 'drupal',
             'engine' => 'docker',
+            'remote' => [
+                'environments' => [
+                    [
+                        'realm' => 'dev',
+                        'name' => 'Development',
+                        'path' => '/var/www/html/docroot',
+                        'uri' => 'dev.project-x.com',
+                        'ssh_url' => 'dev-user@my-hosting.com',
+                    ],
+                    [
+                        'realm' => 'stg',
+                        'name' => 'Stage One',
+                        'path' => '/var/www/html/docroot',
+                        'uri' => 'stage.project-x.com',
+                        'ssh_url' => 'stage-user@my-hosting.com',
+                    ],
+                    [
+                        'realm' => 'stg',
+                        'name' => 'stage-two',
+                        'path' => '/var/www/html/docroot',
+                        'uri' => 'stage2.project-x.com',
+                        'ssh_url' => 'stage2-user@my-hosting.com',
+                    ]
+                ]
+            ],
             'github' => [
                 'url' => 'https://github.com/droath/project-x',
             ],

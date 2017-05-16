@@ -178,6 +178,30 @@ abstract class ProjectType extends TaskSubType implements ProjectTypeInterface
     }
 
     /**
+     * Get project install path.
+     *
+     * @return string
+     *   The full path to the project install root.
+     */
+    public function getInstallPath()
+    {
+        return ProjectX::projectRoot() . static::INSTALL_ROOT;
+    }
+
+    /**
+     * Get project version.
+     *
+     * @return string
+     *   The project version defined in the project-x config; otherwise set to
+     *   the project default version.
+     */
+    public function getProjectVersion()
+    {
+        return ProjectX::getProjectConfig()->getVersion()
+            ?: static::DEFAULT_VERSION;
+    }
+
+    /**
      * Can project run it's install process.
      */
     protected function canInstall()
@@ -257,19 +281,6 @@ abstract class ProjectType extends TaskSubType implements ProjectTypeInterface
     }
 
     /**
-     * Get project version.
-     *
-     * @return string
-     *   The project version defined in the project-x config; otherwise set to
-     *   the project default version.
-     */
-    protected function getProjectVersion()
-    {
-        return ProjectX::getProjectConfig()->getVersion()
-            ?: static::DEFAULT_VERSION;
-    }
-
-    /**
      * Get project hostname.
      *
      * @return string
@@ -281,17 +292,6 @@ abstract class ProjectType extends TaskSubType implements ProjectTypeInterface
             ->getHost();
 
         return isset($host['name']) ? $host['name'] : 'localhost';
-    }
-
-    /**
-     * Get project install path.
-     *
-     * @return string
-     *   The full path to the project install root.
-     */
-    protected function getInstallPath()
-    {
-        return ProjectX::projectRoot() . static::INSTALL_ROOT;
     }
 
     /**
