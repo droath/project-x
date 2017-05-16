@@ -185,6 +185,7 @@ class DrupalProjectType extends PhpProjectType implements TaskSubTypeInterface, 
             ->setupDrupalLocalSettings()
             ->projectEngineUp()
             ->setupDrupalInstall()
+            ->exportDrupalConfig()
             ->projectLaunchBrowser();
 
         return $this;
@@ -603,6 +604,25 @@ class DrupalProjectType extends PhpProjectType implements TaskSubTypeInterface, 
         // Update permissions to ensure all files can be accessed on the
         // install path for both user and groups.
         $this->_chmod($install_path, 0775, 0000, true);
+
+        return $this;
+    }
+
+    /**
+     * Export Drupal configuration.
+     *
+     * @return self
+     */
+    protected function exportDrupalConfig()
+    {
+        $version = $this->getProjectVersion();
+
+        if ($version === 8) {
+            $this->taskDrushStack()
+                ->drupalRootDirectory($this->getInstallPath())
+                ->drush('cex')
+                ->run();
+        }
 
         return $this;
     }
