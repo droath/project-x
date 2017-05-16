@@ -61,6 +61,9 @@ class DockerEngineType extends EngineType implements TaskSubTypeInterface
                 ->run();
         }
 
+        // Write host IP address to .env file.
+        $this->updateHostIPAddress();
+
         // Startup docker compose.
         $this->taskDockerComposeUp()
             ->files($this->getDockerComposeFiles())
@@ -175,13 +178,6 @@ class DockerEngineType extends EngineType implements TaskSubTypeInterface
             'docker/docker-compose-dev.yml' => 'docker-compose-dev.yml',
         ]);
 
-        // Update the docker compose development configuration to replace
-        // the placeholder variables with the valid host IP.
-        $this->taskWriteToFile("$project_root/docker-compose-dev.yml")
-            ->append()
-            ->place('HOST_IP_ADDRESS', ProjectX::clientHostIP())
-            ->run();
-
         $project_name = ProjectX::getProjectMachineName();
 
         $sync_name = uniqid("$project_name-", false);
@@ -191,6 +187,8 @@ class DockerEngineType extends EngineType implements TaskSubTypeInterface
             ->append()
             ->appendUnlessMatches('/SYNC_NAME=\w+/', "SYNC_NAME=$sync_name")
             ->run();
+
+        $this->updateHostIPAddress();
     }
 
     /**
@@ -360,6 +358,23 @@ class DockerEngineType extends EngineType implements TaskSubTypeInterface
         $this->collectionBuilder()
             ->addTask($this->taskDockerSyncDaemonStop())
             ->completion($this->taskDockerSyncDaemonClean())
+            ->run();
+    }
+
+    /**
+     * Update host IP address in the environment file.
+     *
+     * The IP address if appended if it doesn't exist, otherwise it's updated.
+     */
+    protected function updateHostIPAddress()
+    {
+        $host_ip = ProjectX::clientHostIP();
+        $project_root = ProjectX::projectRoot();
+
+        $this->taskWriteToFile("$project_root/.env")
+            ->append()
+            ->regexReplace('/HOST_IP_ADDRESS=.*/', "HOST_IP_ADDRESS={$host_ip}")
+            ->appendUnlessMatches('/HOST_IP_ADDRESS=.*/', "\nHOST_IP_ADDRESS={$host_ip}")
             ->run();
     }
 }

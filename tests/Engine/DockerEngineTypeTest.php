@@ -47,13 +47,13 @@ class DockerEngineTypeTest extends TestTaskBase
         $this->assertProjectFileExists('docker-sync.yml');
         $this->assertProjectFileExists('docker-compose-dev.yml');
 
-        $compose_dev_contents = file_get_contents($this->getProjectFileUrl('docker-compose-dev.yml'));
-        $client_ip = ProjectX::clientHostIp();
-        $this->assertContains("remote_host={$client_ip}", $compose_dev_contents);
-
         $env_contents = file_get_contents($this->getProjectFileUrl('.env'));
 
         $this->assertRegExp('/SYNC_NAME=\w+/', $env_contents);
+        $this->assertRegExp('/HOST_IP_ADDRESS=.*/', $env_contents);
+        
+        $client_ip = ProjectX::clientHostIp();
+        $this->assertRegExp("/$client_ip/", $env_contents);
     }
 
     public function testHasDockerSync()
