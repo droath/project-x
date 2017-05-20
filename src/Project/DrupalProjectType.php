@@ -124,11 +124,10 @@ class DrupalProjectType extends PhpProjectType implements TaskSubTypeInterface, 
         parent::build();
 
         $this
-            ->setupProjectComposer()
-            ->setupProjectFilesystem()
-            ->setupDrush()
-            ->saveComposer()
-            ->updateComposer();
+            ->buildSteps()
+            ->postBuildSteps();
+
+        return $this;
     }
 
     /**
@@ -332,9 +331,6 @@ class DrupalProjectType extends PhpProjectType implements TaskSubTypeInterface, 
 
     /**
      * Setup Drush aliases.
-     *
-     * The setup process consist of the following:
-     *
      *
      * @return self
      */
@@ -623,7 +619,7 @@ class DrupalProjectType extends PhpProjectType implements TaskSubTypeInterface, 
      *
      * @return self
      */
-    protected function exportDrupalConfig()
+    public function exportDrupalConfig()
     {
         $version = $this->getProjectVersion();
 
@@ -637,23 +633,55 @@ class DrupalProjectType extends PhpProjectType implements TaskSubTypeInterface, 
         return $this;
     }
 
-    /**
-     * Get Drupal install options.
-     */
-    protected function getInstallOptions()
+    public function getOptions()
     {
         $type_id = $this->getTypeId();
         $options = ProjectX::getProjectConfig()
             ->getOptions();
 
-        $options = isset($options[$type_id])
+        return isset($options[$type_id])
             ? $options[$type_id]
             : [];
+    }
 
+    /**
+     * Get Drupal install options.
+     */
+    protected function getInstallOptions()
+    {
         return array_replace_recursive(
             $this->defaultInstallOptions(),
-            $options
+            $this->getOptions()
         );
+    }
+
+    /**
+     * Build steps to invoke during the build process.
+     *
+     * @return self
+     */
+    protected function buildSteps()
+    {
+        $this
+            ->setupProjectComposer()
+            ->setupProjectFilesystem()
+            ->setupDrush();
+
+        return $this;
+    }
+
+    /**
+     * Post build steps that are invoked after the build steps.
+     *
+     * @return self
+     */
+    protected function postBuildSteps()
+    {
+        $this
+            ->saveComposer()
+            ->updateComposer();
+
+        return $this;
     }
 
     /**
