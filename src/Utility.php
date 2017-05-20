@@ -16,7 +16,7 @@ class Utility
      * @return string
      *   A string with only lower/uppercase characters.
      */
-    public static function cleanString($string)
+    public static function cleanString($string, $pattern = '/[^a-zA-Z\-]/')
     {
         if (!is_string($string)) {
             throw new \InvalidArgumentException(
@@ -24,7 +24,7 @@ class Utility
             );
         }
 
-        return preg_replace('/[^a-zA-Z\-]/', '', $string);
+        return preg_replace($pattern, '', $string);
     }
 
     /**
