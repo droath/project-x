@@ -10,14 +10,16 @@ use Droath\ProjectX\ProjectX;
 class TemplateManager
 {
     /**
-     * Template base directory.
-     */
-    const BASE_DIRECTORY = '/templates';
-
-    /**
      * Template project directory.
      */
     const PROJECT_DIRECTORY = '/project-x';
+
+    /**
+     * Search directories.
+     *
+     * @var array
+     */
+    protected $searchDirectories = [];
 
     /**
      * Load template file contents.
@@ -67,6 +69,34 @@ class TemplateManager
     }
 
     /**
+     * Set search directory for template files.
+     *
+     * @param string $directory
+     *   The directory on which to search for template files.
+     */
+    public function setSearchDirectory($directory)
+    {
+        $this->searchDirectories[] = $directory;
+
+        return $this;
+    }
+
+    /**
+     * Set search directories for template files.
+     *
+     * @param array $directories
+     *   An array of directories to search for template files.
+     */
+    public function setSearchDirectories(array $directories)
+    {
+        foreach ($directories as $directory) {
+            $this->setSearchDirectory($directory);
+        }
+
+        return $this;
+    }
+
+    /**
      * Has project template directory.
      *
      * @return bool
@@ -91,39 +121,28 @@ class TemplateManager
      */
     protected function locateTemplateFilePath($filename)
     {
-        $default = $this->getTemplatePathByProject() . "/{$filename}";
+        // Search project root template directory if defined.
+        if ($this->hasProjectTemplateDirectory()) {
+            $filepath = $this->templateProjectPath() . "/{$filename}";
 
-        // Check if the project has a template directory.
-        if (!$this->hasProjectTemplateDirectory()) {
-            return $default;
+            if (file_exists($filepath)) {
+                return $filepath;
+            }
         }
 
-        // Check if the file exist in the project template directory.
-        $filepath = $this->templateProjectPath() . "/{$filename}";
-        if (!file_exists($filepath)) {
-            return $default;
+        // Search defined directories for template files.
+        foreach ($this->searchDirectories as $directory) {
+            if (!file_exists($directory)) {
+                continue;
+            }
+            $filepath = "{$directory}/{$filename}";
+
+            if (file_exists($filepath)) {
+                return $filepath;
+            }
         }
 
-        return $filepath;
-    }
-
-    /**
-     * Get template path by project.
-     *
-     * @return string
-     *   The path to the template directory based on project.
-     */
-    protected function getTemplatePathByProject()
-    {
-        $type = ProjectX::getProjectConfig()->getType();
-
-        if (!isset($type)) {
-            throw new \Exception(
-                'Project missing project type definition.'
-            );
-        }
-
-        return  $this->templateBasePath() . '/' . $type;
+        return null;
     }
 
     /**
@@ -150,17 +169,6 @@ class TemplateManager
         }
 
         return $contents;
-    }
-
-    /**
-     * Project-X template base path.
-     *
-     * @return string
-     *   The application template path.
-     */
-    protected function templateBasePath()
-    {
-        return APP_ROOT . static::BASE_DIRECTORY;
     }
 
     /**

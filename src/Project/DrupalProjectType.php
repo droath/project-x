@@ -97,6 +97,16 @@ class DrupalProjectType extends PhpProjectType implements TaskSubTypeInterface, 
     /**
      * {@inheritdoc}.
      */
+    public function templateDirectories()
+    {
+        return array_merge([
+            APP_ROOT . '/templates/drupal'
+        ], parent::templateDirectories());
+    }
+
+    /**
+     * {@inheritdoc}.
+     */
     public function build()
     {
         $status = $this->canBuild();

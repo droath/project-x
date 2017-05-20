@@ -2,6 +2,7 @@
 
 namespace Droath\ProjectX\Tests\Template;
 
+use Droath\ProjectX\ProjectX;
 use Droath\ProjectX\Template\TemplateManager;
 use Droath\ProjectX\Tests\TestBase;
 use org\bovigo\vfs\vfsStream;
@@ -17,7 +18,7 @@ class TemplateManagerTest extends TestBase
     {
         parent::setUp();
 
-        $this->templateManager = new TemplateManager();
+        $this->templateManager = (new TemplateManager())->setSearchDirectories(ProjectX::getProjectType()->templateDirectories());
     }
 
     public function testLoadTemplate()
@@ -48,7 +49,7 @@ class TemplateManagerTest extends TestBase
             ->templateManager
             ->getTemplateFilePath($filename);
 
-        $expected = APP_ROOT . TemplateManager::BASE_DIRECTORY . "/drupal/$filename";
+        $expected = APP_ROOT .  "/templates/drupal/$filename";
 
         $this->assertEquals($expected, $path);
     }

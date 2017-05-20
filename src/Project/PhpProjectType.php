@@ -66,6 +66,16 @@ abstract class PhpProjectType extends ProjectType
     }
 
     /**
+     * {@inheritdoc}
+     */
+    public function templateDirectories()
+    {
+        return array_merge([
+            APP_ROOT . '/templates/php'
+        ], parent::templateDirectories());
+    }
+
+    /**
      * Setup TravisCi configurations.
      *
      * The setup steps consist of the following:

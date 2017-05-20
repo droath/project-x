@@ -72,4 +72,12 @@ abstract class EngineType extends TaskSubType implements EngineTypeInterface
     {
         return ProjectX::projectRoot() . static::INSTALL_ROOT;
     }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function templateDirectories()
+    {
+        return ProjectX::getProjectType()->templateDirectories();
+    }
 }

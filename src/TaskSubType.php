@@ -31,6 +31,17 @@ abstract class TaskSubType implements BuilderAwareInterface, ContainerAwareInter
     }
 
     /**
+     * Template directories.
+     *
+     * @return array
+     *   An array of directories to search for template files.
+     */
+    public function templateDirectories()
+    {
+        return [];
+    }
+
+    /**
      * Get console application.
      *
      * @return \Symfony\Component\Console\Application
@@ -49,7 +60,8 @@ abstract class TaskSubType implements BuilderAwareInterface, ContainerAwareInter
     protected function templateManager()
     {
         return $this->getContainer()
-            ->get('projectXTemplate');
+            ->get('projectXTemplate')
+            ->setSearchDirectories($this->templateDirectories());
     }
 
     /**
