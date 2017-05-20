@@ -104,6 +104,10 @@ abstract class TaskSubTypeResolver
                 $plugin_dir = "$plugin_dir/$plugin_path";
             }
 
+            if (!file_exists($plugin_dir)) {
+                continue;
+            }
+
             $classes = (new PhpClassDiscovery)
                 ->setSearchPattern($pattern)
                 ->addSearchLocation($plugin_dir)
