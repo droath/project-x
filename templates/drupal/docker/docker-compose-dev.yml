@@ -2,17 +2,17 @@ version: "2"
 services:
   nginx:
     volumes:
-      - docker-sync:/var/www/html:rw
+      - docker-sync:/var/www/html:nocopy
   php:
     env_file:
       - .env
     environment:
         XDEBUG_CONFIG: "remote_host=${HOST_IP_ADDRESS}"
     volumes:
-      - docker-sync:/var/www/html:rw
+      - docker-sync:/var/www/html:nocopy
 
 volumes:
   docker-sync:
     external:
-      name: "${SYNC_NAME}-unison-sync"
+      name: "${SYNC_NAME}-docker-sync"
 

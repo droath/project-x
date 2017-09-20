@@ -57,7 +57,7 @@ class DockerEngineType extends EngineType implements TaskSubTypeInterface
 
         // Startup docker sync if found in project.
         if ($this->hasDockerSync()) {
-            $this->taskDockerSyncDaemonStart()
+            $this->taskDockerSyncStart()
                 ->run();
         }
 
@@ -356,8 +356,8 @@ class DockerEngineType extends EngineType implements TaskSubTypeInterface
     protected function runDockerSyncDownCollection()
     {
         $this->collectionBuilder()
-            ->addTask($this->taskDockerSyncDaemonStop())
-            ->completion($this->taskDockerSyncDaemonClean())
+            ->addTask($this->taskDockerSyncStop())
+            ->completion($this->taskDockerSyncClean())
             ->run();
     }
 
