@@ -635,6 +635,12 @@ class DrupalProjectType extends PhpProjectType implements TaskSubTypeInterface, 
         return $this;
     }
 
+    /**
+     * Get Project-X configuration options.
+     *
+     * @return array
+     *   An array of options defined in the Project-X configuration.
+     */
     public function getOptions()
     {
         $type_id = $this->getTypeId();
@@ -646,6 +652,25 @@ class DrupalProjectType extends PhpProjectType implements TaskSubTypeInterface, 
             : [];
     }
 
+    /**
+     * Get Project-X configuration option by key.
+     *
+     * @param string $key
+     *   The unique key for the option.
+     *
+     * @return mixed|bool
+     *   The set value for the given option key; otherwise FALSE if
+     */
+    public function getOptionByKey($key)
+    {
+        $options = $this->getOptions();
+
+        if (!isset($options[$key])) {
+            return false;
+        }
+
+        return $options[$key];
+    }
 
     /**
      * Get Drupal UUID.
