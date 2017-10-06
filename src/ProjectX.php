@@ -73,6 +73,17 @@ class ProjectX extends Application
     }
 
     /**
+     * Get Project-x project path.
+     *
+     * @return string
+     *   The fully qualified path to the project.yml configuration.
+     */
+    public static function getProjectPath()
+    {
+        return self::$projectPath;
+    }
+
+    /**
      * Get Project-X container object.
      *
      * @return \League\Container\ContainerInterface
