@@ -628,6 +628,8 @@ class DrupalProjectType extends PhpProjectType implements TaskSubTypeInterface, 
                 ->drupalRootDirectory($this->getInstallPath())
                 ->drush('cex')
                 ->run();
+
+            $this->saveDrupalUuid();
         }
 
         return $this;
@@ -642,6 +644,57 @@ class DrupalProjectType extends PhpProjectType implements TaskSubTypeInterface, 
         return isset($options[$type_id])
             ? $options[$type_id]
             : [];
+    }
+
+
+    /**
+     * Get Drupal UUID.
+     *
+     * @return string
+     *   The Drupal UUID.
+     */
+    protected function getDrupalUuid()
+    {
+        $uuid = null;
+        $version = $this->getProjectVersion();
+
+        if ($version === 8) {
+            $result = $this->taskDrushStack()
+                ->drupalRootDirectory($this->getInstallPath())
+                ->drush('cget system.site uuid')
+                ->run();
+
+            $message = $result->getMessage();
+
+            if (isset($message)) {
+                $uuid = trim(
+                    substr($message, strrpos($message, ':') + 1)
+                );
+            }
+        }
+
+        return $uuid;
+    }
+
+    /**
+     * Save Drupal UUID in Project-X configuration.
+     *
+     * @return self
+     */
+    protected function saveDrupalUuid()
+    {
+        $config = ProjectX::getProjectConfig();
+        $options[static::getTypeId()] = [
+            'build_info' => [
+                'uuid' => $this->getDrupalUuid()
+            ]
+        ];
+
+        $config
+            ->setOptions($options)
+            ->save(ProjectX::getProjectPath());
+
+        return $this;
     }
 
     /**
