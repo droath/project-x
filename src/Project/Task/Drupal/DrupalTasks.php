@@ -51,6 +51,7 @@ class DrupalTasks extends Tasks
      * @option string $db-host Set the database host.
      * @option bool $no-docker Don't use docker for local setup.
      * @option bool $no-engine Don't start local development engine.
+     * @option bool $no-import Don't import Drupal configurations.
      * @option bool $no-browser Don't launch a browser window after setup is complete.
      */
     public function drupalLocalSetup($opts = [
@@ -60,6 +61,7 @@ class DrupalTasks extends Tasks
         'db-host' => '127.0.0.1',
         'no-docker' => false,
         'no-engine' => false,
+        'no-import' => false,
         'no-browser' => false,
     ])
     {
@@ -95,6 +97,24 @@ class DrupalTasks extends Tasks
         }
         $this
             ->drupalDrushAlias();
+
+        $drush_stack = $this->taskDrushStack()
+            ->drupalRootDirectory($instance->getInstallPath());
+
+        $build_info = $instance->getOptionByKey('build_info');
+
+        if ($build_info !== false && isset($build_info['uuid'])) {
+            $uuid = $build_info['uuid'];
+            $drush_stack
+                ->drush("cset system.site uuid $uuid")
+                ->drush('ev \'\Drupal::entityManager()->getStorage("shortcut_set")->load("default")->delete();\'');
+        }
+
+        if (!$opts['no-import']) {
+            $drush_stack->drush('cim');
+        }
+
+        $drush_stack->run();
 
         return $this;
     }
