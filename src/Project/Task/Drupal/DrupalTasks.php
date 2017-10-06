@@ -328,7 +328,7 @@ class DrupalTasks extends Tasks
 
             include_once "$drush_alias_dir/$realm.aliases.drushrc.php";
 
-            $cached[$realm] = $aliases;
+            $cached[$realm] = isset($aliases) ? $aliases : array();
         }
 
         return $cached[$realm];
