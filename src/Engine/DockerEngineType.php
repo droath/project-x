@@ -59,10 +59,13 @@ class DockerEngineType extends EngineType implements TaskSubTypeInterface
         if ($this->hasDockerSync()) {
             $this->taskDockerSyncStart()
                 ->run();
+
+            // Set the docker-sync name in the .env file.
+            $this->setDockerSyncNameInEnv();
         }
 
-        // Write host IP address to .env file.
-        $this->updateHostIPAddress();
+        // Set host IP address in the .env file.
+        $this->setHostIPAddressInEnv();
 
         // Startup docker compose.
         $this->taskDockerComposeUp()
@@ -178,17 +181,9 @@ class DockerEngineType extends EngineType implements TaskSubTypeInterface
             'docker/docker-compose-dev.yml' => 'docker-compose-dev.yml',
         ]);
 
-        $project_name = ProjectX::getProjectMachineName();
-
-        $sync_name = uniqid("$project_name-", false);
-
-        // Append the sync name with to the project .env file.
-        $this->taskWriteToFile("{$project_root}/.env")
-            ->append()
-            ->appendUnlessMatches('/SYNC_NAME=\w+/', "SYNC_NAME=$sync_name")
-            ->run();
-
-        $this->updateHostIPAddress();
+        $this
+            ->setDockerSyncNameInEnv()
+            ->setHostIPAddressInEnv();
     }
 
     /**
@@ -362,11 +357,26 @@ class DockerEngineType extends EngineType implements TaskSubTypeInterface
     }
 
     /**
-     * Update host IP address in the environment file.
-     *
-     * The IP address if appended if it doesn't exist, otherwise it's updated.
+     * Set docker-sync name in environment file; if not already set.
      */
-    protected function updateHostIPAddress()
+    protected function setDockerSyncNameInEnv()
+    {
+        $project_root = ProjectX::projectRoot();
+        $project_name = ProjectX::getProjectMachineName();
+        $sync_name = uniqid("$project_name-", false);
+
+        $this->taskWriteToFile("{$project_root}/.env")
+            ->append()
+            ->appendUnlessMatches('/SYNC_NAME=\w+/', "SYNC_NAME=$sync_name")
+            ->run();
+
+        return $this;
+    }
+
+    /**
+     * Set host IP address in environment file.
+     */
+    protected function setHostIPAddressInEnv()
     {
         $host_ip = ProjectX::clientHostIP();
         $project_root = ProjectX::projectRoot();
@@ -376,5 +386,7 @@ class DockerEngineType extends EngineType implements TaskSubTypeInterface
             ->regexReplace('/HOST_IP_ADDRESS=.*/', "HOST_IP_ADDRESS={$host_ip}")
             ->appendUnlessMatches('/HOST_IP_ADDRESS=.*/', "\nHOST_IP_ADDRESS={$host_ip}")
             ->run();
+
+        return $this;
     }
 }
