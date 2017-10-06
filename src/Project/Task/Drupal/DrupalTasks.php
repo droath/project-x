@@ -140,15 +140,18 @@ class DrupalTasks extends Tasks
      */
     public function drupalLocalSync()
     {
-        $local_alias = $this->determineDrushLocalAlias();
-        $remote_alias = $this->determineDrushRemoteAlias();
+        $drupal = $this->getProjectInstance();
+        $version = $drupal->getProjectVersion();
 
-        if (isset($local_alias) && isset($remote_alias)) {
-            $drupal = $this->getProjectInstance();
-            $version = $drupal->getProjectVersion();
+        if ($version === 8) {
+            $drush_stack = $this->taskDrushStack()
+                ->drupalRootDirectory($drupal->getInstallPath());
 
-            if ($version === 8) {
-                // Drupal 8 tables to skip when syncing or dumping SQL.
+            $local_alias = $this->determineDrushLocalAlias();
+            $remote_alias = $this->determineDrushRemoteAlias();
+
+            if (isset($local_alias) && isset($remote_alias)) {
+              // Drupal 8 tables to skip when syncing or dumping SQL.
                 $skip_tables = implode(',', [
                     'cache_bootstrap',
                     'cache_config',
@@ -166,14 +169,17 @@ class DrupalTasks extends Tasks
                     'watchdog'
                 ]);
 
-                $this->taskDrushStack()
-                    ->drupalRootDirectory($drupal->getInstallPath())
-                    ->drush("drush sql-sync --sanitize --skip-tables-key='$skip_tables' '@$remote_alias' '@$local_alias'", true)
-                    ->drush('cim')
-                    ->drush('updb --entity-updates')
-                    ->drush('cr')
-                    ->run();
+                $drush_stack->drush(
+                    "drush sql-sync --sanitize --skip-tables-key='$skip_tables' '@$remote_alias' '@$local_alias'",
+                    true
+                );
             }
+
+            $drush_stack
+                ->drush('cim')
+                ->drush('updb --entity-updates')
+                ->drush('cr')
+                ->run();
         }
 
         return $this;
