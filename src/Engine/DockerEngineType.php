@@ -52,7 +52,7 @@ class DockerEngineType extends EngineType implements TaskSubTypeInterface
         $status = $this->runOpenPortStatusReport();
 
         if (!$status) {
-            return false;
+            exit;
         }
 
         // Startup docker sync if found in project.
