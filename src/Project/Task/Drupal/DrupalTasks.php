@@ -101,17 +101,22 @@ class DrupalTasks extends Tasks
         $drush_stack = $this->taskDrushStack()
             ->drupalRootDirectory($instance->getInstallPath());
 
+        $version = $this->getProjectVersion();
         $build_info = $instance->getOptionByKey('build_info');
 
-        if ($build_info !== false && isset($build_info['uuid'])) {
-            $uuid = $build_info['uuid'];
-            $drush_stack
-                ->drush("cset system.site uuid $uuid")
-                ->drush('ev \'\Drupal::entityManager()->getStorage("shortcut_set")->load("default")->delete();\'');
-        }
+        if ($version === 8) {
+            if ($build_info !== false && isset($build_info['uuid'])) {
+                $uuid = $build_info['uuid'];
+                $drush_stack
+                    ->drush("cset system.site uuid $uuid")
+                    ->drush('ev \'\Drupal::entityManager()->getStorage("shortcut_set")->load("default")->delete();\'');
+            }
 
-        if (!$opts['no-import']) {
-            $drush_stack->drush('cim');
+            if (!$opts['no-import']) {
+                $drush_stack->drush('cim');
+            }
+
+            $drush_stack->drush('cr all');
         }
 
         $drush_stack->run();
