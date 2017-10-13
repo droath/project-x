@@ -5,6 +5,7 @@ namespace Droath\ProjectX\Task\Drupal;
 use Boedah\Robo\Task\Drush\loadTasks as drushTasks;
 use Droath\ProjectX\ProjectX;
 use Droath\ProjectX\Project\DrupalProjectType;
+use Robo\Task\Composer\loadTasks as composerTasks;
 use Robo\Tasks;
 use Symfony\Component\Console\Question\ChoiceQuestion;
 use Symfony\Component\Console\Question\ConfirmationQuestion;
@@ -15,6 +16,7 @@ use Symfony\Component\Console\Question\ConfirmationQuestion;
 class DrupalTasks extends Tasks
 {
     use drushTasks;
+    use composerTasks;
 
     /**
      * Install Drupal on the current environment.
@@ -208,6 +210,34 @@ class DrupalTasks extends Tasks
         }
 
         return $this;
+    }
+
+    /**
+     * Refresh the local Drupal instance.
+     */
+    public function drupalRefresh()
+    {
+        $drupal = $this->getProjectInstance();
+        $version = $drupal->getProjectVersion();
+
+        $drush_stack = $this->taskDrushStack()
+            ->drupalRootDirectory($drupal->getInstallPath());
+
+        // Composer install.
+        $this->taskComposerInstall()->run();
+
+        if ($version === 8) {
+            $drush_stack
+                ->drush('updb --entity-updates')
+                ->drush('cim')
+                ->drush('cr');
+        } else {
+            $drush_stack
+                ->drush('updb')
+                ->drush('cc all');
+        }
+
+        $drush_stack->run();
     }
 
     /**
