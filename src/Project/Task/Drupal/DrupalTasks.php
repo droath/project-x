@@ -103,7 +103,7 @@ class DrupalTasks extends Tasks
         $drush_stack = $this->taskDrushStack()
             ->drupalRootDirectory($instance->getInstallPath());
 
-        $version = $this->getProjectVersion();
+        $version = $instance->getProjectVersion();
         $build_info = $instance->getOptionByKey('build_info');
 
         if ($version === 8) {
