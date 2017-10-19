@@ -115,10 +115,12 @@ class DrupalTasks extends Tasks
             }
 
             if (!$opts['no-import']) {
-                $drush_stack->drush('cim');
+                $drush_stack
+                    ->drush('cr')
+                    ->drush('cim');
             }
 
-            $drush_stack->drush('cr all');
+            $drush_stack->drush('cr');
         }
 
         $drush_stack->run();
