@@ -100,19 +100,11 @@ class DrupalTasks extends Tasks
         $this
             ->drupalDrushAlias();
 
-        $drush_stack = $this->taskDrushStack()
-            ->drupalRootDirectory($instance->getInstallPath());
-
+        $drush_stack = $this->getDrushStack();
         $version = $instance->getProjectVersion();
-        $build_info = $instance->getOptionByKey('build_info');
 
         if ($version === 8) {
-            if ($build_info !== false && isset($build_info['uuid'])) {
-                $uuid = $build_info['uuid'];
-                $drush_stack
-                    ->drush("cset system.site uuid $uuid")
-                    ->drush('ev \'\Drupal::entityManager()->getStorage("shortcut_set")->load("default")->delete();\'');
-            }
+            $this->setDrupalUuid();
 
             if (!$opts['no-import']) {
                 $drush_stack
@@ -153,8 +145,7 @@ class DrupalTasks extends Tasks
             $version = $drupal->getProjectVersion();
 
             if ($version === 8) {
-                $drush_stack = $this->taskDrushStack()
-                    ->drupalRootDirectory($drupal->getInstallPath())
+                $this->getDrushStack()
                     ->drush("drush sql-sync '@$local_alias' '@$remote_alias'", true)
                     ->drush('cr')
                     ->run();
@@ -173,8 +164,7 @@ class DrupalTasks extends Tasks
         $version = $drupal->getProjectVersion();
 
         if ($version === 8) {
-            $drush_stack = $this->taskDrushStack()
-                ->drupalRootDirectory($drupal->getInstallPath());
+            $drush_stack = $this->getDrushStack();
 
             $local_alias = $this->determineDrushLocalAlias();
             $remote_alias = $this->determineDrushRemoteAlias();
@@ -216,17 +206,43 @@ class DrupalTasks extends Tasks
 
     /**
      * Refresh the local Drupal instance.
+     *
+     * @param array $opts
+     * @option string $db-name Set the database name.
+     * @option string $db-user Set the database user.
+     * @option string $db-pass Set the database password.
+     * @option string $db-host Set the database host.
+     * @option bool $hard Refresh the site by destroying the database and rebuilding.
      */
-    public function drupalRefresh()
+    public function drupalRefresh($opts = [
+        'db-name' => 'drupal',
+        'db-user' => 'admin',
+        'db-pass' => 'root',
+        'db-host' => '127.0.0.1',
+        'hard' => false,
+    ])
     {
-        $drupal = $this->getProjectInstance();
-        $version = $drupal->getProjectVersion();
-
-        $drush_stack = $this->taskDrushStack()
-            ->drupalRootDirectory($drupal->getInstallPath());
+        $instance = $this->getProjectInstance();
+        $version = $instance->getProjectVersion();
 
         // Composer install.
         $this->taskComposerInstall()->run();
+
+        if ($opts['hard']) {
+            // Reinstall the Drupal database, which drops the existing data.
+            $this->getProjectInstance()
+                ->setupDrupalInstall(
+                    $opts['db-name'],
+                    $opts['db-user'],
+                    $opts['db-pass'],
+                    $opts['db-host']
+                );
+
+            if ($version === 8) {
+                $this->setDrupalUuid();
+            }
+        }
+        $drush_stack = $this->getDrushStack();
 
         if ($version === 8) {
             $drush_stack
@@ -268,6 +284,39 @@ class DrupalTasks extends Tasks
 
         $this->getProjectInstance()
             ->setupDrushAlias($opts['exclude-remote']);
+
+        return $this;
+    }
+
+    /**
+     * Get the Drush stack instance.
+     *
+     * @return \Boedah\Robo\Task\Drush\DrushStack
+     *   The Drush stack object.
+     */
+    protected function getDrushStack()
+    {
+        $instance = $this->getProjectInstance();
+
+        return $this->taskDrushStack()
+            ->drupalRootDirectory($instance->getInstallPath());
+    }
+
+    /**
+     * Set the Drupal UUID.
+     */
+    protected function setDrupalUuid()
+    {
+        $instance = $this->getProjectInstance();
+        $build_info = $instance->getOptionByKey('build_info');
+
+        if ($build_info !== false && isset($build_info['uuid'])) {
+            $drush_stack = $this->getDrushStack();
+            $drush_stack
+                ->drush("cset system.site uuid {$build_info['uuid']}")
+                ->drush('ev \'\Drupal::entityManager()->getStorage("shortcut_set")->load("default")->delete();\'')
+                ->run();
+        }
 
         return $this;
     }
