@@ -23,14 +23,18 @@ abstract class GitHubTaskBase extends Tasks
             ->gitHubUserAuth()
             ->getAuthInfo();
 
-        if (!isset($info['user'])) {
+        $user = isset($info['user'])
+            ? $info['user']
+            : getenv('PROJECTX_GITHUB_USER') ?: null;
+
+        if (!isset($user)) {
             throw new \RuntimeException(
                 "GitHub authentication user is required. \r\n\n " .
                 '[info] Run vendor/bin/project-x github::auth to get started.'
             );
         }
 
-        return $info['user'];
+        return $user;
     }
 
     /**
@@ -46,14 +50,18 @@ abstract class GitHubTaskBase extends Tasks
             ->gitHubUserAuth()
             ->getAuthInfo();
 
-        if (!isset($info['token'])) {
+        $token = isset($info['token'])
+            ? $info['token']
+            : getenv('PROJECTX_GITHUB_TOKEN') ?: null;
+
+        if (!isset($token)) {
             throw new \RuntimeException(
                 "GitHub user authentication token is required. \r\n\n " .
                 '[info] Run vendor/bin/project-x github::auth to get started.'
             );
         }
 
-        return $info['token'];
+        return $token;
     }
 
     /**
