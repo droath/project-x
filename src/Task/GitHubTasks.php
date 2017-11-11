@@ -2,7 +2,10 @@
 
 namespace Droath\ProjectX\Task;
 
+use Droath\ProjectX\ProjectX;
+use Droath\ProjectX\Utility;
 use Droath\RoboGitHub\Task\loadTasks as loadGitHubTasks;
+use Droath\RoboGoogleLighthouse\Task\loadTasks as loadLighthouseTasks;
 use Symfony\Component\Console\Helper\Table;
 use Symfony\Component\Console\Question\ChoiceQuestion;
 
@@ -12,6 +15,7 @@ use Symfony\Component\Console\Question\ChoiceQuestion;
 class GitHubTasks extends GitHubTaskBase
 {
     use loadGitHubTasks;
+    use loadLighthouseTasks;
 
     /**
      * Authenticate GitHub user.
@@ -89,6 +93,151 @@ class GitHubTasks extends GitHubTaskBase
                 ->run();
         }
     }
+
+    /**
+     * GitHub lighthouse status check.
+     *
+     * @param string $sha
+     * @param array $opts
+     * @option string $url Set the URL hostname.
+     * @option string $protocol Set the URL protocol http or https.
+     * @option bool $performance Validate performance score.
+     * @option bool $performance-score Set the performance score requirement.
+     * @option bool $accessibility Validate accessibility score.
+     * @option bool $accessibility-score Set the accessibility score requirement.
+     * @option bool $best-practices Validate best-practices score.
+     * @option bool $best-practices-score Set the best-practices score requirement.
+     * @option bool $progressive-web-app Validate progressive-web-app score.
+     * @option bool $progressive-web-app-score Set the progressive-web-app score requirement.
+     */
+    public function githubLighthouseStatus($sha, $opts = [
+        'hostname' => null,
+        'protocol' => 'http',
+        'performance' => false,
+        'performance-score' => 50,
+        'accessibility' => false,
+        'accessibility-score' => 50,
+        'best-practices' => false,
+        'best-practices-score' => 50,
+        'progressive-web-app' => false,
+        'progressive-web-app-score' => 50,
+    ])
+    {
+        $host = ProjectX::getProjectConfig()
+            ->getHost();
+
+        $protocol = $opts['protocol'];
+        $hostname = isset($opts['hostname'])
+            ? $opts['hostname']
+            : (isset($host['name']) ? $host['name'] : 'localhost');
+
+        $url = "$protocol://$hostname";
+        $path = new \SplFileInfo("/tmp/projectx-lighthouse-$sha.json");
+
+        if (!file_exists($path)) {
+            throw new \RuntimeException(
+                'Unable to locate the Google lighthouse results.'
+            );
+        }
+        $this->taskGoogleLighthouse()
+            ->setUrl($url)
+            ->setOutput('json')
+            ->setOutputPath($path)
+            ->run();
+
+        $selected = array_filter([
+            'performance',
+            'accessibility',
+            'best-practices',
+            'progressive-web-app'
+        ], function ($key) use ($opts) {
+            return $opts[$key] === true;
+        });
+
+        $report_data = $this->findLighthouseScoreReportData(
+            $path,
+            $selected
+        );
+        $state = $this->determineLighthouseState($report_data, $opts);
+
+        $this->taskGitHubRepoStatusesCreate($this->getToken())
+            ->setAccount($this->getAccount())
+            ->setRepository($this->getRepository())
+            ->setSha($sha)
+            ->setParamState($state)
+            ->setParamDescription('Google Lighthouse Tests')
+            ->setParamContext('project-x/lighthouse')
+            ->run();
+    }
+
+    /**
+     * Determine Google lighthouse state.
+     *
+     * @param array $values
+     *   An array of formatted values.
+     * @param array $opts
+     *   An array of command options.
+     *
+     * @return string
+     *   The google lighthouse state based on the evaluation.
+     */
+    protected function determineLighthouseState(array $values, array $opts)
+    {
+        $state = 'success';
+
+        foreach ($values as $key => $info) {
+            $required_score = isset($opts["$key-score"])
+                ? ($opts["$key-score"] <= 100 ? $opts["$key-score"] : 100)
+                : 50;
+
+            if ($info['score'] < $required_score
+                && $info['score'] !== $required_score) {
+                return 'failure';
+            }
+        }
+
+        return $state;
+    }
+
+    /**
+     * Find Google lighthouse score report data.
+     *
+     * @param \SplFileInfo $path
+     *   The path the Google lighthouse report.
+     * @param array $selected
+     *   An array of sections to retrieve scores for.
+     *
+     * @return array
+     *   An array of section data with name, and scores.
+     */
+    protected function findLighthouseScoreReportData(\SplFileInfo $path, array $selected)
+    {
+        $data = [];
+        $json = json_decode(file_get_contents($path), true);
+
+        foreach ($json['reportCategories'] as $report) {
+            if (!isset($report['name']) || !isset($report['score'])) {
+                continue;
+            }
+            $label = $report['name'];
+            $key = Utility::cleanString(
+                strtolower(strtr($label, ' ', '_')),
+                '/[^a-zA-Z\_]/'
+            );
+
+            if (!in_array($key, $selected)) {
+                continue;
+            }
+
+            $data[$key] = [
+                'name' => $label,
+                'score' => round($report['score'])
+            ];
+        }
+
+        return $data;
+    }
+
 
     /**
      * Output GitHub issue table.
