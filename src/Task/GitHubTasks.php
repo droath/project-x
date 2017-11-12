@@ -136,6 +136,10 @@ class GitHubTasks extends GitHubTaskBase
 
         $this->taskGoogleLighthouse()
             ->setUrl($url)
+            ->chromeFlags([
+                '--headless',
+                '--no-sandbox'
+            ])
             ->setOutput('json')
             ->setOutputPath($path)
             ->run();
