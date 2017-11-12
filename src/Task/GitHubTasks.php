@@ -134,17 +134,17 @@ class GitHubTasks extends GitHubTaskBase
         $url = "$protocol://$hostname";
         $path = new \SplFileInfo("/tmp/projectx-lighthouse-$sha.json");
 
-        if (!file_exists($path)) {
-            throw new \RuntimeException(
-                'Unable to locate the Google lighthouse results.'
-            );
-        }
         $this->taskGoogleLighthouse()
             ->setUrl($url)
             ->setOutput('json')
             ->setOutputPath($path)
             ->run();
 
+        if (!file_exists($path)) {
+            throw new \RuntimeException(
+                'Unable to locate the Google lighthouse results.'
+            );
+        }
         $selected = array_filter([
             'performance',
             'accessibility',
