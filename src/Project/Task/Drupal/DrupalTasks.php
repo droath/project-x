@@ -94,11 +94,7 @@ class DrupalTasks extends Tasks
             $db_host
         );
 
-        if (!$opts['no-browser']) {
-            $instance->projectLaunchBrowser();
-        }
-        $this
-            ->drupalDrushAlias();
+        $this->drupalDrushAlias();
 
         $drush_stack = $this->getDrushStack();
         $version = $instance->getProjectVersion();
@@ -116,6 +112,10 @@ class DrupalTasks extends Tasks
         }
 
         $drush_stack->run();
+
+        if (!$opts['no-browser']) {
+            $instance->projectLaunchBrowser();
+        }
 
         return $this;
     }
