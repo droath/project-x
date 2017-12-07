@@ -87,6 +87,17 @@ class DrupalProjectType extends PhpProjectType implements TaskSubTypeInterface, 
     }
 
     /**
+     * {@inheritdoc}
+     */
+    public function getUsedPorts()
+    {
+        return [
+            80,
+            $this->getDatabasePort()
+        ] + parent::getUsedPorts();
+    }
+
+    /**
      * {@inheritdoc}.
      */
     public function taskDirectories()

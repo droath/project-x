@@ -6,6 +6,7 @@ use Droath\ProjectX\ProjectX;
 use Droath\ProjectX\TaskSubTypeInterface;
 use Droath\RoboDockerCompose\Task\loadTasks as dockerComposerTasks;
 use Droath\RoboDockerSync\Task\loadTasks as dockerSyncTasks;
+use function get_class;
 use Symfony\Component\Console\Helper\Table;
 use Symfony\Component\Console\Helper\TableCell;
 use Symfony\Component\Console\Helper\TableSeparator;
@@ -15,13 +16,20 @@ use Symfony\Component\Console\Helper\TableSeparator;
  */
 class DockerEngineType extends EngineType implements TaskSubTypeInterface
 {
+    use dockerSyncTasks;
+    use dockerComposerTasks;
+
     /**
      * Engine install path.
      */
     const INSTALL_ROOT = '/docker';
 
-    use dockerSyncTasks;
-    use dockerComposerTasks;
+    /**
+     * Engine used ports.
+     *
+     * @var array
+     */
+    protected $ports = [];
 
     /**
      * {@inheritdoc}.
@@ -187,6 +195,21 @@ class DockerEngineType extends EngineType implements TaskSubTypeInterface
     }
 
     /**
+     * Set the docker services ports.
+     *
+     * @param array $ports
+     *   An array of ports that are used by docker services.
+     *
+     * @return $this
+     */
+    public function setDockerPorts(array $ports)
+    {
+        $this->ports = $ports;
+
+        return $this;
+    }
+
+    /**
      * Has docker sync configuration.
      *
      * @return bool
@@ -208,8 +231,7 @@ class DockerEngineType extends EngineType implements TaskSubTypeInterface
     protected function runOpenPortStatusReport()
     {
         $host = '127.0.0.1';
-        $ports = ['80', '3306'];
-        $status = $this->getPortStatus($host, $ports);
+        $status = $this->getPortStatus($host, $this->ports);
         $has_warning = isset($status['state']['warning'])
             && $status['state']['warning'] !== 0
                 ? true

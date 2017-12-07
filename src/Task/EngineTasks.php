@@ -5,6 +5,7 @@ namespace Droath\ProjectX\Task;
 use Droath\HostsFileManager\HostsFile;
 use Droath\HostsFileManager\HostsFileWriter;
 use Droath\ProjectX\ProjectX;
+use function get_class;
 
 /**
  * Define Project-X engine task commands.
@@ -21,7 +22,8 @@ class EngineTasks extends TaskBase
      */
     public function engineUp($opts = ['no-hostname' => false, 'no-browser' => false])
     {
-        $status = $this->engineInstance()->up();
+        $ports = $this->projectInstance()->getUsedPorts();
+        $status = $this->engineInstance()->setDockerPorts($ports)->up();
 
         if ($status !== false) {
             // Allow projects to react to the engine startup.

@@ -178,6 +178,17 @@ abstract class ProjectType extends TaskSubType implements ProjectTypeInterface
     }
 
     /**
+     * Get project used ports.
+     *
+     * @return array
+     *   An array of used ports on the project.
+     */
+    public function getUsedPorts()
+    {
+        return [];
+    }
+
+    /**
      * Get project install path.
      *
      * @return string
