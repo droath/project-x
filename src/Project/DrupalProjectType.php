@@ -19,6 +19,8 @@ class DrupalProjectType extends PhpProjectType implements TaskSubTypeInterface, 
     const DRUSH_VERSION = '^8.1';
     const DEFAULT_VERSION = 8;
     const DRUPAL_8_VERSION = '^8.3';
+    const DATABASE_PORT = 3306;
+    const DATABASE_PROTOCOL = 'mysql';
     const SUPPORTED_VERSIONS = [
         7 => 7,
         8 => 8
@@ -542,8 +544,11 @@ class DrupalProjectType extends PhpProjectType implements TaskSubTypeInterface, 
 
         $this->_copy("{$this->sitesPath}/example.settings.local.php", $this->settingLocalFile);
 
+        $db_port = $this->getDatabasePort();
+        $db_protocol = $this->getDatabaseProtocol();
+
         if ($running_docker) {
-            $db_host = 'mysql';
+            $db_host = $db_protocol;
         }
 
         $this->taskWriteToFile($this->settingLocalFile)
@@ -553,6 +558,8 @@ class DrupalProjectType extends PhpProjectType implements TaskSubTypeInterface, 
             ->place('DB_USER', $db_user)
             ->place('DB_PASS', $db_pass)
             ->place('DB_HOST', $db_host)
+            ->place('DB_PORT', $db_port)
+            ->place('DB_PROTOCOL', $db_protocol)
             ->run();
 
         return $this;
@@ -581,7 +588,9 @@ class DrupalProjectType extends PhpProjectType implements TaskSubTypeInterface, 
     ) {
         $this->say('Waiting on Drupal database to become available...');
 
-        $db_connection = $this->hasDatabaseConnection($db_host);
+        $db_port = $this->getDatabasePort();
+        $db_protocol = $this->getDatabaseProtocol();
+        $db_connection = $this->hasDatabaseConnection($db_host, $db_port);
 
         if (!$db_connection) {
             throw new \Exception(
@@ -603,7 +612,7 @@ class DrupalProjectType extends PhpProjectType implements TaskSubTypeInterface, 
             ->accountMail($options['account']['mail'])
             ->accountName($options['account']['name'])
             ->accountPass($options['account']['pass'])
-            ->mysqlDbUrl("$db_user:$db_pass@$db_host:3306/$db_name")
+            ->dbUrl("$db_protocol://$db_user:$db_pass@$db_host:$db_port/$db_name")
             ->siteInstall($options['site']['profile'])
             ->run();
 
@@ -636,12 +645,32 @@ class DrupalProjectType extends PhpProjectType implements TaskSubTypeInterface, 
     }
 
     /**
-     * Get Project-X configuration options.
+     * Get Project-X configuration project option by key.
+     *
+     * @param string $key
+     *   The unique key for the option.
+     *
+     * @return mixed|bool
+     *   The set value for the given project option key; otherwise FALSE.
+     */
+    public function getProjectOptionByKey($key)
+    {
+        $options = $this->getProjectOptions();
+
+        if (!isset($options[$key])) {
+            return false;
+        }
+
+        return $options[$key];
+    }
+
+    /**
+     * Get Project-X configuration project options.
      *
      * @return array
-     *   An array of options defined in the Project-X configuration.
+     *   An array of project options defined in the Project-X configuration.
      */
-    public function getOptions()
+    protected function getProjectOptions()
     {
         $type_id = $this->getTypeId();
         $options = ProjectX::getProjectConfig()
@@ -653,23 +682,63 @@ class DrupalProjectType extends PhpProjectType implements TaskSubTypeInterface, 
     }
 
     /**
-     * Get Project-X configuration option by key.
+     * Get Project-X configuration engine options.
      *
-     * @param string $key
-     *   The unique key for the option.
-     *
-     * @return mixed|bool
-     *   The set value for the given option key; otherwise FALSE if
+     * @return array
+     *   An array of engine options defined in the project-x configuration.
      */
-    public function getOptionByKey($key)
+    protected function getEngineOptions()
     {
-        $options = $this->getOptions();
+        $config = ProjectX::getProjectConfig();
 
-        if (!isset($options[$key])) {
-            return false;
+        $engine = $config->getEngine();
+        $options = $config->getOptions();
+
+        return isset($options[$engine])
+            ? $options[$engine]
+            : [];
+    }
+
+    /**
+     * Get database protocol.
+     *
+     * @return string
+     *   Return database protocol defined in project-x configurations; otherwise
+     *   the default protocol is given.
+     */
+    protected function getDatabaseProtocol()
+    {
+        $options = $this->getEngineOptions();
+
+        if (!isset($options['database'])) {
+            return static::DATABASE_PROTOCOL;
         }
+        $database = $options['database'];
 
-        return $options[$key];
+        return isset($database['protocol'])
+            ? $database['protocol']
+            : static::DATABASE_PROTOCOL;
+    }
+
+    /**
+     * Get database port.
+     *
+     * @return string
+     *   Return database port defined in project-x configurations; otherwise
+     *   the default port is given.
+     */
+    protected function getDatabasePort()
+    {
+        $options = $this->getEngineOptions();
+
+        if (!isset($options['database'])) {
+            return static::DATABASE_PORT;
+        }
+        $database = $options['database'];
+
+        return isset($database['port'])
+            ? $database['port']
+            : static::DATABASE_PORT;
     }
 
     /**
@@ -729,7 +798,7 @@ class DrupalProjectType extends PhpProjectType implements TaskSubTypeInterface, 
     {
         return array_replace_recursive(
             $this->defaultInstallOptions(),
-            $this->getOptions()
+            $this->getProjectOptions()
         );
     }
 

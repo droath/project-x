@@ -308,7 +308,7 @@ class DrupalTasks extends Tasks
     protected function setDrupalUuid()
     {
         $instance = $this->getProjectInstance();
-        $build_info = $instance->getOptionByKey('build_info');
+        $build_info = $instance->getProjectOptionByKey('build_info');
 
         if ($build_info !== false && isset($build_info['uuid'])) {
             $drush_stack = $this->getDrushStack();
