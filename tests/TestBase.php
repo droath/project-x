@@ -108,10 +108,10 @@ abstract class TestBase extends TestCase
     /**
      * Add Project-X local config to project root.
      */
-    protected function addProjecXLocalConfigToRoot()
+    protected function addProjectXLocalConfigToRoot()
     {
         (new YamlFilesystem(
-            $this->getprojectXLocalFileContents(),
+            $this->getProjectXLocalFileContents(),
             $this->projectRoot
         ))
         ->save($this->projectLocalFileName);
@@ -206,6 +206,52 @@ abstract class TestBase extends TestCase
                         'pass' => 'pass-testing',
                     ],
                 ],
+                'docker' => [
+                    'services' => [
+                        'web' => [
+                            'type' => 'apache',
+                            'version' => '2.4',
+                            'links' => [
+                                'php',
+                                'database'
+                            ]
+                        ],
+                        'web2' => [
+                            'type' => 'nginx',
+                            'version' => '1.11',
+                            'links' => [
+                                'php',
+                                'database'
+                            ]
+                        ],
+                        'php' => [
+                            'type' => 'php',
+                            'version' => 7.1
+                        ],
+                        'database' => [
+                            'type' => 'mysql',
+                            'version' => 'latest',
+                            'ports' => ['3307:3307'],
+                            'links' => ['web1'],
+                            'environment' => [
+                                'MYSQL_USER=admin',
+                                'MYSQL_PASSWORD=root',
+                                'MYSQL_DATABASE=drupal',
+                                'MYSQL_ALLOW_EMPTY_PASSWORD=1'
+                            ]
+                        ],
+                        'database2' => [
+                            'type' => 'mariadb',
+                            'version' => '5.5',
+                            'environment' => [
+                                'MYSQL_USER=admin',
+                                'MYSQL_PASSWORD=root',
+                                'MYSQL_DATABASE=drupal',
+                                'MYSQL_ALLOW_EMPTY_PASSWORD=1'
+                            ]
+                        ]
+                    ]
+                ]
             ],
         ];
     }
@@ -215,7 +261,7 @@ abstract class TestBase extends TestCase
      *
      * @return array
      */
-    protected function getprojectXLocalFileContents()
+    protected function getProjectXLocalFileContents()
     {
         return [
             'name' => 'Project-X Local',
