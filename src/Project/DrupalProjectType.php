@@ -16,11 +16,30 @@ use Droath\ProjectX\Utility;
  */
 class DrupalProjectType extends PhpProjectType implements TaskSubTypeInterface, OptionFormAwareInterface
 {
+    /**
+     * Composer package version constants.
+     */
     const DRUSH_VERSION = '^8.1';
-    const DEFAULT_VERSION = 8;
-    const DRUPAL_8_VERSION = '^8.3';
+    const DRUPAL_8_VERSION = '^8.4';
+
+    /**
+     * Service constants.
+     */
+    const DEFAULT_PHP7 = 7.1;
+    const DEFAULT_PHP5 = 5.6;
+    const DEFAULT_MYSQL = 'latest';
+    const DEFAULT_APACHE = 'stable';
+
+    /**
+     * Database constants.
+     */
     const DATABASE_PORT = 3306;
     const DATABASE_PROTOCOL = 'mysql';
+
+    /**
+     * Project supported versions.
+     */
+    const DEFAULT_VERSION = 8;
     const SUPPORTED_VERSIONS = [
         7 => 7,
         8 => 8
@@ -95,6 +114,36 @@ class DrupalProjectType extends PhpProjectType implements TaskSubTypeInterface, 
             80,
             $this->getDatabasePort()
         ] + parent::getUsedPorts();
+    }
+
+    public function defaultServices()
+    {
+        return [
+            'web' => [
+                'type' => 'apache',
+                'version' => static::DEFAULT_APACHE,
+                'links' => [
+                    'php',
+                    'database'
+                ]
+            ],
+            'php' => [
+                'type' => 'php',
+                'version' => $this->getProjectVersion() === 8
+                    ? static::DEFAULT_PHP7
+                    : static::DEFAULT_PHP5,
+            ],
+            'database' => [
+                'type' => 'mysql',
+                'version' => static::DEFAULT_MYSQL,
+                'environments' => [
+                    'MYSQL_USER=admin',
+                    'MYSQL_PASSWORD=root',
+                    'MYSQL_DATABASE=drupal',
+                    'MYSQL_ALLOW_EMPTY_PASSWORD=1'
+                ]
+            ]
+        ];
     }
 
     /**

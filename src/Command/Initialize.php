@@ -4,6 +4,7 @@ namespace Droath\ProjectX\Command;
 
 use Droath\ConsoleForm\Form;
 use Droath\ProjectX\Config\ProjectXConfig;
+use Droath\ProjectX\Engine\DockerEngineType;
 use Droath\ProjectX\OptionFormAwareInterface;
 use Droath\ProjectX\ProjectX;
 use Symfony\Component\Console\Command\Command;
@@ -28,6 +29,12 @@ class Initialize extends Command
                 InputOption::VALUE_OPTIONAL,
                 'Set the path for the Project-X configuration.',
                 getcwd()
+            )
+            ->addOption(
+                'only-options',
+                null,
+                InputOption::VALUE_NONE,
+                'Only generate options related to Project-X configurations.'
             );
     }
 
@@ -50,18 +57,20 @@ class Initialize extends Command
         $filename = 'project-x.yml';
         $filepath = "{$path}/{$filename}";
 
-        $form->save(function ($results) use ($output, $filepath) {
-            $saved = ProjectXConfig::createFromArray($results)
-                ->save($filepath);
+        if (!$input->getOption('only-options')) {
+            $form->save(function ($results) use ($output, $filepath) {
+                $saved = ProjectXConfig::createFromArray($results)
+                    ->save($filepath);
 
-            if ($saved) {
-                $output->writeln(
-                    sprintf('🚀  <info>Success, the project-x configuration have been saved.</info>')
-                );
-                ProjectX::clearProjectConfig();
-                ProjectX::setProjectPath($filepath);
-            }
-        });
+                if ($saved) {
+                    $output->writeln(
+                        sprintf('🚀  <info>Success, the project-x configuration have been saved.</info>')
+                    );
+                    ProjectX::clearProjectConfig();
+                    ProjectX::setProjectPath($filepath);
+                }
+            });
+        }
 
         $this->initProjectOptionForm($input, $output, $filepath);
     }
@@ -77,17 +86,20 @@ class Initialize extends Command
      *   The project-x file path.
      *
      * @return self
+     * @throws \Psr\Container\ContainerExceptionInterface
+     * @throws \Psr\Container\NotFoundExceptionInterface
      */
     protected function initProjectOptionForm($input, $output, $filepath)
     {
+        $options = [];
+
+        $io = new SymfonyStyle($input, $output);
         $project = ProjectX::getProjectType();
 
+        // Add project specific options to the configuration file.
         if ($project instanceof OptionFormAwareInterface) {
-            $classname =  get_class($project);
-            $label = $classname::getLabel();
-
-            $io = new SymfonyStyle($input, $output);
-            $io->title(sprintf('%s Project Options', $label));
+            $classname = get_class($project);
+            $io->title(sprintf('%s Project Options', $classname::getLabel()));
 
             $form = $project->optionForm();
             $form
@@ -97,14 +109,26 @@ class Initialize extends Command
                 ->process();
 
             $options[$classname::getTypeId()] = $form->getResults();
+        }
 
+        $engine = ProjectX::getEngineType();
+
+        // Add engine specific options to the configuration file.
+        if ($engine instanceof DockerEngineType) {
+            $classname = get_class($engine);
+            $options[$classname::getTypeId()] = [
+                'services' => $project->defaultServices()
+            ];
+        }
+
+        if (!empty($options)) {
             $saved = ProjectX::getProjectConfig()
                 ->setOptions($options)
                 ->save($filepath);
 
             if ($saved) {
                 $output->writeln(
-                    sprintf('🚀  <info>Success, the %s options have been saved.</info>', $label)
+                    sprintf('🚀  <info>Success, the options have been saved.</info>')
                 );
             }
         }

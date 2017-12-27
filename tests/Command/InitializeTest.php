@@ -63,7 +63,8 @@ class InitializeTest extends TestBase
         $this->assertEquals('testing@example.com', $config->getOptions()['drupal']['account']['mail']);
         $this->assertEquals('hacker123', $config->getOptions()['drupal']['account']['name']);
         $this->assertEquals('secret', $config->getOptions()['drupal']['account']['pass']);
-        $this->assertContains('Success, the Drupal options have been saved.', $output);
+        $this->assertContains('Success, the options have been saved.', $output);
+        $this->assertArrayHasKey('docker', $config->getOptions());
     }
 
     protected function questionHelperMock()

@@ -213,6 +213,19 @@ class ProjectX extends Application
     }
 
     /**
+     * Get engine type instance.
+     *
+     * @return mixed
+     * @throws \Psr\Container\ContainerExceptionInterface
+     * @throws \Psr\Container\NotFoundExceptionInterface
+     */
+    public static function getEngineType()
+    {
+        return self::getContainer()
+            ->get('projectXEngine');
+    }
+
+    /**
      * Get Project-X configuration.
      *
      * @return \Droath\ProjectX\Config\ProjectXConfig

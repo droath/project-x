@@ -13,7 +13,7 @@ use Symfony\Component\Yaml\Yaml;
  */
 abstract class YamlConfigBase extends ConfigBase implements ConfigInterface
 {
-    const CONTEXT_INLINE = 4;
+    const CONTEXT_INLINE = 8;
     const CONTEXT_INDENT = 2;
     const CONFIG_FORMAT = 'yaml';
 
