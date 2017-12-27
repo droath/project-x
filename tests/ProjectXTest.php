@@ -73,7 +73,7 @@ class ProjectXTest extends TestBase
 
     public function testGetConfigOverrideLocal()
     {
-        $this->addProjecXLocalConfigToRoot();
+        $this->addProjectXLocalConfigToRoot();
 
         $config = ProjectX::getProjectConfig();
         $this->assertEquals('drupal', $config->getType());
