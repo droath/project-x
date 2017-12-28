@@ -3,6 +3,7 @@
 namespace Droath\ProjectX\Tests\Engine;
 
 use Droath\ProjectX\Engine\DockerEngineType;
+use Droath\ProjectX\Engine\DockerServices\DockerServiceInterface;
 use Droath\ProjectX\ProjectX;
 use Droath\ProjectX\Tests\TestTaskBase;
 use org\bovigo\vfs\vfsStream;
@@ -40,6 +41,54 @@ class DockerEngineTypeTest extends TestTaskBase
         $this->assertGreaterThan(1, array_slice(scandir($this->getProjectFileUrl('docker')), 2));
     }
 
+    public function testRebuildDocker()
+    {
+        // Setup existing docker setup defined in default project-x configuration.
+        $this->dockerEngine->setupDocker();
+
+        $config = ProjectX::getProjectConfig();
+        $services = $config->getOptions()['docker']['services'];
+        $this->assertEquals('apache', $services['web']['type']);
+        $this->assertProjectFileExists('docker/services/apache');
+
+        // Update web instance type to be an nginx instead of apache.
+        $services['web']['type'] = 'nginx';
+        ProjectX::getProjectConfig()->setOptions([
+            'docker' => [
+                'services' => $services
+            ]
+        ])->save("{$this->projectRoot}/$this->projectFileName");
+
+        // Invoke docker to be rebuilt.
+        $this->dockerEngine->rebuildDocker();
+
+        $this->assertProjectFileExists('docker');
+        $this->assertProjectFileExists('docker-compose.yml');
+        $this->assertProjectFileExists('docker/services/nginx');
+
+        // Check that nginx is using a Drupal specific service template for default.conf.
+        $this->assertEquals('drupal', $config->getType());
+        $nginx_file = file_get_contents("{$this->projectRoot}/docker/services/nginx/default.conf");
+        $this->assertContains('Drupal', $nginx_file);
+    }
+
+    public function testBuildDockerCompose()
+    {
+        $this->dockerEngine->buildDockerCompose();
+        $php_dockerfile = file_get_contents("{$this->projectRoot}/docker/services/php/DockerFile");
+        $this->assertProjectFileExists('docker/services/php');
+        $this->assertContains('FROM php:7.2-fpm', $php_dockerfile);
+        $this->assertProjectFileExists('docker/services/mysql');
+        $this->assertProjectFileExists('docker/services/apache');
+        $this->assertProjectFileExists('docker-compose.yml');
+    }
+
+    public function testBuildDockerComposeDev()
+    {
+        $this->dockerEngine->buildDockerComposeDev();
+        $this->assertProjectFileExists('docker-compose-dev.yml');
+    }
+
     public function testSetupDockerSync()
     {
         $this->dockerEngine->setupDockerSync();
@@ -51,7 +100,7 @@ class DockerEngineTypeTest extends TestTaskBase
 
         $this->assertRegExp('/SYNC_NAME=\w+/', $env_contents);
         $this->assertRegExp('/HOST_IP_ADDRESS=.*/', $env_contents);
-        
+
         $client_ip = ProjectX::clientHostIp();
         $this->assertRegExp("/$client_ip/", $env_contents);
     }
@@ -64,4 +113,41 @@ class DockerEngineTypeTest extends TestTaskBase
         $this->assertTrue($this->dockerEngine->hasDockerSync());
     }
 
+    public function testTemplateDirectories()
+    {
+        $this->assertEquals([
+            './templates/docker',
+            './templates/docker/services'
+        ], $this->dockerEngine->templateDirectories());
+    }
+
+    /**
+     * @dataProvider dockerServices
+     *
+     * @param $name
+     *   The name of the docker service.
+     */
+    public function testLoadService($name)
+    {
+        $service = DockerEngineType::loadService($name);
+        $this->assertInstanceOf(DockerServiceInterface::class, $service);
+    }
+
+    /**
+     * Get docker services.
+     *
+     * @return array
+     *   An array of docker services.
+     */
+    public function dockerServices()
+    {
+        return [
+            ['php'],
+            ['redis'],
+            ['mysql'],
+            ['nginx'],
+            ['apache'],
+            ['mariadb']
+        ];
+    }
 }

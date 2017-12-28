@@ -64,6 +64,14 @@ abstract class EngineType extends TaskSubType implements EngineTypeInterface
     }
 
     /**
+     * {@inheritdoc}
+     */
+    public function rebuild()
+    {
+        $this->say('Project engine is running the rebuild process. 🤘');
+    }
+    
+    /**
      * Get engine install path.
      *
      * @return string
@@ -74,10 +82,29 @@ abstract class EngineType extends TaskSubType implements EngineTypeInterface
     }
 
     /**
-     * {@inheritdoc}
+     * Get engine options.
+     *
+     * @return array
+     *   An array of options for the given engine.
      */
-    public function templateDirectories()
+    protected function getOptions()
     {
-        return ProjectX::getProjectType()->templateDirectories();
+        $engine = $this->getConfigs()->getEngine();
+        $options = $this->getConfigs()->getOptions();
+
+        return isset($options[$engine])
+            ? $options[$engine]
+            : [];
+    }
+
+    /**
+     * Get project type.
+     *
+     * @return string
+     *   The project type defined in the configuration.
+     */
+    protected function getProjectType()
+    {
+        return $this->getConfigs()->getType();
     }
 }

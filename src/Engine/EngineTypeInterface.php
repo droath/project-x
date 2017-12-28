@@ -36,4 +36,9 @@ interface EngineTypeInterface
      * Install generic engine configurations.
      */
     public function install();
+
+    /**
+     * Rebuild generic engine configurations.
+     */
+    public function rebuild();
 }

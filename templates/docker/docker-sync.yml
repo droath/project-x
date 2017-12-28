@@ -1,7 +1,21 @@
-version: "2"
+version: '2'
 syncs:
   ${SYNC_NAME}-docker-sync:
     src: './'
     sync_userid: 33
     sync_host_ip: '127.0.0.1'
     notify_terminal: true
+    sync_excludes:
+      - docs
+      - tests
+      - docker
+      - reports
+      - .git
+      - .project-x
+      - .docker-sync
+      - composer.json
+      - composer.lock
+      - project-x.yml
+      - docker-sync.yml
+      - docker-compose.yml
+      - docker-compose-dev.yml

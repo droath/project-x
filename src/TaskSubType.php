@@ -42,6 +42,16 @@ abstract class TaskSubType implements BuilderAwareInterface, ContainerAwareInter
     }
 
     /**
+     * Get project-x configurations.
+     *
+     * @return \Droath\ProjectX\Config\ProjectXConfig
+     */
+    protected function getConfigs()
+    {
+        return ProjectX::getProjectConfig();
+    }
+
+    /**
      * Get console application.
      *
      * @return \Symfony\Component\Console\Application
@@ -96,10 +106,13 @@ abstract class TaskSubType implements BuilderAwareInterface, ContainerAwareInter
      *   The filename of template file.
      * @param bool $overwrite
      *   A flag to determine if the file should be overwritten if exists.
+     *
+     * @return TaskSubType
+     * @throws \Exception
      */
     protected function copyTemplateFileToProject($filename, $overwrite = false)
     {
-        $this->copyTemplateFilesToProject([$filename => $filename], $overwrite);
+        return $this->copyTemplateFilesToProject([$filename => $filename], $overwrite);
     }
 
     /**
@@ -109,6 +122,9 @@ abstract class TaskSubType implements BuilderAwareInterface, ContainerAwareInter
      *   An array of template filenames, keyed by target path.
      * @param bool $overwrite
      *   A flag to determine if the file should be overwritten if exists.
+     *
+     * @return self
+     * @throws \Exception
      */
     protected function copyTemplateFilesToProject(array $filenames, $overwrite = false)
     {
@@ -129,6 +145,8 @@ abstract class TaskSubType implements BuilderAwareInterface, ContainerAwareInter
                 sprintf('Failed to copy template file(s) into project!')
             );
         }
+
+        return $this;
     }
 
     /**

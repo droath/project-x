@@ -27,8 +27,8 @@ class PhpService extends DockerServiceBase implements DockerServiceInterface
     public function service()
     {
         return (new DockerService())
-            ->setBuild('docker/php-fpm')
-            ->setExpose([9000])
+            ->setBuild('./docker/services/php')
+            ->setExpose(['9000'])
             ->setVolumes([
                 './:/var/www/html',
                 './docker/services/php/php-overrides.ini:/usr/local/etc/php/conf.d/99-php-overrides.ini'

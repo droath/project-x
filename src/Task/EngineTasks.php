@@ -5,7 +5,6 @@ namespace Droath\ProjectX\Task;
 use Droath\HostsFileManager\HostsFile;
 use Droath\HostsFileManager\HostsFileWriter;
 use Droath\ProjectX\ProjectX;
-use function get_class;
 
 /**
  * Define Project-X engine task commands.
@@ -34,6 +33,16 @@ class EngineTasks extends TaskBase
                 $this->addHostName($opts['no-browser']);
             }
         }
+
+        return $this;
+    }
+
+    /**
+     * Rebuild engine configuration.
+     */
+    public function engineRebuild()
+    {
+        $this->engineInstance()->rebuild();
 
         return $this;
     }
@@ -97,6 +106,8 @@ class EngineTasks extends TaskBase
      *
      * @param bool $no_browser
      *   Don't open the browser window.
+     *
+     * @return self
      */
     protected function addHostName($no_browser)
     {

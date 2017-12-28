@@ -226,7 +226,7 @@ abstract class TestBase extends TestCase
                         ],
                         'php' => [
                             'type' => 'php',
-                            'version' => 7.1
+                            'version' => 7.2
                         ],
                         'database' => [
                             'type' => 'mysql',

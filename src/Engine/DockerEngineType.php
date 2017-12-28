@@ -2,11 +2,17 @@
 
 namespace Droath\ProjectX\Engine;
 
+use Droath\ProjectX\Config\DockerComposeConfig;
+use Droath\ProjectX\Engine\DockerServices\ApacheService;
+use Droath\ProjectX\Engine\DockerServices\MariadbService;
+use Droath\ProjectX\Engine\DockerServices\MysqlService;
+use Droath\ProjectX\Engine\DockerServices\NginxService;
+use Droath\ProjectX\Engine\DockerServices\PhpService;
+use Droath\ProjectX\Engine\DockerServices\RedisService;
 use Droath\ProjectX\ProjectX;
 use Droath\ProjectX\TaskSubTypeInterface;
 use Droath\RoboDockerCompose\Task\loadTasks as dockerComposerTasks;
 use Droath\RoboDockerSync\Task\loadTasks as dockerSyncTasks;
-use function get_class;
 use Symfony\Component\Console\Helper\Table;
 use Symfony\Component\Console\Helper\TableCell;
 use Symfony\Component\Console\Helper\TableSeparator;
@@ -147,24 +153,92 @@ class DockerEngineType extends EngineType implements TaskSubTypeInterface
     }
 
     /**
+     * {@inheritdoc}
+     */
+    public function rebuild()
+    {
+        parent::rebuild();
+
+        $this->rebuildDocker();
+
+        return $this;
+    }
+
+    /**
      * Setup Docker configurations.
      *
      * The setup process consist of the following:
      *   - Make engine install path.
-     *   - Move docker services into project install path.
-     *   - Copy docker-composer.yml config into project root.
+     *   - Build docker compose file.
      *
      * @return self
      */
     public function setupDocker()
     {
-        $project_root = ProjectX::projectRoot();
+        $this->_mkdir($this->getInstallPath());
+        $this->buildDockerCompose();
 
-        $this->taskFilesystemStack()
-            ->mkdir($this->getInstallPath())
-            ->mirror($this->getTemplateFilePath('docker/services'), "{$this->getInstallPath()}")
-            ->copy($this->getTemplateFilePath('docker/docker-compose.yml'), "{$project_root}/docker-compose.yml")
-            ->run();
+        return $this;
+    }
+
+    /**
+     * Rebuild Docker configurations.
+     *
+     * The setup process consist of the following:
+     *   - Remove docker service directory in project install path.
+     *   - Build docker compose file based on docker services.
+     *   - If docker-sync is used then rebuild the docker compose dev file.
+     *
+     * @return self
+     */
+    public function rebuildDocker()
+    {
+        $this->_remove($this->getInstallPath() . '/services');
+        $this->buildDockerCompose();
+
+        if ($this->hasDockerSync()) {
+            $this->buildDockerComposeDev();
+        }
+
+        return $this;
+    }
+
+    /**
+     * Build Docker related structure.
+     *
+     * The setup process consist of the following:
+     *   - Copy docker service templates.
+     *   - Generate docker-compose.yml file.
+     *   - Save docker-composer.yml configuration.
+     *
+     * @return self
+     */
+    public function buildDockerCompose()
+    {
+        $project_root = ProjectX::projectRoot();
+        $this
+            ->copyDockerServiceFiles()
+            ->generateDockerCompose()
+            ->save("{$project_root}/docker-compose.yml");
+
+        return $this;
+    }
+
+    /**
+     * Build Docker related structure.
+     *
+     * The setup process consist of the following:
+     *   - Generate docker-compose-dev.yml file.
+     *   - Save docker-composer-dev.yml configuration.
+     *
+     * @return self
+     */
+    public function buildDockerComposeDev()
+    {
+        $project_root = ProjectX::projectRoot();
+        $this
+            ->generateDockerCompose(true)
+            ->save("{$project_root}/docker-compose-dev.yml");
 
         return $this;
     }
@@ -173,25 +247,23 @@ class DockerEngineType extends EngineType implements TaskSubTypeInterface
      * Setup Docker sync configurations.
      *
      * The setup process consist of the following:
+     *   - Set docker sync name in environment file.
+     *   - Set host IP address in environment file.
+     *   - Build docker-compose-dev.yml configurations.
      *   - Copy docker-sync.yml config into project root.
-     *   - Copy docker-composer-dev.yml config into project root.
-     *   - Replace hosts IP address placeholder in docker-compose.dev.yml.
-     *   - Write the sync name to the project .env file.
      *
-     * @return self
+     * @return void
+     * @throws \Exception
      */
     public function setupDockerSync()
     {
-        $project_root = ProjectX::projectRoot();
-
-        $this->copyTemplateFilesToProject([
-            'docker/docker-sync.yml' => 'docker-sync.yml',
-            'docker/docker-compose-dev.yml' => 'docker-compose-dev.yml',
-        ]);
-
         $this
             ->setDockerSyncNameInEnv()
-            ->setHostIPAddressInEnv();
+            ->setHostIPAddressInEnv()
+            ->buildDockerComposeDev()
+            ->copyTemplateFilesToProject([
+                'docker-sync.yml' => 'docker-sync.yml',
+            ]);
     }
 
     /**
@@ -223,10 +295,203 @@ class DockerEngineType extends EngineType implements TaskSubTypeInterface
     }
 
     /**
+     * {@inheritdoc}
+     */
+    public function templateDirectories()
+    {
+        return array_merge([
+            APP_ROOT . '/templates/docker',
+            APP_ROOT . '/templates/docker/services'
+        ], parent::templateDirectories());
+    }
+
+    /**
+     * Load Docker service.
+     *
+     * @param $name
+     *   The docker service name.
+     *
+     * @return \Droath\ProjectX\Engine\DockerServices\DockerServiceInterface
+     */
+    public static function loadService($name)
+    {
+        $classname = self::serviceClassname($name);
+
+        if (!class_exists($classname)) {
+            throw new \RuntimeException(
+                sprintf("Class %s doesn't exist.", $classname)
+            );
+        }
+
+        return new $classname();
+    }
+
+    /**
+     * Get service classname.
+     *
+     * @param $name
+     *   The service name.
+     *
+     * @return string
+     *   The service fully qualified classname.
+     */
+    public static function serviceClassname($name)
+    {
+        $services = self::availableServices();
+
+        if (!isset($services[$name])) {
+            throw new \InvalidArgumentException(
+                sprintf('The provided service %s does not exist.', $name)
+            );
+        }
+
+        return $services[$name];
+    }
+
+    /**
+     * Define available services.
+     *
+     * @return array
+     *   An array available services.
+     */
+    protected static function availableServices()
+    {
+        return [
+            'php' => PhpService::class,
+            'redis' => RedisService::class,
+            'mysql' => MysqlService::class,
+            'nginx' => NginxService::class,
+            'apache' => ApacheService::class,
+            'mariadb' => MariadbService::class
+        ];
+    }
+
+    /**
+     * Get docker services.
+     *
+     * @return array
+     *   An array of docker services.
+     */
+    protected function getDockerServices()
+    {
+        $options = $this->getOptions();
+
+        return isset($options['services'])
+            ? $options['services']
+            : [];
+    }
+
+    /**
+     * Generate docker-compose object.
+     *
+     * @param bool $dev
+     *   Determine if a dev version should be generated.
+     * @return \Droath\ProjectX\Config\DockerComposeConfig
+     *   The docker compose configuration.
+     */
+    protected function generateDockerCompose($dev = false)
+    {
+        $docker_compose = new DockerComposeConfig();
+        $docker_compose->setVersion('2');
+
+        foreach ($this->getDockerServices() as $name => $info) {
+            if (!isset($info['type'])) {
+                continue;
+            }
+            $type = $info['type'];
+            $instance = self::loadService($type);
+
+            if (isset($info['version'])) {
+                $instance->setVersion($info['version']);
+            }
+            $volumes = $dev ? $instance->devVolumes() : $instance->volumes();
+            $service = $dev ? $instance->devService() : $instance->getCompleteService();
+
+            if (!empty($volumes)) {
+                $docker_compose->setVolumes($volumes);
+            }
+
+            if (!$service->isEmpty()) {
+                $docker_compose->setService($name, $service);
+            }
+        }
+
+        return $docker_compose;
+    }
+
+    /**
+     * Copy docker service template files.
+     */
+    protected function copyDockerServiceFiles()
+    {
+        $root = ProjectX::projectRoot() . "/docker/services";
+        $project_type = $this->getProjectType();
+
+        foreach ($this->getDockerServices() as $name => $info) {
+            if (!isset($info['type'])) {
+                continue;
+            }
+            $type = $info['type'];
+            $instance = self::loadService($type);
+
+            if (isset($info['version'])) {
+                $instance->setVersion($info['version']);
+            }
+            foreach ($instance->templateFiles() as $template => $file_info) {
+                $paths = [
+                    "{$type}/{$project_type}/{$template}",
+                    "{$type}/{$template}"
+                ];
+
+                foreach ($paths as $path) {
+                    $filepath = $this->getTemplateFilePath($path);
+
+                    if (false !== $filepath) {
+                        $filesystem = $this->taskFilesystemStack();
+                        $destination = "{$root}/{$type}";
+
+                        if (!file_exists($destination)) {
+                            $filesystem->mkdir($destination);
+                        }
+                        $destination = "{$destination}/" . basename($filepath);
+
+                        $overwrite = isset($file_info['overwrite'])
+                            ? $file_info['overwrite']
+                            : false;
+
+                        $status = $filesystem
+                            ->copy($filepath, $destination, $overwrite)
+                            ->run();
+
+                        if ($status->wasSuccessful()
+                            && !empty($file_info['variables'])) {
+                            $file_task = $this
+                                ->taskWriteToFile($destination)
+                                ->append();
+
+                            foreach ($file_info['variables'] as $name => $value) {
+                                $file_task->place($name, $value);
+                            }
+
+                            $file_task->run();
+                        }
+
+                        break;
+                    }
+                }
+            }
+        }
+
+        return $this;
+    }
+
+    /**
      * Run open port status report.
      *
      * @return bool
      *   Return true if warnings have been issued; otherwise false.
+     * @throws \Psr\Container\ContainerExceptionInterface
+     * @throws \Psr\Container\NotFoundExceptionInterface
      */
     protected function runOpenPortStatusReport()
     {
@@ -304,6 +569,8 @@ class DockerEngineType extends EngineType implements TaskSubTypeInterface
      *
      * @return array
      *   An array of port status data.
+     * @throws \Psr\Container\ContainerExceptionInterface
+     * @throws \Psr\Container\NotFoundExceptionInterface
      */
     protected function getPortStatus($host, array $ports)
     {
