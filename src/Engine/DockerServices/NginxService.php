@@ -3,6 +3,7 @@
 namespace Droath\ProjectX\Engine\DockerServices;
 
 use Droath\ProjectX\Engine\DockerService;
+use Droath\ProjectX\Engine\ServiceInterface;
 use Droath\ProjectX\ProjectX;
 use Droath\RoboDockerCompose\DockerServicesTrait;
 
@@ -11,7 +12,7 @@ use Droath\RoboDockerCompose\DockerServicesTrait;
  *
  * @package Droath\ProjectX\Engine\DockerServices
  */
-class NginxService extends DockerServiceBase implements DockerServiceInterface
+class NginxService extends DockerServiceBase implements ServiceInterface
 {
     const DEFAULT_VERSION = 'stable';
 

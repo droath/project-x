@@ -3,13 +3,14 @@
 namespace Droath\ProjectX\Engine\DockerServices;
 
 use Droath\ProjectX\Engine\DockerService;
+use Droath\ProjectX\Engine\ServiceInterface;
 
 /**
  * Class PhpService
  *
  * @package Droath\ProjectX\Engine\DockerServices
  */
-class PhpService extends DockerServiceBase implements DockerServiceInterface
+class PhpService extends DockerServiceBase implements ServiceInterface
 {
     const DEFAULT_VERSION = 7.1;
 

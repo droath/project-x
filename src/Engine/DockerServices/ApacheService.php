@@ -4,13 +4,14 @@ namespace Droath\ProjectX\Engine\DockerServices;
 
 use Droath\ProjectX\Engine\DockerFrontendServiceTrait;
 use Droath\ProjectX\Engine\DockerService;
+use Droath\ProjectX\Engine\ServiceInterface;
 
 /**
  * Class ApacheService
  *
  * @package Droath\ProjectX\Engine\DockerServices
  */
-class ApacheService extends DockerServiceBase implements DockerServiceInterface
+class ApacheService extends DockerServiceBase implements ServiceInterface
 {
     const DEFAULT_VERSION = 2.4;
 

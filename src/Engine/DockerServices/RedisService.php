@@ -3,13 +3,14 @@
 namespace Droath\ProjectX\Engine\DockerServices;
 
 use Droath\ProjectX\Engine\DockerService;
+use Droath\ProjectX\Engine\ServiceInterface;
 
 /**
  * Class RedisService
  *
  * @package Droath\ProjectX\Engine\DockerServices
  */
-class RedisService extends DockerServiceBase implements DockerServiceInterface
+class RedisService extends DockerServiceBase implements ServiceInterface
 {
     const DEFAULT_VERSION = '4.0';
 

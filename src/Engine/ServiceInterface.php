@@ -1,13 +1,13 @@
 <?php
 
-namespace Droath\ProjectX\Engine\DockerServices;
+namespace Droath\ProjectX\Engine;
 
 /**
  * Interface DockerServiceInterface
  *
- * @package Droath\ProjectX\Engine\DockerServices
+ * @package Droath\ProjectX\Engine
  */
-interface DockerServiceInterface
+interface ServiceInterface
 {
     /**
      * Docker service name.

@@ -3,13 +3,15 @@
 namespace Droath\ProjectX\Engine\DockerServices;
 
 use Droath\ProjectX\Engine\DockerService;
+use Droath\ProjectX\Engine\ServiceDbInterface;
+use Droath\ProjectX\Engine\ServiceInterface;
 
 /**
  * Class MysqlService
  *
  * @package Droath\ProjectX\Engine\DockerServices
  */
-class MysqlService extends DockerServiceBase implements DockerServiceInterface
+class MysqlService extends DockerServiceBase implements ServiceInterface, ServiceDbInterface
 {
     const DEFAULT_VERSION = 5.6;
 
