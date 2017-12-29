@@ -31,7 +31,8 @@ abstract class DockerServiceBase
      *
      * @return string
      */
-    public static function group() {
+    public static function group()
+    {
         return 'service';
     }
 
@@ -43,7 +44,8 @@ abstract class DockerServiceBase
      *
      * @return self
      */
-    public function setVersion($version) {
+    public function setVersion($version)
+    {
         $this->version = $version;
 
         return $this;
@@ -54,10 +56,22 @@ abstract class DockerServiceBase
      *
      * @return int|string
      */
-    public function getVersion() {
+    public function getVersion()
+    {
         return isset($this->version)
             ? $this->version
             : static::DEFAULT_VERSION;
+    }
+
+    /**
+     * Docker service ports.
+     *
+     * @return array
+     *   An array of service ports.
+     */
+    public function ports()
+    {
+        return [];
     }
 
     /**
@@ -66,7 +80,8 @@ abstract class DockerServiceBase
      * @return array
      *   An array of service volumes.
      */
-    public function volumes() {
+    public function volumes()
+    {
         return [];
     }
 
@@ -76,7 +91,8 @@ abstract class DockerServiceBase
      * @return array
      *   An array of dev service volumes.
      */
-    public function devVolumes() {
+    public function devVolumes()
+    {
         return [];
     }
 
@@ -85,7 +101,8 @@ abstract class DockerServiceBase
      *
      * @return DockerService
      */
-    public function devService() {
+    public function devService()
+    {
         return new DockerService();
     }
 
@@ -95,7 +112,8 @@ abstract class DockerServiceBase
      * @return array
      *   The template files related to the service.
      */
-    public function templateFiles() {
+    public function templateFiles()
+    {
         return [];
     }
 
@@ -110,6 +128,7 @@ abstract class DockerServiceBase
         $info = $this->getInfo();
         $service = $this->service();
 
+        // Apply the overridden property values.
         foreach (static::PROPERTIES_OVERRIDE as $property) {
             if (!isset($info[$property]) || empty($info[$property])) {
                 continue;
@@ -122,6 +141,41 @@ abstract class DockerServiceBase
         }
 
         return $service;
+    }
+
+    /**
+     * Get Docker host ports.
+     *
+     * @return array
+     *   An array of host ports.
+     */
+    public function getHostPorts()
+    {
+        $ports = [];
+        $service = $this->getCompleteService();
+
+        foreach ($service->getPorts() as $port) {
+            list($host,) = explode(':', $port);
+            $ports[] = $host;
+        }
+
+        return $ports;
+    }
+
+    /**
+     * Get Docker formatted service ports.
+     *
+     * @return array
+     *   An array of Docker service ports.
+     */
+    protected function getPorts()
+    {
+        $ports = $this->ports();
+        array_walk($ports, function (&$port) {
+            $port = "{$port}:{$port}";
+        });
+
+        return $ports;
     }
 
     /**
@@ -169,7 +223,7 @@ abstract class DockerServiceBase
      */
     protected function getInfo()
     {
-        foreach ($this->getServices() as $name => $info) {
+        foreach ($this->getServices() as $info) {
             if ($info['type'] === static::name()) {
                 return $info;
             }

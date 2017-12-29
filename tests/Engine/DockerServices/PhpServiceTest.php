@@ -26,7 +26,7 @@ class PhpServiceTest extends TestBase
     {
         $service = $this->service->service();
         $this->assertInstanceOf(DockerService::class, $service);
-        $this->assertEquals('docker/php-fpm', $service->getBuild());
+        $this->assertEquals('./docker/services/php', $service->getBuild());
         $this->assertEquals(['9000'], $service->getExpose());
         $this->assertEquals([
             './:/var/www/html',

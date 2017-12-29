@@ -178,12 +178,12 @@ abstract class ProjectType extends TaskSubType implements ProjectTypeInterface
     }
 
     /**
-     * Get project used ports.
+     * Get project default services.
      *
      * @return array
-     *   An array of used ports on the project.
+     *   An array of default services.
      */
-    public function getUsedPorts()
+    public function defaultServices()
     {
         return [];
     }
@@ -315,5 +315,17 @@ abstract class ProjectType extends TaskSubType implements ProjectTypeInterface
         $this->taskDeleteDir($this->getInstallPath())->run();
 
         return $this;
+    }
+
+    /**
+     * Get engine instance object.
+     *
+     * @return \Droath\ProjectX\Engine\EngineTypeInterface
+     * @throws \Psr\Container\ContainerExceptionInterface
+     * @throws \Psr\Container\NotFoundExceptionInterface
+     */
+    protected function getEngineInstance()
+    {
+        return ProjectX::getEngineType();
     }
 }

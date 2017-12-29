@@ -6,9 +6,7 @@ use Droath\ProjectX\Config\ProjectXConfig;
 use Droath\ProjectX\Discovery\PhpClassDiscovery;
 use League\Container\ContainerAwareTrait;
 use Robo\Robo;
-use Symfony\Component\Cache\Adapter\FilesystemAdapter;
 use Symfony\Component\Console\Application;
-use Symfony\Component\Finder\Finder;
 
 /**
  * Project-X console CLI application.
@@ -205,6 +203,8 @@ class ProjectX extends Application
      * Get project type instance.
      *
      * @return \Droath\ProjectX\Project\ProjectTypeInterface
+     * @throws \Psr\Container\ContainerExceptionInterface
+     * @throws \Psr\Container\NotFoundExceptionInterface
      */
     public static function getProjectType()
     {
@@ -215,7 +215,7 @@ class ProjectX extends Application
     /**
      * Get engine type instance.
      *
-     * @return mixed
+     * @return \Droath\ProjectX\Engine\EngineTypeInterface
      * @throws \Psr\Container\ContainerExceptionInterface
      * @throws \Psr\Container\NotFoundExceptionInterface
      */

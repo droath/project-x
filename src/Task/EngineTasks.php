@@ -21,8 +21,7 @@ class EngineTasks extends TaskBase
      */
     public function engineUp($opts = ['no-hostname' => false, 'no-browser' => false])
     {
-        $ports = $this->projectInstance()->getUsedPorts();
-        $status = $this->engineInstance()->setDockerPorts($ports)->up();
+        $status = $this->engineInstance()->up();
 
         if ($status !== false) {
             // Allow projects to react to the engine startup.

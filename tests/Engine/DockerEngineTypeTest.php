@@ -3,7 +3,7 @@
 namespace Droath\ProjectX\Tests\Engine;
 
 use Droath\ProjectX\Engine\DockerEngineType;
-use Droath\ProjectX\Engine\DockerServices\DockerServiceInterface;
+use Droath\ProjectX\Engine\ServiceInterface;
 use Droath\ProjectX\ProjectX;
 use Droath\ProjectX\Tests\TestTaskBase;
 use org\bovigo\vfs\vfsStream;
@@ -121,6 +121,11 @@ class DockerEngineTypeTest extends TestTaskBase
         ], $this->dockerEngine->templateDirectories());
     }
 
+    public function testRequiredPorts()
+    {
+        $this->assertEquals(['80', '3307', '3306'], $this->dockerEngine->requiredPorts());
+    }
+
     /**
      * @dataProvider dockerServices
      *
@@ -130,7 +135,7 @@ class DockerEngineTypeTest extends TestTaskBase
     public function testLoadService($name)
     {
         $service = DockerEngineType::loadService($name);
-        $this->assertInstanceOf(DockerServiceInterface::class, $service);
+        $this->assertInstanceOf(ServiceInterface::class, $service);
     }
 
     /**

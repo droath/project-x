@@ -5,7 +5,6 @@ namespace Droath\ProjectX\Tests\Engine\DockerServices;
 use Droath\ProjectX\Engine\DockerService;
 use Droath\ProjectX\Engine\DockerServices\DockerServiceBase;
 use Droath\ProjectX\Engine\DockerServices\MysqlService;
-use Droath\ProjectX\Engine\DockerServices\NginxService;
 use Droath\ProjectX\Tests\TestBase;
 
 class DockerServiceBaseTest extends TestBase
@@ -79,5 +78,21 @@ class DockerServiceBaseTest extends TestBase
             'MYSQL_ALLOW_EMPTY_PASSWORD=1'
         ], $service->getEnvironment());
         $this->assertEquals(['web1'], $service->getLinks());
+    }
+
+    public function testGetHostPosts()
+    {
+        $this->service
+            ->expects($this->any())
+            ->method('service')
+            ->will($this->returnValue((new MysqlService())->service()));
+
+        $this->service
+            ->expects($this->any())
+            ->method('name')
+            ->will($this->returnValue('mysql'));
+
+        $ports = $this->service->getHostPorts();
+        $this->assertEquals('3307', current($ports));
     }
 }

@@ -6,6 +6,7 @@ use Boedah\Robo\Task\Drush\loadTasks as drushTasks;
 use Droath\ConsoleForm\Field\BooleanField;
 use Droath\ConsoleForm\Field\TextField;
 use Droath\ConsoleForm\Form;
+use Droath\ProjectX\Engine\ServiceDbInterface;
 use Droath\ProjectX\OptionFormAwareInterface;
 use Droath\ProjectX\ProjectX;
 use Droath\ProjectX\TaskSubTypeInterface;
@@ -28,11 +29,12 @@ class DrupalProjectType extends PhpProjectType implements TaskSubTypeInterface, 
     const DEFAULT_PHP7 = 7.1;
     const DEFAULT_PHP5 = 5.6;
     const DEFAULT_MYSQL = 'latest';
-    const DEFAULT_APACHE = 'stable';
+    const DEFAULT_APACHE = 'latest';
 
     /**
      * Database constants.
      */
+    const DATABASE_HOST = 'localhost';
     const DATABASE_PORT = 3306;
     const DATABASE_PROTOCOL = 'mysql';
 
@@ -108,14 +110,6 @@ class DrupalProjectType extends PhpProjectType implements TaskSubTypeInterface, 
     /**
      * {@inheritdoc}
      */
-    public function getUsedPorts()
-    {
-        return [
-            80,
-            $this->getDatabasePort()
-        ] + parent::getUsedPorts();
-    }
-
     public function defaultServices()
     {
         return [
@@ -136,7 +130,7 @@ class DrupalProjectType extends PhpProjectType implements TaskSubTypeInterface, 
             'database' => [
                 'type' => 'mysql',
                 'version' => static::DEFAULT_MYSQL,
-                'environments' => [
+                'environment' => [
                     'MYSQL_USER=admin',
                     'MYSQL_PASSWORD=root',
                     'MYSQL_DATABASE=drupal',
@@ -590,6 +584,8 @@ class DrupalProjectType extends PhpProjectType implements TaskSubTypeInterface, 
      *   A flag to determine if docker is hosting the project.
      *
      * @return self
+     * @throws \Psr\Container\ContainerExceptionInterface
+     * @throws \Psr\Container\NotFoundExceptionInterface
      */
     public function setupDrupalLocalSettings(
         $db_name = 'drupal',
@@ -602,13 +598,13 @@ class DrupalProjectType extends PhpProjectType implements TaskSubTypeInterface, 
             ->templateManager()
             ->loadTemplate('settings.local.txt');
 
+        $this->_remove($this->settingLocalFile);
         $this->_copy("{$this->sitesPath}/example.settings.local.php", $this->settingLocalFile);
 
-        $db_port = $this->getDatabasePort();
-        $db_protocol = $this->getDatabaseProtocol();
+        $database = $this->getDatabaseInfo();
 
         if ($running_docker) {
-            $db_host = $db_protocol;
+            $db_host = $database['host'];
         }
 
         $this->taskWriteToFile($this->settingLocalFile)
@@ -618,8 +614,8 @@ class DrupalProjectType extends PhpProjectType implements TaskSubTypeInterface, 
             ->place('DB_USER', $db_user)
             ->place('DB_PASS', $db_pass)
             ->place('DB_HOST', $db_host)
-            ->place('DB_PORT', $db_port)
-            ->place('DB_PROTOCOL', $db_protocol)
+            ->place('DB_PORT', $database['port'])
+            ->place('DB_PROTOCOL', $database['protocol'])
             ->run();
 
         return $this;
@@ -639,6 +635,10 @@ class DrupalProjectType extends PhpProjectType implements TaskSubTypeInterface, 
      * @param string $db_host The database host.
      *
      * @return self
+     * @throws \Exception
+     * @throws \Psr\Container\ContainerExceptionInterface
+     * @throws \Psr\Container\NotFoundExceptionInterface
+     * @throws \Robo\Exception\TaskException
      */
     public function setupDrupalInstall(
         $db_name = 'drupal',
@@ -648,8 +648,10 @@ class DrupalProjectType extends PhpProjectType implements TaskSubTypeInterface, 
     ) {
         $this->say('Waiting on Drupal database to become available...');
 
-        $db_port = $this->getDatabasePort();
-        $db_protocol = $this->getDatabaseProtocol();
+        $database = $this->getDatabaseInfo();
+        $db_port = $database['port'];
+        $db_protocol = $database['protocol'];
+
         $db_connection = $this->hasDatabaseConnection($db_host, $db_port);
 
         if (!$db_connection) {
@@ -687,6 +689,7 @@ class DrupalProjectType extends PhpProjectType implements TaskSubTypeInterface, 
      * Export Drupal configuration.
      *
      * @return self
+     * @throws \Robo\Exception\TaskException
      */
     public function exportDrupalConfig()
     {
@@ -725,6 +728,39 @@ class DrupalProjectType extends PhpProjectType implements TaskSubTypeInterface, 
     }
 
     /**
+     * Get database information based on services.
+     *
+     * @return array
+     * @throws \Psr\Container\ContainerExceptionInterface
+     * @throws \Psr\Container\NotFoundExceptionInterface
+     */
+    public function getDatabaseInfo()
+    {
+        $engine = $this->getEngineInstance();
+        foreach ($engine->getServiceInstances() as $name => $info) {
+            if (!isset($info['instance'])) {
+                continue;
+            }
+            $instance = $info['instance'];
+
+            if ($instance instanceof ServiceDbInterface) {
+                $port = current($instance->getHostPorts());
+                return [
+                    'host' => $name,
+                    'port' => $port,
+                    'protocol' => $instance->protocol(),
+                ];
+            }
+        }
+
+        return [
+            'host' => static::DATABASE_HOST,
+            'port' => static::DATABASE_PORT,
+            'protocol' => static::DATABASE_PROTOCOL,
+        ];
+    }
+
+    /**
      * Get Project-X configuration project options.
      *
      * @return array
@@ -760,52 +796,11 @@ class DrupalProjectType extends PhpProjectType implements TaskSubTypeInterface, 
     }
 
     /**
-     * Get database protocol.
-     *
-     * @return string
-     *   Return database protocol defined in project-x configurations; otherwise
-     *   the default protocol is given.
-     */
-    protected function getDatabaseProtocol()
-    {
-        $options = $this->getEngineOptions();
-
-        if (!isset($options['database'])) {
-            return static::DATABASE_PROTOCOL;
-        }
-        $database = $options['database'];
-
-        return isset($database['protocol'])
-            ? $database['protocol']
-            : static::DATABASE_PROTOCOL;
-    }
-
-    /**
-     * Get database port.
-     *
-     * @return string
-     *   Return database port defined in project-x configurations; otherwise
-     *   the default port is given.
-     */
-    protected function getDatabasePort()
-    {
-        $options = $this->getEngineOptions();
-
-        if (!isset($options['database'])) {
-            return static::DATABASE_PORT;
-        }
-        $database = $options['database'];
-
-        return isset($database['port'])
-            ? $database['port']
-            : static::DATABASE_PORT;
-    }
-
-    /**
      * Get Drupal UUID.
      *
      * @return string
      *   The Drupal UUID.
+     * @throws \Robo\Exception\TaskException
      */
     protected function getDrupalUuid()
     {
@@ -834,6 +829,7 @@ class DrupalProjectType extends PhpProjectType implements TaskSubTypeInterface, 
      * Save Drupal UUID in Project-X configuration.
      *
      * @return self
+     * @throws \Robo\Exception\TaskException
      */
     protected function saveDrupalUuid()
     {

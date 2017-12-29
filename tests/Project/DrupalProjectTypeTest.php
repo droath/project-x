@@ -192,6 +192,8 @@ class DrupalProjectTypeTest extends TestTaskBase
         $this->assertRegExp('/\'username\'\s?=>\s?\'drupal-admin\'\,/', $local_content);
         $this->assertRegExp('/\'password\'\s?=>\s?\'drupal-pass\'\,/', $local_content);
         $this->assertRegExp('/\'host\'\s?=>\s?\'drupal-host\'\,/', $local_content);
+        $this->assertRegExp('/\'port\'\s?=>\s?\'3307\'\,/', $local_content);
+        $this->assertRegExp('/\'driver\'\s?=>\s?\'mysql\'\,/', $local_content);
     }
 
     public function testSetupDrupalLocalSettingsDefault()
@@ -206,6 +208,24 @@ class DrupalProjectTypeTest extends TestTaskBase
         $this->assertRegExp('/\'database\'\s?=>\s?\'drupal\'\,/', $local_content);
         $this->assertRegExp('/\'username\'\s?=>\s?\'admin\'\,/', $local_content);
         $this->assertRegExp('/\'password\'\s?=>\s?\'root\'\,/', $local_content);
-        $this->assertRegExp('/\'host\'\s?=>\s?\'mysql\'\,/', $local_content);
+        $this->assertRegExp('/\'host\'\s?=>\s?\'database\'\,/', $local_content);
+        $this->assertRegExp('/\'port\'\s?=>\s?\'3307\'\,/', $local_content);
+        $this->assertRegExp('/\'driver\'\s?=>\s?\'mysql\'\,/', $local_content);
+    }
+
+    public function testGetProjectOptionByKey()
+    {
+        $site = $this->drupalProject->getProjectOptionByKey('site');
+        $this->assertEquals('Drupal-X Site', $site['name']);
+        $this->assertEquals('standard', $site['profile']);
+        $this->assertFalse($this->drupalProject->getProjectOptionByKey('nothing'));
+    }
+
+    public function testGetDatabaseInfo()
+    {
+        $info = $this->drupalProject->getDatabaseInfo();
+        $this->assertEquals('3307', $info['port']);
+        $this->assertEquals('database', $info['host']);
+        $this->assertEquals('mysql', $info['protocol']);
     }
 }

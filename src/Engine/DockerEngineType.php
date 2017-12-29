@@ -8,6 +8,7 @@ use Droath\ProjectX\Engine\DockerServices\MariadbService;
 use Droath\ProjectX\Engine\DockerServices\MysqlService;
 use Droath\ProjectX\Engine\DockerServices\NginxService;
 use Droath\ProjectX\Engine\DockerServices\PhpService;
+use Droath\ProjectX\Engine\DockerServices\PostgresService;
 use Droath\ProjectX\Engine\DockerServices\RedisService;
 use Droath\ProjectX\ProjectX;
 use Droath\ProjectX\TaskSubTypeInterface;
@@ -29,13 +30,6 @@ class DockerEngineType extends EngineType implements TaskSubTypeInterface
      * Engine install path.
      */
     const INSTALL_ROOT = '/docker';
-
-    /**
-     * Engine used ports.
-     *
-     * @var array
-     */
-    protected $ports = [];
 
     /**
      * {@inheritdoc}.
@@ -267,21 +261,6 @@ class DockerEngineType extends EngineType implements TaskSubTypeInterface
     }
 
     /**
-     * Set the docker services ports.
-     *
-     * @param array $ports
-     *   An array of ports that are used by docker services.
-     *
-     * @return $this
-     */
-    public function setDockerPorts(array $ports)
-    {
-        $this->ports = $ports;
-
-        return $this;
-    }
-
-    /**
      * Has docker sync configuration.
      *
      * @return bool
@@ -306,55 +285,34 @@ class DockerEngineType extends EngineType implements TaskSubTypeInterface
     }
 
     /**
-     * Load Docker service.
-     *
-     * @param $name
-     *   The docker service name.
-     *
-     * @return \Droath\ProjectX\Engine\DockerServices\DockerServiceInterface
-     */
-    public static function loadService($name)
-    {
-        $classname = self::serviceClassname($name);
-
-        if (!class_exists($classname)) {
-            throw new \RuntimeException(
-                sprintf("Class %s doesn't exist.", $classname)
-            );
-        }
-
-        return new $classname();
-    }
-
-    /**
-     * Get service classname.
-     *
-     * @param $name
-     *   The service name.
-     *
-     * @return string
-     *   The service fully qualified classname.
-     */
-    public static function serviceClassname($name)
-    {
-        $services = self::availableServices();
-
-        if (!isset($services[$name])) {
-            throw new \InvalidArgumentException(
-                sprintf('The provided service %s does not exist.', $name)
-            );
-        }
-
-        return $services[$name];
-    }
-
-    /**
-     * Define available services.
+     * Get required ports based on services.
      *
      * @return array
-     *   An array available services.
+     *   An array of unique ports required by defined services.
      */
-    protected static function availableServices()
+    public function requiredPorts()
+    {
+        $ports = [];
+
+        foreach ($this->getServiceInstances() as $info) {
+            if (!isset($info['instance'])) {
+                continue;
+            }
+            $instance = $info['instance'];
+
+            if ($instance instanceof ServiceInterface) {
+                $ports = array_merge($ports, $instance->getHostPorts());
+            }
+        }
+        $ports = array_unique($ports);
+
+        return array_values($ports);
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    protected static function services()
     {
         return [
             'php' => PhpService::class,
@@ -362,23 +320,9 @@ class DockerEngineType extends EngineType implements TaskSubTypeInterface
             'mysql' => MysqlService::class,
             'nginx' => NginxService::class,
             'apache' => ApacheService::class,
-            'mariadb' => MariadbService::class
+            'mariadb' => MariadbService::class,
+            'postgres' => PostgresService::class
         ];
-    }
-
-    /**
-     * Get docker services.
-     *
-     * @return array
-     *   An array of docker services.
-     */
-    protected function getDockerServices()
-    {
-        $options = $this->getOptions();
-
-        return isset($options['services'])
-            ? $options['services']
-            : [];
     }
 
     /**
@@ -394,7 +338,7 @@ class DockerEngineType extends EngineType implements TaskSubTypeInterface
         $docker_compose = new DockerComposeConfig();
         $docker_compose->setVersion('2');
 
-        foreach ($this->getDockerServices() as $name => $info) {
+        foreach ($this->getServices() as $name => $info) {
             if (!isset($info['type'])) {
                 continue;
             }
@@ -427,7 +371,7 @@ class DockerEngineType extends EngineType implements TaskSubTypeInterface
         $root = ProjectX::projectRoot() . "/docker/services";
         $project_type = $this->getProjectType();
 
-        foreach ($this->getDockerServices() as $name => $info) {
+        foreach ($this->getServices() as $name => $info) {
             if (!isset($info['type'])) {
                 continue;
             }
@@ -496,7 +440,7 @@ class DockerEngineType extends EngineType implements TaskSubTypeInterface
     protected function runOpenPortStatusReport()
     {
         $host = '127.0.0.1';
-        $status = $this->getPortStatus($host, $this->ports);
+        $status = $this->getPortStatus($host, $this->requiredPorts());
         $has_warning = isset($status['state']['warning'])
             && $status['state']['warning'] !== 0
                 ? true

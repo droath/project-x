@@ -34,13 +34,20 @@ class MysqlService extends DockerServiceBase implements ServiceInterface, Servic
     /**
      * {@inheritdoc}
      */
+    public function ports() {
+        return ['3306'];
+    }
+
+    /**
+     * {@inheritdoc}
+     */
     public function service()
     {
         $db_type = $this->dbType();
 
         return (new DockerService())
            ->setImage($db_type, $this->getVersion())
-           ->setPorts(['3306:3306'])
+           ->setPorts($this->getPorts())
            ->setVolumes([
                'mysql-data:/var/lib/mysql',
                "./docker/services/{$db_type}/mysql-overrides.cnf:/etc/mysql/mysql.conf.d/99-mysql-overrides.cnf"
@@ -70,10 +77,18 @@ class MysqlService extends DockerServiceBase implements ServiceInterface, Servic
     }
 
     /**
-     * The database type.
+     * {@inheritdoc}
+     */
+    public function protocol()
+    {
+        return 'mysql';
+    }
+
+    /**
+     * The database vendor type.
      *
      * @return string
-     *   The database type.
+     *   The database vendor type.
      */
     protected function dbType()
     {
