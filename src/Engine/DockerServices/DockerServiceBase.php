@@ -270,4 +270,14 @@ abstract class DockerServiceBase
 
         return $docker['services'];
     }
+
+    /**
+     * Get project type defined in project-x configuration.
+     *
+     * @return string
+     */
+    protected function getProjectType()
+    {
+        return ProjectX::getProjectConfig()->getType();
+    }
 }

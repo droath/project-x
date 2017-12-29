@@ -77,4 +77,14 @@ class DockerServiceTest extends TestBase {
         $this->service->setImage('solr');
         $this->assertFalse($this->service->isEmpty());
     }
+
+    public function testAsArray()
+    {
+        $service = $this->service;
+        $service->setImage('apache', 2.4);
+        $service->setBuild(null);
+
+        $this->assertInternalType('array', $this->service->asArray());
+        $this->assertEquals(1, count($this->service->asArray()));
+    }
 }

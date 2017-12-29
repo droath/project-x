@@ -129,4 +129,23 @@ class DockerService
 
         return true;
     }
+
+    /**
+     * Get an array representation of the object.
+     *
+     * @return array
+     *   An array of all properties that have values.
+     */
+    public function asArray()
+    {
+        $array = [];
+        foreach(get_object_vars($this) as $property => $value) {
+            if (empty($value)) {
+                continue;
+            }
+            $array[$property] = $value;
+        }
+
+        return $array;
+    }
 }
