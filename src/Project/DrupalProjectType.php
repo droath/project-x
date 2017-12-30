@@ -130,12 +130,6 @@ class DrupalProjectType extends PhpProjectType implements TaskSubTypeInterface, 
             'database' => [
                 'type' => 'mysql',
                 'version' => static::DEFAULT_MYSQL,
-                'environment' => [
-                    'MYSQL_USER=admin',
-                    'MYSQL_PASSWORD=root',
-                    'MYSQL_DATABASE=drupal',
-                    'MYSQL_ALLOW_EMPTY_PASSWORD=1'
-                ]
             ]
         ];
     }

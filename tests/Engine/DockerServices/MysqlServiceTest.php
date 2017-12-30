@@ -31,12 +31,20 @@ class MysqlServiceTest extends TestBase
     {
         $service = $this->service->service();
         $this->assertInstanceOf(DockerService::class, $service);
-        $this->assertEquals('mysql:5.6', $service->getImage());
-        $this->assertEquals(['3306:3306'], $service->getPorts());
         $this->assertEquals([
-            'mysql-data:/var/lib/mysql',
-            './docker/services/mysql/mysql-overrides.cnf:/etc/mysql/mysql.conf.d/99-mysql-overrides.cnf'
-        ], $service->getVolumes());
+            'image' => 'mysql:5.6',
+            'ports' => ['3306:3306'],
+            'volumes' => [
+                'mysql-data:/var/lib/mysql',
+                './docker/services/mysql/mysql-overrides.cnf:/etc/mysql/mysql.conf.d/99-mysql-overrides.cnf'
+            ],
+            'environment' => [
+                'MYSQL_USER=admin',
+                'MYSQL_PASSWORD=root',
+                "MYSQL_DATABASE=drupal",
+                'MYSQL_ALLOW_EMPTY_PASSWORD=1'
+            ]
+        ], $service->asArray());
     }
 
     public function testVolumes()
@@ -51,5 +59,25 @@ class MysqlServiceTest extends TestBase
     public function testTemplateFiles()
     {
         $this->assertArrayHasKey('mysql-overrides.cnf', $this->service->templateFiles());
+    }
+
+    public function testUsername()
+    {
+        $this->assertEquals('admin', $this->service->username());
+    }
+
+    public function testPassword()
+    {
+        $this->assertEquals('root', $this->service->password());
+    }
+
+    public function testDatabase()
+    {
+        $this->assertEquals('drupal', $this->service->database());
+    }
+
+    public function testProtocol()
+    {
+        $this->assertEquals('mysql', $this->service->protocol());
     }
 }

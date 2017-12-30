@@ -30,13 +30,14 @@ class ApacheServiceTest extends TestBase
     public function testService()
     {
         $service = $this->service->service();
-        $this->assertInstanceOf(DockerService::class, $service);
-        $this->assertEquals('httpd:2.4', $service->getImage());
-        $this->assertEquals(['80:80'], $service->getPorts());
         $this->assertEquals([
-            './:/var/www/html',
-            './docker/services/apache/httpd.conf:/usr/local/apache2/conf/httpd.conf',
-        ], $service->getVolumes());
+            'image'       => 'httpd:2.4',
+            'ports'       => ['80:80'],
+            'volumes'     => [
+                './:/var/www/html',
+                './docker/services/apache/httpd.conf:/usr/local/apache2/conf/httpd.conf'
+            ],
+        ], $service->asArray());
     }
 
     public function testTemplateFiles()
