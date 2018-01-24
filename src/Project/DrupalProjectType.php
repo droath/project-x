@@ -6,6 +6,9 @@ use Boedah\Robo\Task\Drush\loadTasks as drushTasks;
 use Droath\ConsoleForm\Field\BooleanField;
 use Droath\ConsoleForm\Field\TextField;
 use Droath\ConsoleForm\Form;
+use Droath\ProjectX\Database;
+use Droath\ProjectX\DatabaseInterface;
+use Droath\ProjectX\Engine\EngineType;
 use Droath\ProjectX\Engine\ServiceDbInterface;
 use Droath\ProjectX\OptionFormAwareInterface;
 use Droath\ProjectX\ProjectX;
@@ -566,28 +569,15 @@ class DrupalProjectType extends PhpProjectType implements TaskSubTypeInterface, 
      *   - Copy over example.settings.local.php.
      *   - Appends database connection details.
      *
-     * @param string $db_name
-     *   The database name.
-     * @param string $db_user
-     *   The database username.
-     * @param string $db_pass
-     *   The database password.
-     * @param string $db_host
-     *   The database host.
-     * @param bool $running_docker
-     *   A flag to determine if docker is hosting the project.
+     * @param DatabaseInterface|null $database
+     *   The database object.
      *
      * @return self
      * @throws \Psr\Container\ContainerExceptionInterface
      * @throws \Psr\Container\NotFoundExceptionInterface
      */
-    public function setupDrupalLocalSettings(
-        $db_name = 'drupal',
-        $db_user = 'admin',
-        $db_pass = 'root',
-        $db_host = '127.0.0.1',
-        $running_docker = true
-    ) {
+    public function setupDrupalLocalSettings(DatabaseInterface $database = null)
+    {
         $local_settings = $this
             ->templateManager()
             ->loadTemplate('settings.local.txt');
@@ -595,21 +585,19 @@ class DrupalProjectType extends PhpProjectType implements TaskSubTypeInterface, 
         $this->_remove($this->settingLocalFile);
         $this->_copy("{$this->sitesPath}/example.settings.local.php", $this->settingLocalFile);
 
-        $database = $this->getDatabaseInfo();
-
-        if ($running_docker) {
-            $db_host = $database['host'];
-        }
+        $database = is_null($database)
+            ? $this->getDatabaseInfo()
+            : $this->getDatabaseInfoWithOverrides($database);
 
         $this->taskWriteToFile($this->settingLocalFile)
             ->append()
             ->appendUnlessMatches('/\$databases\[.+\]/', $local_settings)
-            ->place('DB_NAME', $db_name)
-            ->place('DB_USER', $db_user)
-            ->place('DB_PASS', $db_pass)
-            ->place('DB_HOST', $db_host)
-            ->place('DB_PORT', $database['port'])
-            ->place('DB_PROTOCOL', $database['protocol'])
+            ->place('DB_NAME', $database->getDatabase())
+            ->place('DB_USER', $database->getUser())
+            ->place('DB_PASS', $database->getPassword())
+            ->place('DB_HOST', $database->getHostname())
+            ->place('DB_PORT', $database->getPort())
+            ->place('DB_PROTOCOL', $database->getProtocol())
             ->run();
 
         return $this;
@@ -623,10 +611,8 @@ class DrupalProjectType extends PhpProjectType implements TaskSubTypeInterface, 
      *   - Install Drupal using the drush executable.
      *   - Update install path permissions recursively.
      *
-     * @param string $db_name The database name.
-     * @param string $db_user The database username.
-     * @param string $db_pass The database password.
-     * @param string $db_host The database host.
+     * @param DatabaseInterface|null $database
+     *   The database object.
      *
      * @return self
      * @throws \Exception
@@ -634,21 +620,30 @@ class DrupalProjectType extends PhpProjectType implements TaskSubTypeInterface, 
      * @throws \Psr\Container\NotFoundExceptionInterface
      * @throws \Robo\Exception\TaskException
      */
-    public function setupDrupalInstall(
-        $db_name = 'drupal',
-        $db_user = 'admin',
-        $db_pass = 'root',
-        $db_host = '127.0.0.1'
-    ) {
+    public function setupDrupalInstall(DatabaseInterface $database = null)
+    {
         $this->say('Waiting on Drupal database to become available...');
 
-        $database = $this->getDatabaseInfo();
-        $db_port = $database['port'];
-        $db_protocol = $database['protocol'];
+        $database = is_null($database)
+            ? $this->getDatabaseInfo()
+            : $this->getDatabaseInfoWithOverrides($database);
 
-        $db_connection = $this->hasDatabaseConnection($db_host, $db_port);
+        $db_user = $database->getUser();
+        $db_port = $database->getPort();
+        $db_pass = $database->getPassword();
+        $db_name = $database->getDatabase();
+        $db_host = $database->getHostname();
+        $db_protocol = $database->getProtocol();
 
-        if (!$db_connection) {
+        // Since drush is running from the host, docker hosts are not
+        // discoverable outside the container. We work around this by using
+        // 127.0.0.1 as the db host since the database container ports have been
+        // binded to the host.
+        if (ProjectX::engineType() === 'docker') {
+            $db_host = '127.0.0.1';
+        }
+
+        if (!$this->hasDatabaseConnection($db_host, $db_port)) {
             throw new \Exception(
                 sprintf('Unable to connection to Drupal database %s', $db_host)
             );
@@ -724,14 +719,15 @@ class DrupalProjectType extends PhpProjectType implements TaskSubTypeInterface, 
     /**
      * Get database information based on services.
      *
-     * @return array
+     * @return DatabaseInterface
      * @throws \Psr\Container\ContainerExceptionInterface
      * @throws \Psr\Container\NotFoundExceptionInterface
      */
     public function getDatabaseInfo()
     {
+        /** @var EngineType $engine */
         $engine = $this->getEngineInstance();
-        foreach ($engine->getServiceInstances() as $name => $info) {
+        foreach ($engine->getServiceInstances() as $hostname => $info) {
             if (!isset($info['instance'])) {
                 continue;
             }
@@ -739,19 +735,186 @@ class DrupalProjectType extends PhpProjectType implements TaskSubTypeInterface, 
 
             if ($instance instanceof ServiceDbInterface) {
                 $port = current($instance->getHostPorts());
-                return [
-                    'host' => $name,
-                    'port' => $port,
-                    'protocol' => $instance->protocol(),
-                ];
+
+                return (new Database($this->databaseInfoMapping()))
+                    ->setPort($port)
+                    ->setUser($instance->username())
+                    ->setPassword($instance->password())
+                    ->setProtocol($instance->protocol())
+                    ->setHostname($hostname)
+                    ->setDatabase($instance->database());
             }
         }
 
+        return (new Database($this->databaseInfoMapping()))
+            ->setPort(static::DATABASE_PORT)
+            ->setProtocol(static::DATABASE_PROTOCOL)
+            ->setHostname(static::DATABASE_HOST);
+    }
+
+    /**
+     * Get database info with overrides.
+     *
+     * @param DatabaseInterface $database
+     *   A database object that contains properties to override.
+     *
+     * @return DatabaseInterface
+     * @throws \Psr\Container\ContainerExceptionInterface
+     * @throws \Psr\Container\NotFoundExceptionInterface
+     */
+    public function getDatabaseInfoWithOverrides(DatabaseInterface $database)
+    {
+        $default_database = $this->getDatabaseInfo();
+
+        // Set the override database value for given properties.
+        foreach (get_object_vars($database) as $property => $value) {
+            if (empty($value)) {
+                continue;
+            }
+            $method = 'set' . ucwords($property);
+
+            if (!method_exists($default_database, $method)) {
+                continue;
+            }
+            $default_database = call_user_func_array(
+                [$default_database, $method],
+                [$value]
+            );
+        }
+
+        return $default_database;
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function rebuildSettings()
+    {
+        if ($this->hasDatabaseInfoChanged()) {
+            $this->refreshDatabaseSettings();
+        }
+
+        return $this;
+    }
+
+    /**
+     * Refresh database settings.
+     *
+     * @return bool
+     *   Return boolean based on if refresh was successful.
+     *
+     * @throws \Exception
+     * @throws \Psr\Container\ContainerExceptionInterface
+     * @throws \Psr\Container\NotFoundExceptionInterface
+     */
+    protected function refreshDatabaseSettings()
+    {
+        /** @var Database $database */
+        $database = $this->getDatabaseInfo();
+        $settings = file_get_contents($this->settingLocalFile);
+
+        // Replace database properties based on database info.
+        foreach ($database->asArray() as $property => $value) {
+            $settings = $this->replaceDatabaseProperty(
+                $property,
+                $value,
+                $settings
+            );
+        }
+
+        // Replace the namespace property based on the database protocol.
+        $namespace_base = addslashes('Drupal\\\\Core\\\\Database\\\\Driver\\\\');
+        $settings = $this->replaceDatabaseProperty(
+            'namespace',
+            "{$namespace_base}{$database->getProtocol()}",
+            $settings
+        );
+
+        // Check if file contents whats updated.
+        $status = file_put_contents($this->settingLocalFile, $settings);
+
+        if (false === $status) {
+            throw new \Exception(
+                sprintf('Unable to refresh database settings in (%s).', $this->settingLocalFile)
+            );
+
+            return false;
+        }
+
+        return true;
+    }
+
+    /**
+     * Replace database property.
+     *
+     * @param $property
+     *   The property name.
+     * @param $value
+     *   The property value.
+     * @param $contents
+     *   The contents to search and replace the property value.
+     *
+     * @return string
+     *   The contents with the database property value replaced.
+     */
+    protected function replaceDatabaseProperty($property, $value, $contents)
+    {
+        return preg_replace(
+            "/\\'({$property})\\'\s=>\s\\'(.+)\\'\,?/",
+            "'$1' => '{$value}',",
+            $contents
+        );
+    }
+
+    /**
+     * Database info mapping keys.
+     *
+     * @return array
+     *   An array of database key mapping.
+     */
+    protected function databaseInfoMapping()
+    {
         return [
-            'host' => static::DATABASE_HOST,
-            'port' => static::DATABASE_PORT,
-            'protocol' => static::DATABASE_PROTOCOL,
+            'port' => 'port',
+            'user' => 'username',
+            'hostname' => 'host',
+            'database' => 'database',
+            'password' => 'password',
+            'protocol' => 'driver',
         ];
+    }
+
+    /**
+     * Determine if database info has been updated.
+     *
+     * @return bool
+     *   Return TRUE if database info has been changed; otherwise FALSE.
+     *
+     * @throws \Psr\Container\ContainerExceptionInterface
+     * @throws \Psr\Container\NotFoundExceptionInterface
+     */
+    protected function hasDatabaseInfoChanged()
+    {
+        $settings_uri = $this->settingLocalFile;
+        if (file_exists($settings_uri)) {
+            $settings = file_get_contents($settings_uri);
+            $match_status = preg_match_all("/\'(database|username|password|host|port|driver)\'\s=>\s\'(.+)\'\,?/", $settings, $matches);
+
+            if ($match_status !== false) {
+                $database = $this
+                    ->getDatabaseInfo($this->databaseInfoMapping());
+                $database_file = array_combine($matches[1], $matches[2]);
+
+                foreach ($database->asArray() as $property => $value) {
+                    if (isset($database_file[$property])
+                        && $database_file[$property] != $value) {
+                        return true;
+                    }
+                }
+            }
+        }
+
+        return false;
     }
 
     /**

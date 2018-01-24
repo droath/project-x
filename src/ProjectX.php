@@ -213,6 +213,16 @@ class ProjectX extends Application
     }
 
     /**
+     * Project-x project type.
+     *
+     * @return string
+     */
+    public static function projectType()
+    {
+        return static::getProjectConfig()->getType();
+    }
+
+    /**
      * Get engine type instance.
      *
      * @return \Droath\ProjectX\Engine\EngineTypeInterface
@@ -223,6 +233,16 @@ class ProjectX extends Application
     {
         return self::getContainer()
             ->get('projectXEngine');
+    }
+
+    /**
+     * Project-x engine type.
+     *
+     * @return string
+     */
+    public static function engineType()
+    {
+        return static::getProjectConfig()->getEngine();
     }
 
     /**

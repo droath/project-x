@@ -3,8 +3,7 @@
 namespace Droath\ProjectX\Tests;
 
 use Droath\ProjectX\ProjectX;
-use Robo\Robo;
-use org\bovigo\vfs\vfsStream;
+use phpDocumentor\Reflection\Project;
 
 /**
  * Define Project-X tests.
@@ -13,7 +12,7 @@ class ProjectXTest extends TestBase
 {
     public function testDiscoverCommands()
     {
-        $commands = $this->projectX->discoverCommands();
+        $this->projectX->discoverCommands();
         $this->assertInstanceOf('\Droath\ProjectX\Command\Robo', $this->projectX->find('robo'));
         $this->assertInstanceOf('\Droath\ProjectX\Command\Initialize', $this->projectX->find('init'));
     }
@@ -38,7 +37,7 @@ class ProjectXTest extends TestBase
         $this->assertEquals($this->projectRoot, ProjectX::projectRoot());
     }
 
-    public function testHasProjecConfig()
+    public function testHasProjectConfig()
     {
         $this->assertTrue(ProjectX::hasProjectConfig());
         ProjectX::setProjectPath(null);
@@ -48,6 +47,22 @@ class ProjectXTest extends TestBase
     public function testGetProjectType()
     {
         $this->assertInstanceOf('\Droath\ProjectX\Project\DrupalProjectType', ProjectX::getProjectType());
+    }
+
+    public function testGetEngineType()
+    {
+        $this->assertInstanceOf('\Droath\ProjectX\Engine\DockerEngineType', ProjectX::getEngineType());
+    }
+
+    public function testProjectType()
+    {
+        $this->assertEquals('drupal', ProjectX::projectType());
+    }
+
+    public function testEngineType()
+    {
+        $this->assertEquals('docker', ProjectX::engineType());
+
     }
 
     public function testGetProjectConfig()

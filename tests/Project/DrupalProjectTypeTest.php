@@ -2,7 +2,9 @@
 
 namespace Droath\ProjectX\Tests\Project;
 
+use Droath\ProjectX\Database;
 use Droath\ProjectX\Project\DrupalProjectType;
+use Droath\ProjectX\ProjectX;
 use Droath\ProjectX\Tests\TestTaskBase;
 use org\bovigo\vfs\vfsStream;
 
@@ -173,36 +175,12 @@ class DrupalProjectTypeTest extends TestTaskBase
         $this->assertRegExp('/\$config_directories\[CONFIG_SYNC_DIRECTORY].+\/config.+\;/', $settings_content);
     }
 
-    public function testSetupDrupalLocalSettings()
-    {
-        $this->drupalProject
-            ->setupDrupalLocalSettings(
-                'drupal-test',
-                'drupal-admin',
-                'drupal-pass',
-                'drupal-host',
-                false
-            );
-        $local_url = $this->getProjectFileUrl('docroot/sites/default/settings.local.php');
-        $local_content = file_get_contents($local_url);
-
-        $this->assertProjectFileExists('docroot/sites/default/settings.local.php');
-        $this->assertRegExp('/\$databases\[.+\]/', $local_content);
-        $this->assertRegExp('/\'database\'\s?=>\s?\'drupal-test\'\,/', $local_content);
-        $this->assertRegExp('/\'username\'\s?=>\s?\'drupal-admin\'\,/', $local_content);
-        $this->assertRegExp('/\'password\'\s?=>\s?\'drupal-pass\'\,/', $local_content);
-        $this->assertRegExp('/\'host\'\s?=>\s?\'drupal-host\'\,/', $local_content);
-        $this->assertRegExp('/\'port\'\s?=>\s?\'3307\'\,/', $local_content);
-        $this->assertRegExp('/\'driver\'\s?=>\s?\'mysql\'\,/', $local_content);
-    }
-
     public function testSetupDrupalLocalSettingsDefault()
     {
         $this->drupalProject->setupDrupalLocalSettings();
 
         $local_url = $this->getProjectFileUrl('docroot/sites/default/settings.local.php');
         $local_content = file_get_contents($local_url);
-
         $this->assertProjectFileExists('docroot/sites/default/settings.local.php');
         $this->assertRegExp('/\$databases\[.+\]/', $local_content);
         $this->assertRegExp('/\'database\'\s?=>\s?\'drupal\'\,/', $local_content);
@@ -210,7 +188,23 @@ class DrupalProjectTypeTest extends TestTaskBase
         $this->assertRegExp('/\'password\'\s?=>\s?\'root\'\,/', $local_content);
         $this->assertRegExp('/\'host\'\s?=>\s?\'database\'\,/', $local_content);
         $this->assertRegExp('/\'port\'\s?=>\s?\'3307\'\,/', $local_content);
-        $this->assertRegExp('/\'driver\'\s?=>\s?\'mysql\'\,/', $local_content);
+        $this->assertRegExp('/\'namespace\'\s?=>\s?\'.+mysql\'\,/', $local_content);
+    }
+
+    public function testSetupDrupalLocalSettingDatabaseOverride() {
+        $this->drupalProject->setupDrupalLocalSettings((new Database())
+            ->setProtocol('pgsql')
+            ->setPort(5253)
+            ->setHostname('127.0.0.1')
+        );
+
+        $local_url = $this->getProjectFileUrl('docroot/sites/default/settings.local.php');
+        $local_content = file_get_contents($local_url);
+
+        $this->assertRegExp('/\'host\'\s?=>\s?\'127.0.0.1\'\,/', $local_content);
+        $this->assertRegExp('/\'port\'\s?=>\s?\'5253\'\,/', $local_content);
+        $this->assertRegExp('/\'driver\'\s?=>\s?\'pgsql\'\,/', $local_content);
+        $this->assertRegExp('/\'namespace\'\s?=>\s?\'.+pgsql\'\,/', $local_content);
     }
 
     public function testGetProjectOptionByKey()
@@ -223,9 +217,71 @@ class DrupalProjectTypeTest extends TestTaskBase
 
     public function testGetDatabaseInfo()
     {
-        $info = $this->drupalProject->getDatabaseInfo();
-        $this->assertEquals('3307', $info['port']);
-        $this->assertEquals('database', $info['host']);
-        $this->assertEquals('mysql', $info['protocol']);
+        $this->assertEquals(new \ArrayObject([
+            'host' => 'database',
+            'port' => '3307',
+            'username' => 'admin',
+            'password' => 'root',
+            'database' => 'drupal',
+            'driver' => 'mysql',
+        ]), $this->drupalProject->getDatabaseInfo()->asArray());
+    }
+
+    public function testGetDatabaseInfoWithOverrides() {
+        $this->assertEquals(new \ArrayObject([
+            'host' => '127.0.0.1',
+            'port' => '5253',
+            'username' => 'admin',
+            'password' => 'root',
+            'database' => 'drupal',
+            'driver' => 'pgsql',
+        ]), $this->drupalProject->getDatabaseInfoWithOverrides((new Database())
+            ->setPort(5253)
+            ->setProtocol('pgsql')
+            ->setHostname('127.0.0.1')
+        )->asArray());
+    }
+
+    public function testRebuildSettings()
+    {
+        // Setup project using defined database information.
+        $this->drupalProject->setupDrupalLocalSettings();
+
+        // Update project configuration to reflect database update change.
+        $config = ProjectX::getProjectConfig();
+        $config->setOptions([
+            'docker' => [
+                'services' => [
+                    'database' => [
+                        'type' => 'postgres',
+                        'ports' => [
+                            '5431'
+                        ],
+                        'environment' => [
+                            'POSTGRES_USER=admin2',
+                            'POSTGRES_PASSWORD=root2',
+                            "POSTGRES_DB=drupal2",
+                            'PGDATA=/var/lib/postgresql/data'
+                        ]
+                    ]
+                ]
+            ]
+        ]);
+        $filename = $this->getProjectFileUrl($this->projectFileName);
+        $config->save($filename);
+
+        // Rebuild the settings based on new changes in configuration.
+        $this->drupalProject->rebuildSettings();
+
+        $settings_url = $this->getProjectFileUrl('docroot/sites/default/settings.local.php');
+        $settings = file_get_contents($settings_url);
+
+        $this->assertRegExp('/\'database\'\s?=>\s?\'drupal2\'\,/', $settings);
+        $this->assertRegExp('/\'username\'\s?=>\s?\'admin2\'\,/', $settings);
+        $this->assertRegExp('/\'password\'\s?=>\s?\'root2\'\,/', $settings);
+        $this->assertRegExp('/\'port\'\s?=>\s?\'5431\'\,/', $settings);
+        $this->assertRegExp('/\'host\'\s?=>\s?\'database\'\,/', $settings);
+        $this->assertRegExp('/\'driver\'\s?=>\s?\'pgsql\'\,/', $settings);
+        $this->assertRegExp('/\'namespace\'\s?=>\s?\'.+pgsql\'\,/', $settings);
     }
 }

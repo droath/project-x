@@ -213,6 +213,14 @@ abstract class ProjectType extends TaskSubType implements ProjectTypeInterface
     }
 
     /**
+     * Rebuild project settings.
+     */
+    public function rebuildSettings()
+    {
+        // Nothing to do at parent level.
+    }
+
+    /**
      * Can project run it's install process.
      */
     protected function canInstall()

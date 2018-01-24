@@ -3,6 +3,7 @@
 namespace Droath\ProjectX\Task\Drupal;
 
 use Boedah\Robo\Task\Drush\loadTasks as drushTasks;
+use Droath\ProjectX\Database;
 use Droath\ProjectX\ProjectX;
 use Droath\ProjectX\Project\DrupalProjectType;
 use Robo\Task\Composer\loadTasks as composerTasks;
@@ -22,84 +23,84 @@ class DrupalTasks extends Tasks
      * Install Drupal on the current environment.
      *
      * @param array $opts
+     *
      * @option string $db-name Set the database name.
      * @option string $db-user Set the database user.
      * @option string $db-pass Set the database password.
      * @option string $db-host Set the database host.
+     * @option string $db-port Set the database port.
+     * @option string $db-protocol Set the database protocol.
+     *
+     * @return self
+     * @throws \Exception
+     * @throws \Psr\Container\ContainerExceptionInterface
+     * @throws \Psr\Container\NotFoundExceptionInterface
      */
     public function drupalInstall($opts = [
-        'db-name' => 'drupal',
-        'db-user' => 'admin',
-        'db-pass' => 'root',
-        'db-host' => '127.0.0.1',
+        'db-name' => null,
+        'db-user' => null,
+        'db-pass' => null,
+        'db-host' => null,
+        'db-port' => null,
+        'db-protocol' => null,
     ])
     {
         $this->getProjectInstance()
-            ->setupDrupalInstall(
-                $opts['db-name'],
-                $opts['db-user'],
-                $opts['db-pass'],
-                $opts['db-host']
-            );
+            ->setupDrupalInstall($this->buildDatabase($opts));
+
+        return $this;
     }
 
     /**
      * Setup local environment for already built projects.
      *
      * @param array $opts
+     *
      * @option string $db-name Set the database name.
      * @option string $db-user Set the database user.
      * @option string $db-pass Set the database password.
      * @option string $db-host Set the database host.
+     * @option string $db-port Set the database port.
+     * @option string $db-protocol Set the database protocol.
      * @option bool $no-docker Don't use docker for local setup.
      * @option bool $no-engine Don't start local development engine.
      * @option bool $no-import Don't import Drupal configurations.
      * @option bool $no-browser Don't launch a browser window after setup is complete.
+     *
+     * @return self
+     * @throws \Exception
+     * @throws \Psr\Container\ContainerExceptionInterface
+     * @throws \Psr\Container\NotFoundExceptionInterface
+     * @throws \Robo\Exception\TaskException
      */
     public function drupalLocalSetup($opts = [
-        'db-name' => 'drupal',
-        'db-user' => 'admin',
-        'db-pass' => 'root',
-        'db-host' => '127.0.0.1',
+        'db-name' => null,
+        'db-user' => null,
+        'db-pass' => null,
+        'db-host' => null,
+        'db-port' => null,
+        'db-protocol' => null,
         'no-docker' => false,
         'no-engine' => false,
         'no-import' => false,
         'no-browser' => false,
     ])
     {
-        $db_name = $opts['db-name'];
-        $db_user = $opts['db-user'];
-        $db_pass = $opts['db-pass'];
-        $db_host = $opts['db-host'];
-
+        $database = $this->buildDatabase($opts);
         $instance = $this
             ->getProjectInstance()
             ->setupDrupalFilesystem()
-            ->setupDrupalLocalSettings(
-                $db_name,
-                $db_user,
-                $db_pass,
-                $db_host,
-                !$opts['no-docker'] ? true : false
-            );
+            ->setupDrupalLocalSettings($database);
 
         if (!$opts['no-engine']) {
             $instance->projectEngineUp();
         }
-
-        $instance->setupDrupalInstall(
-            $db_name,
-            $db_user,
-            $db_pass,
-            $db_host
-        );
+        $instance->setupDrupalInstall($database);
 
         $this->drupalDrushAlias();
-
         $drush_stack = $this->getDrushStack();
-        $version = $instance->getProjectVersion();
 
-        if ($version === 8) {
+        if ($instance->getProjectVersion() === 8) {
             $this->setDrupalUuid();
 
             if (!$opts['no-import']) {
@@ -208,17 +209,28 @@ class DrupalTasks extends Tasks
      * Refresh the local Drupal instance.
      *
      * @param array $opts
+     *
      * @option string $db-name Set the database name.
      * @option string $db-user Set the database user.
      * @option string $db-pass Set the database password.
      * @option string $db-host Set the database host.
+     * @option string $db-port Set the database port.
+     * @option string $db-protocol Set the database protocol.
      * @option bool $hard Refresh the site by destroying the database and rebuilding.
+     *
+     * @return self
+     * @throws \Exception
+     * @throws \Psr\Container\ContainerExceptionInterface
+     * @throws \Psr\Container\NotFoundExceptionInterface
+     * @throws \Robo\Exception\TaskException
      */
     public function drupalRefresh($opts = [
-        'db-name' => 'drupal',
-        'db-user' => 'admin',
-        'db-pass' => 'root',
-        'db-host' => '127.0.0.1',
+        'db-name' => null,
+        'db-user' => null,
+        'db-pass' => null,
+        'db-host' => null,
+        'db-port' => null,
+        'db-protocol' => null,
         'hard' => false,
     ])
     {
@@ -232,10 +244,7 @@ class DrupalTasks extends Tasks
             // Reinstall the Drupal database, which drops the existing data.
             $this->getProjectInstance()
                 ->setupDrupalInstall(
-                    $opts['db-name'],
-                    $opts['db-user'],
-                    $opts['db-pass'],
-                    $opts['db-host']
+                    $this->buildDatabase($opts)
                 );
 
             if ($version === 8) {
@@ -256,6 +265,8 @@ class DrupalTasks extends Tasks
         }
 
         $drush_stack->run();
+
+        return $this;
     }
 
     /**
@@ -289,10 +300,33 @@ class DrupalTasks extends Tasks
     }
 
     /**
+     * Build database object based on options.
+     *
+     * @param array $options
+     *   An array of options.
+     *
+     * @return Database
+     */
+    protected function buildDatabase(array $options)
+    {
+        return (new Database())
+            ->setPort($options['db-port'])
+            ->setUser($options['db-user'])
+            ->setPassword($options['db-pass'])
+            ->setDatabase($options['db-name'])
+            ->setHostname($options['db-host'])
+            ->setProtocol($options['db-protocol']);
+    }
+
+    /**
      * Get the Drush stack instance.
      *
      * @return \Boedah\Robo\Task\Drush\DrushStack
      *   The Drush stack object.
+     *
+     * @throws \Exception
+     * @throws \Psr\Container\ContainerExceptionInterface
+     * @throws \Psr\Container\NotFoundExceptionInterface
      */
     protected function getDrushStack()
     {
@@ -450,6 +484,9 @@ class DrupalTasks extends Tasks
      * Get the project instance.
      *
      * @return \Droath\ProjectX\Project\ProjectTypeInterface
+     * @throws \Exception
+     * @throws \Psr\Container\ContainerExceptionInterface
+     * @throws \Psr\Container\NotFoundExceptionInterface
      */
     protected function getProjectInstance()
     {
