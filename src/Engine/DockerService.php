@@ -139,7 +139,7 @@ class DockerService
     public function asArray()
     {
         $array = [];
-        foreach(get_object_vars($this) as $property => $value) {
+        foreach (get_object_vars($this) as $property => $value) {
             if (empty($value)) {
                 continue;
             }

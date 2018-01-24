@@ -56,7 +56,7 @@ class PostgresService extends DockerServiceBase implements ServiceInterface, Ser
             ])
             ->setVolumes([
                'pgsql-data:/var/lib/postgresql/data'
-           ]);
+            ]);
     }
 
     /**

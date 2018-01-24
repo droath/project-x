@@ -34,7 +34,8 @@ class MysqlService extends DockerServiceBase implements ServiceInterface, Servic
     /**
      * {@inheritdoc}
      */
-    public function ports() {
+    public function ports()
+    {
         return ['3306'];
     }
 

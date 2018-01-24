@@ -4,7 +4,6 @@ namespace Droath\ProjectX\Project;
 
 use Droath\ProjectX\Config\ComposerConfig;
 use Droath\ProjectX\ProjectX;
-use Droath\ProjectX\TaskSubTypeInterface;
 
 /**
  * Define PHP project type.

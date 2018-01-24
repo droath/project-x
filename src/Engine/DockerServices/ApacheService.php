@@ -44,7 +44,7 @@ class ApacheService extends DockerServiceBase implements ServiceInterface
             ->setVolumes([
                './:/var/www/html',
                './docker/services/apache/httpd.conf:/usr/local/apache2/conf/httpd.conf'
-           ]);
+            ]);
     }
 
     /**

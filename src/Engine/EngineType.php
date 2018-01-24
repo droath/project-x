@@ -172,7 +172,8 @@ abstract class EngineType extends TaskSubType implements EngineTypeInterface
      * @return array
      *   An array of services referencing classname.
      */
-    protected static function services() {
+    protected static function services()
+    {
         return [];
     }
 

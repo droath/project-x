@@ -36,5 +36,4 @@ interface ServiceDbInterface
      * @return string
      */
     public function protocol();
-
 }
