@@ -58,6 +58,21 @@ class PostgresServiceTest extends TestBase
         ], $this->service->volumes());
     }
 
+    public function testUsername()
+    {
+        $this->assertEquals('admin', $this->service->username());
+    }
+
+    public function testPassword()
+    {
+        $this->assertEquals('root', $this->service->password());
+    }
+
+    public function testDatabase()
+    {
+        $this->assertEquals('drupal', $this->service->database());
+    }
+
     public function testProtocol()
     {
         $this->assertEquals('pgsql', $this->service->protocol());

@@ -74,6 +74,30 @@ class PostgresService extends DockerServiceBase implements ServiceInterface, Ser
     /**
      * {@inheritdoc}
      */
+    public function username()
+    {
+        return $this->getEnvironmentValue('POSTGRES_USER');
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function password()
+    {
+        return $this->getEnvironmentValue('POSTGRES_PASSWORD');
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function database()
+    {
+        return $this->getEnvironmentValue('POSTGRES_DB');
+    }
+
+    /**
+     * {@inheritdoc}
+     */
     public function protocol()
     {
         return 'pgsql';

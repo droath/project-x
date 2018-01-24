@@ -57,7 +57,7 @@ class DockerServiceBaseTest extends TestBase
         $this->assertInternalType('array', $this->service->templateFiles());
     }
 
-    public function testGetCompleteService()
+    public function testGetService()
     {
         $this->service
             ->expects($this->any())
@@ -69,7 +69,7 @@ class DockerServiceBaseTest extends TestBase
             ->method('service')
             ->will($this->returnValue((new MysqlService())->service()));
 
-        $service = $this->service->getCompleteService();
+        $service = $this->service->getService();
         $this->assertEquals(['3307:3307'], $service->getPorts());
         $this->assertEquals([
             'MYSQL_USER=admin',
@@ -78,6 +78,22 @@ class DockerServiceBaseTest extends TestBase
             'MYSQL_ALLOW_EMPTY_PASSWORD=1'
         ], $service->getEnvironment());
         $this->assertEquals(['web1'], $service->getLinks());
+    }
+
+    public function testGetEnvironmentValue()
+    {
+        $this->service
+            ->expects($this->any())
+            ->method('name')
+            ->will($this->returnValue('mysql'));
+
+        $this->service
+            ->expects($this->any())
+            ->method('service')
+            ->will($this->returnValue((new MysqlService())->service()));
+
+        $this->assertEquals('admin', $this->service->getEnvironmentValue('MYSQL_USER'));
+        $this->assertEquals('1', $this->service->getEnvironmentValue('MYSQL_ALLOW_EMPTY_PASSWORD'));
     }
 
     public function testGetHostPosts()

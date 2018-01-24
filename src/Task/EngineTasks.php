@@ -42,6 +42,7 @@ class EngineTasks extends TaskBase
     public function engineRebuild()
     {
         $this->engineInstance()->rebuild();
+        $this->projectInstance()->rebuildSettings();
 
         return $this;
     }

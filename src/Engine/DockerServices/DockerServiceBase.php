@@ -27,6 +27,11 @@ abstract class DockerServiceBase
     protected $version;
 
     /**
+     * @var DockerService
+     */
+    protected $service;
+
+    /**
      * Docker service groups.
      *
      * @return string
@@ -123,24 +128,52 @@ abstract class DockerServiceBase
      * @return \Droath\ProjectX\Engine\DockerService
      *   A fully defined service object.
      */
-    public function getCompleteService()
+    public function getService()
     {
-        $info = $this->getInfo();
-        $service = $this->service();
+        if (!isset($this->service)) {
+            $info = $this->getInfo();
+            $this->service = $this->service();
 
-        // Apply the overridden property values.
-        foreach (static::PROPERTIES_OVERRIDE as $property) {
-            if (!isset($info[$property]) || empty($info[$property])) {
-                continue;
-            }
-            $method = 'set' . ucwords($property);
+            // Apply the overridden property values.
+            foreach (static::PROPERTIES_OVERRIDE as $property) {
+                if (!isset($info[$property]) || empty($info[$property])) {
+                    continue;
+                }
+                $method = 'set' . ucwords($property);
 
-            if (is_callable([$service, $method])) {
-                call_user_func_array([$service, $method], [$info[$property]]);
+                if (is_callable([$this->service, $method])) {
+                    call_user_func_array([$this->service, $method], [$info[$property]]);
+                }
             }
         }
 
-        return $service;
+        return $this->service;
+    }
+
+    /**
+     * Get environment value.
+     *
+     * @param $name
+     *   The name of the environment variable.
+     *
+     * @return string
+     *   The environment value; otherwise null.
+     */
+    public function getEnvironmentValue($name)
+    {
+        $name = strtolower($name);
+        $service = $this->getService();
+        
+        foreach ($service->getEnvironment() as $environment) {
+            list($key, $value) = explode('=', $environment);
+            if (strtolower($key) !== $name) {
+                continue;
+            }
+
+            return $value;
+        }
+
+        return null;
     }
 
     /**
@@ -152,7 +185,7 @@ abstract class DockerServiceBase
     public function getHostPorts()
     {
         $ports = [];
-        $service = $this->getCompleteService();
+        $service = $this->getService();
 
         foreach ($service->getPorts() as $port) {
             list($host,) = explode(':', $port);

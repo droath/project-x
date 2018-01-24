@@ -349,7 +349,7 @@ class DockerEngineType extends EngineType implements TaskSubTypeInterface
                 $instance->setVersion($info['version']);
             }
             $volumes = $dev ? $instance->devVolumes() : $instance->volumes();
-            $service = $dev ? $instance->devService() : $instance->getCompleteService();
+            $service = $dev ? $instance->devService() : $instance->getService();
 
             if (!empty($volumes)) {
                 $docker_compose->setVolumes($volumes);
