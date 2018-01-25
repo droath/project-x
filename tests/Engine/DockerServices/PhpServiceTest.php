@@ -19,7 +19,7 @@ class PhpServiceTest extends TestBase
 
     public function testName()
     {
-        $this->assertEquals('php', $this->classname::name());
+        $this->assertEquals('php', call_user_func_array([$this->classname, 'name'], []));
     }
 
     public function testService()

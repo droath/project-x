@@ -19,12 +19,12 @@ class PostgresServiceTest extends TestBase
 
     public function testName()
     {
-        $this->assertEquals('postgres', $this->classname::name());
+        $this->assertEquals('postgres', call_user_func_array([$this->classname, 'name'], []));
     }
 
     public function testGroup()
     {
-        $this->assertEquals('database', $this->classname::group());
+        $this->assertEquals('database', call_user_func_array([$this->classname, 'group'], []));
     }
 
     public function testPorts()

@@ -19,7 +19,7 @@ class RedisServiceTest extends TestBase
 
     public function testName()
     {
-        $this->assertEquals('redis', $this->classname::name());
+        $this->assertEquals('redis', call_user_func_array([$this->classname, 'name'], []));
     }
 
     public function testService()

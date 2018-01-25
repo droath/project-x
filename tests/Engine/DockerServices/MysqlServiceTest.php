@@ -19,12 +19,12 @@ class MysqlServiceTest extends TestBase
 
     public function testName()
     {
-        $this->assertEquals('mysql', $this->classname::name());
+        $this->assertEquals('mysql', call_user_func_array([$this->classname, 'name'], []));
     }
 
     public function testGroup()
     {
-        $this->assertEquals('database', $this->classname::group());
+        $this->assertEquals('database', call_user_func_array([$this->classname, 'group'], []));
     }
 
     public function testService()

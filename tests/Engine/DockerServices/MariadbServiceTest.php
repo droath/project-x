@@ -19,12 +19,12 @@ class MariadbServiceTest extends TestBase
 
     public function testName()
     {
-        $this->assertEquals('mariadb', $this->classname::name());
+        $this->assertEquals('mariadb', call_user_func_array([$this->classname, 'name'], []));
     }
 
     public function testGroup()
     {
-        $this->assertEquals('database', $this->classname::group());
+        $this->assertEquals('database', call_user_func_array([$this->classname, 'group'], []));
     }
 
     public function testService()

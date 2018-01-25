@@ -19,12 +19,12 @@ class NginxServiceTest extends TestBase
 
     public function testName()
     {
-        $this->assertEquals('nginx', $this->classname::name());
+        $this->assertEquals('nginx', call_user_func_array([$this->classname, 'name'], []));
     }
 
     public function testGroup()
     {
-        $this->assertEquals('frontend', $this->classname::group());
+        $this->assertEquals('frontend', call_user_func_array([$this->classname, 'group'], []));
     }
 
     public function testService()

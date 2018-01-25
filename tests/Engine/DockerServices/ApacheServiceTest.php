@@ -2,7 +2,6 @@
 
 namespace Droath\ProjectX\Tests\Engine\DockerServices;
 
-use Droath\ProjectX\Engine\DockerService;
 use Droath\ProjectX\Engine\DockerServices\ApacheService;
 use Droath\ProjectX\Tests\TestBase;
 
@@ -19,12 +18,12 @@ class ApacheServiceTest extends TestBase
 
     public function testName()
     {
-        $this->assertEquals('apache', $this->classname::name());
+        $this->assertEquals('apache', call_user_func_array([$this->classname, 'name'], []));
     }
 
     public function testGroup()
     {
-        $this->assertEquals('frontend', $this->classname::group());
+        $this->assertEquals('frontend', call_user_func_array([$this->classname, 'group'], []));
     }
 
     public function testService()
