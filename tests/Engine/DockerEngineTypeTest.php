@@ -75,9 +75,7 @@ class DockerEngineTypeTest extends TestTaskBase
     public function testBuildDockerCompose()
     {
         $this->dockerEngine->buildDockerCompose();
-        $php_dockerfile = file_get_contents("{$this->projectRoot}/docker/services/php/DockerFile");
         $this->assertProjectFileExists('docker/services/php');
-        $this->assertContains('FROM php:7.2-fpm', $php_dockerfile);
         $this->assertProjectFileExists('docker/services/mysql');
         $this->assertProjectFileExists('docker/services/apache');
         $this->assertProjectFileExists('docker-compose.yml');
