@@ -93,6 +93,14 @@ abstract class ProjectType extends TaskSubType implements ProjectTypeInterface
     }
 
     /**
+     * React on the deploy build.
+     */
+    public function onDeployBuild()
+    {
+        // Nothing to do at the parent level.
+    }
+
+    /**
      * Has docker support.
      */
     public function hasDockerSupport()

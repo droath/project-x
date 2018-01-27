@@ -64,6 +64,7 @@ class InitializeTest extends TestBase
         $this->assertEquals('hacker123', $config->getOptions()['drupal']['account']['name']);
         $this->assertEquals('secret', $config->getOptions()['drupal']['account']['pass']);
         $this->assertContains('Success, the options have been saved.', $output);
+        $this->assertEquals('droath/project-x', $config->getOptions()['deploy']['github_repo']);
         $this->assertArrayHasKey('docker', $config->getOptions());
     }
 
@@ -89,6 +90,8 @@ class InitializeTest extends TestBase
                         return 8;
                     case 'select_engine':
                         return 'docker';
+                    case 'github_repo':
+                        return 'droath/project-x';
                     case 'github_url':
                         return 'https://github.com/droath/project-x';
                     case 'hostname':
@@ -123,6 +126,7 @@ class InitializeTest extends TestBase
                     case 'setup_github':
                     case 'setup_remote':
                     case 'save_results':
+                    case 'setup_build_deploy':
                     case 'open_browser_on_startup':
                     case 'setup_drupal_site_options':
                     case 'setup_drupal_account_options':

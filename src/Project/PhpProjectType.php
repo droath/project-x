@@ -4,12 +4,17 @@ namespace Droath\ProjectX\Project;
 
 use Droath\ProjectX\Config\ComposerConfig;
 use Droath\ProjectX\ProjectX;
+use Robo\Task\Composer\loadTasks as composerTasks;
+use Robo\Task\Filesystem\loadTasks as fileSystemTasks;
 
 /**
  * Define PHP project type.
  */
 abstract class PhpProjectType extends ProjectType
 {
+    use composerTasks;
+    use fileSystemTasks;
+
     const PHPCS_VERSION = '2.*';
     const BEHAT_VERSION = '^3.1';
     const PHPUNIT_VERSION = '>=4.8.28 <5';
@@ -235,6 +240,31 @@ abstract class PhpProjectType extends ProjectType
     }
 
     /**
+     * Package PHP build.
+     *
+     * The process consist of following:
+     *   - Copy patches.
+     *   - Copy composer.json and composer.lock
+     *
+     * @return self
+     */
+    public function packagePhpBuild()
+    {
+        $build_root = ProjectX::buildRoot();
+        $project_root = ProjectX::projectRoot();
+
+        $stack = $this->taskFilesystemStack();
+        if (file_exists("{$project_root}/patches")) {
+            $stack->mirror("{$project_root}/patches", "{$build_root}/patches");
+        }
+        $stack->copy("{$project_root}/composer.json", "{$build_root}/composer.json");
+        $stack->copy("{$project_root}/composer.json", "{$build_root}/composer.lock");
+        $stack->run();
+
+        return $this;
+    }
+
+    /**
      * Update composer packages.
      *
      * @return self
@@ -247,7 +277,31 @@ abstract class PhpProjectType extends ProjectType
         return $this;
     }
 
-   /**
+    /**
+     * {@inheritdoc}
+     */
+    public function onDeployBuild()
+    {
+        parent::onDeployBuild();
+
+        $this->packagePhpBuild();
+
+        $this->taskComposerUpdate()
+            ->noDev()
+            ->workingDir(ProjectX::buildRoot())
+            ->option('lock')
+            ->run();
+
+        $this->taskComposerInstall()
+            ->noDev()
+            ->option('quiet')
+            ->noInteraction()
+            ->workingDir(ProjectX::buildRoot())
+            ->optimizeAutoloader()
+            ->run();
+    }
+
+    /**
      * Ask to setup TravisCI configurations.
      *
      * @return self

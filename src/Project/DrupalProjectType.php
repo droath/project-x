@@ -14,6 +14,7 @@ use Droath\ProjectX\OptionFormAwareInterface;
 use Droath\ProjectX\ProjectX;
 use Droath\ProjectX\TaskSubTypeInterface;
 use Droath\ProjectX\Utility;
+use phpDocumentor\Reflection\Project;
 
 /**
  * Define Drupal project type.
@@ -265,6 +266,15 @@ class DrupalProjectType extends PhpProjectType implements TaskSubTypeInterface, 
     /**
      * {@inheritdoc}
      */
+    public function onDeployBuild()
+    {
+        $this->packageDrupalBuild();
+        parent::onDeployBuild();
+    }
+
+    /**
+     * {@inheritdoc}
+     */
     public function setupBehat()
     {
         parent::setupBehat();
@@ -351,6 +361,43 @@ class DrupalProjectType extends PhpProjectType implements TaskSubTypeInterface, 
                 'docroot/themes/contrib/{$name}'=> ['type:drupal-theme'],
                 'drush/contrib/{$name}'=> ['type:drupal-drush']
             ]);
+
+        return $this;
+    }
+
+    /**
+     * Package up Drupal into a build directory.
+     *
+     * The process consist of the following:
+     *   - Copy config
+     *   - Copy salt.txt
+     *   - Copy themes, modules, and profile custom code.
+     *
+     * @return self
+     */
+    public function packageDrupalBuild()
+    {
+        $build_root = ProjectX::buildRoot();
+        $project_root = ProjectX::projectRoot();
+
+        $stack = $this->taskFilesystemStack()
+            ->copy("{$project_root}/salt.txt", "{$build_root}/salt.txt");
+
+        $mirror_directories = [
+            '/config',
+            static::INSTALL_ROOT . '/themes/custom',
+            static::INSTALL_ROOT . '/modules/custom',
+            static::INSTALL_ROOT . '/profile/custom'
+        ];
+
+        foreach ($mirror_directories as $directory) {
+            $path_to_directory = "{$project_root}{$directory}";
+            if (!file_exists($path_to_directory)) {
+                continue;
+            }
+            $stack->mirror($path_to_directory, "{$build_root}{$directory}");
+        }
+        $stack->run();
 
         return $this;
     }

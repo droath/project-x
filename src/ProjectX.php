@@ -182,6 +182,16 @@ class ProjectX extends Application
     }
 
     /**
+     * Get the build root path
+     * .
+     * @return string
+     */
+    public static function buildRoot()
+    {
+        return static::projectRoot() . '/build';
+    }
+
+    /**
      * Has Project-X configuration.
      *
      * @return bool

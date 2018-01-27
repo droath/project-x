@@ -54,6 +54,11 @@ class ProjectXTest extends TestBase
         $this->assertInstanceOf('\Droath\ProjectX\Engine\DockerEngineType', ProjectX::getEngineType());
     }
 
+    public function testBuildRoot()
+    {
+        $this->assertEquals('vfs://root/build', ProjectX::buildRoot());
+    }
+
     public function testProjectType()
     {
         $this->assertEquals('drupal', ProjectX::projectType());

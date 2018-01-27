@@ -2,6 +2,8 @@
 
 namespace Droath\ProjectX\Command;
 
+use Droath\ConsoleForm\Field\BooleanField;
+use Droath\ConsoleForm\Field\TextField;
 use Droath\ConsoleForm\Form;
 use Droath\ProjectX\Config\ProjectXConfig;
 use Droath\ProjectX\Engine\DockerEngineType;
@@ -110,7 +112,29 @@ class Initialize extends Command
 
             $options[$classname::getTypeId()] = $form->getResults();
         }
+        $io->newLine(2);
+        $io->title('Deploy Build Options');
 
+        $deploy_form = (new Form())
+            ->setInput($input)
+            ->setOutput($output)
+            ->setHelperSet($this->getHelperSet())
+            ->addFields([
+                (new BooleanField('deploy', 'Setup build deploy?'))
+                    ->setDefault(false)
+                    ->setSubform(function ($subform, $value) {
+                        if (true === $value) {
+                            $subform->addFields([
+                                (new TextField('github_repo', 'GitHub Repo')),
+                            ]);
+                        }
+                    })
+            ]);
+        $deploy_results = $deploy_form->process()->getResults();
+
+        if (!empty($deploy_results)) {
+            $options = array_merge($options, $deploy_results);
+        }
         $engine = ProjectX::getEngineType();
 
         // Add engine specific options to the configuration file.

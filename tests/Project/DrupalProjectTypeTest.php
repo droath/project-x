@@ -89,6 +89,43 @@ class DrupalProjectTypeTest extends TestTaskBase
         $this->assertTrue($this->projectDir->hasChild('.gitignore'));
     }
 
+    public function testPackageDrupalBuild()
+    {
+        vfsStream::create([
+            'config' => [
+                'configure1.yml' => '',
+                'configure2.yml' => ''
+            ],
+            'docroot' => [
+                'modules' => [
+                    'custom' => [
+                        'page_manager' => []
+                    ]
+                ],
+                'themes' => [
+                    'custom' => [
+                        'bootstrap' => []
+                    ]
+                ],
+                'profile' => [
+                    'custom' => [
+                        'lighting' => []
+                    ]
+                ]
+            ],
+            'salt.txt' => '12334567',
+        ], $this->projectDir);
+
+        $build_root = ProjectX::buildRoot();
+        $this->drupalProject->packageDrupalBuild();
+
+        $this->assertFileExists("{$build_root}/docroot/modules/custom/page_manager");
+        $this->assertFileExists("{$build_root}/docroot/themes/custom/bootstrap");
+        $this->assertFileExists("{$build_root}/docroot/profile/custom/lighting");
+        $this->assertFileExists("{$build_root}/salt.txt");
+        $this->assertFileExists("{$build_root}/config/configure1.yml");
+    }
+
     public function testSetupDrush()
     {
         $this->drupalProject->setupDrush();

@@ -3,7 +3,9 @@
 namespace Droath\ProjectX\Tests\Project;
 
 use Droath\ProjectX\Project\PhpProjectType;
+use Droath\ProjectX\ProjectX;
 use Droath\ProjectX\Tests\TestTaskBase;
+use org\bovigo\vfs\vfsStream;
 use Symfony\Component\Console\Input\StringInput;
 
 /**
@@ -76,5 +78,24 @@ class PhpProjectTypeTest extends TestTaskBase
 
         $this->assertProjectFileExists('phpcs.xml.dist');
         $this->assertTrue($this->phpProject->hasPhpCodeSniffer());
+    }
+
+    public function testPackagePhpBuild()
+    {
+        vfsStream::create([
+            'patches' => [
+                'fix_me.patch' => '',
+                'fix_me_2.patch' => ''
+            ],
+            'composer.json' => '{}',
+            'composer.lock' => '{}',
+        ], $this->projectDir);
+
+        $build_root = ProjectX::buildRoot();
+        $this->phpProject->packagePhpBuild();
+
+        $this->assertFileExists("{$build_root}/composer.json");
+        $this->assertFileExists("{$build_root}/composer.lock");
+        $this->assertFileExists("{$build_root}/patches/fix_me.patch");
     }
 }
