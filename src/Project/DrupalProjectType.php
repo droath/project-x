@@ -1013,6 +1013,7 @@ class DrupalProjectType extends PhpProjectType implements TaskSubTypeInterface, 
 
         if ($version === 8) {
             $result = $this->taskDrushStack()
+                ->printOutput(false)
                 ->drupalRootDirectory($this->getInstallPath())
                 ->drush('cget system.site uuid')
                 ->run();

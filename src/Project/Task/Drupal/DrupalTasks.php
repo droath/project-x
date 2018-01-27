@@ -344,7 +344,9 @@ class DrupalTasks extends Tasks
         $instance = $this->getProjectInstance();
         $build_info = $instance->getProjectOptionByKey('build_info');
 
-        if ($build_info !== false && isset($build_info['uuid'])) {
+        if ($build_info !== false
+            && isset($build_info['uuid'])
+            && !empty($build_info['uuid'])) {
             $drush_stack = $this->getDrushStack();
             $drush_stack
                 ->drush("cset system.site uuid {$build_info['uuid']}")
