@@ -20,7 +20,18 @@ abstract class EngineType extends TaskSubType implements EngineTypeInterface
      */
     public function up()
     {
-        $this->say('Project engine is preparing for takeoff. 🚀');
+        $this->say('Project is preparing for startup. 🚀');
+
+        if (!$this->hasServices()) {
+            $this->io()->note(
+                'Missing service definitions in project-x configuration. This ' .
+                'feature was added in version 2.2.14 to help streamline adding ' .
+                'additional services without having to worry about configuration.' .
+                "\n\nRun `project-x init --only-options` to generate project defaults. " .
+                'After this you will be able to add/replace services to meet ' .
+                'project requirements with ease.'
+            );
+        }
     }
 
     /**
@@ -84,6 +95,16 @@ abstract class EngineType extends TaskSubType implements EngineTypeInterface
         return isset($options['services'])
             ? $options['services']
             : [];
+    }
+
+    /**
+     * Has engine services defined.
+     *
+     * @return bool
+     */
+    public function hasServices()
+    {
+          return !empty($this->getServices());
     }
 
     /**

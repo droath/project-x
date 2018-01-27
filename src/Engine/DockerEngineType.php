@@ -57,10 +57,12 @@ class DockerEngineType extends EngineType implements TaskSubTypeInterface
         // Run open port status report. Display a confirmation message if
         // warning(s) have been issued. User will need to confirm if they want
         // to continue or not.
-        $status = $this->runOpenPortStatusReport();
+        $continue = $this->runOpenPortStatusReport();
 
-        if (!$status) {
-            exit;
+        if (!$continue) {
+            throw new \RuntimeException(
+                'Project startup has been aborted due to conflicting ports.'
+            );
         }
 
         // Startup docker sync if found in project.
@@ -433,7 +435,7 @@ class DockerEngineType extends EngineType implements TaskSubTypeInterface
      * Run open port status report.
      *
      * @return bool
-     *   Return true if warnings have been issued; otherwise false.
+     *   Return true if it's okay to continue; otherwise false.
      * @throws \Psr\Container\ContainerExceptionInterface
      * @throws \Psr\Container\NotFoundExceptionInterface
      */
@@ -441,30 +443,33 @@ class DockerEngineType extends EngineType implements TaskSubTypeInterface
     {
         $host = '127.0.0.1';
         $status = $this->getPortStatus($host, $this->requiredPorts());
-        $has_warning = isset($status['state']['warning'])
+
+        if (!empty($status)) {
+            $has_warning = isset($status['state']['warning'])
             && $status['state']['warning'] !== 0
                 ? true
                 : false;
 
-        if ($has_warning) {
-            $this->io()
-                ->caution(
-                    "Another process on your system is using the same port(s).\n" .
-                    'Please review the report below for more details.'
-                );
-        }
-        $table = new Table($this->getOutput());
-        $table
-            ->setHeaders(['Port', 'Status'])
-            ->setRows($this->buildPortStatusRows($status));
+            if ($has_warning) {
+                $this->io()
+                    ->caution(
+                        "Another process on your system is using the same port(s).\n" .
+                        'Please review the report below for more details.'
+                    );
+            }
+            $table = new Table($this->getOutput());
+            $table
+                ->setHeaders(['Port', 'Status'])
+                ->setRows($this->buildPortStatusRows($status));
 
-        $table->render();
+            $table->render();
 
-        if ($has_warning) {
-            $confirm = $this->askConfirmQuestion('Do you want to continue?');
+            if ($has_warning) {
+                $confirm = $this->askConfirmQuestion('Do you want to continue?');
 
-            if (!$confirm) {
-                return false;
+                if (!$confirm) {
+                    return false;
+                }
             }
         }
 
@@ -519,28 +524,31 @@ class DockerEngineType extends EngineType implements TaskSubTypeInterface
     protected function getPortStatus($host, array $ports)
     {
         $status = [];
-        $hostchecker = $this->getContainer()
-            ->get('projectXHostChecker');
 
-        $warning_count = 0;
+        if (!empty($ports)) {
+            $hostchecker = $this->getContainer()
+                ->get('projectXHostChecker');
 
-        foreach ($ports as $port) {
-            $response = $hostchecker
-                ->setHost($host)
-                ->setPort($port)
-                ->isPortOpen();
+            $warning_count = 0;
 
-            $status['ports'][$port] = [
-                'status' => $response ? '❌' : '✅',
-                'is_open' => (int) $response,
-            ];
+            foreach ($ports as $port) {
+                $response = $hostchecker
+                    ->setHost($host)
+                    ->setPort($port)
+                    ->isPortOpen();
 
-            if ($response) {
-                ++$warning_count;
+                $status['ports'][$port] = [
+                    'status' => $response ? '❌' : '✅',
+                    'is_open' => (int) $response,
+                ];
+
+                if ($response) {
+                    ++$warning_count;
+                }
             }
+            $status['host'] = $host;
+            $status['state']['warning'] = $warning_count;
         }
-        $status['host'] = $host;
-        $status['state']['warning'] = $warning_count;
 
         return $status;
     }
