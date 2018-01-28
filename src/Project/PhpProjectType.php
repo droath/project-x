@@ -246,11 +246,12 @@ abstract class PhpProjectType extends ProjectType
      *   - Copy patches.
      *   - Copy composer.json and composer.lock
      *
+     * @param $build_root
+     *   The build root path.
      * @return self
      */
-    public function packagePhpBuild()
+    public function packagePhpBuild($build_root)
     {
-        $build_root = ProjectX::buildRoot();
         $project_root = ProjectX::projectRoot();
 
         $stack = $this->taskFilesystemStack();
@@ -280,15 +281,15 @@ abstract class PhpProjectType extends ProjectType
     /**
      * {@inheritdoc}
      */
-    public function onDeployBuild()
+    public function onDeployBuild($build_root)
     {
-        parent::onDeployBuild();
+        parent::onDeployBuild($build_root);
 
-        $this->packagePhpBuild();
+        $this->packagePhpBuild($build_root);
 
         $this->taskComposerUpdate()
             ->noDev()
-            ->workingDir(ProjectX::buildRoot())
+            ->workingDir($build_root)
             ->option('lock')
             ->run();
 
@@ -296,7 +297,7 @@ abstract class PhpProjectType extends ProjectType
             ->noDev()
             ->option('quiet')
             ->noInteraction()
-            ->workingDir(ProjectX::buildRoot())
+            ->workingDir($build_root)
             ->optimizeAutoloader()
             ->run();
     }

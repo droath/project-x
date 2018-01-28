@@ -20,22 +20,37 @@ class DeployTasks extends TaskBase
     use filesystemTasks;
 
     /**
-     * Run the deployment build for the project.
+     * The deploy build path.
+     *
+     * @var string
      */
-    public function deployBuild()
-    {
-        $build_root = ProjectX::buildRoot();
-        $install_root = "{$build_root}{$this->getInstallRoot()}";
+    protected $build_path;
 
-        if (!file_exists($build_root)) {
-            $this->_mkdir($build_root);
+    /**
+     * Run the deployment build for the project.
+     *
+     * @param array $opts
+     * @option $build-path The build path it should be built at.
+     */
+    public function deployBuild($opts = [
+        'build-path' => null
+    ])
+    {
+        $this->build_path = isset($opts['build-path'])
+            ? $opts['build-path']
+            : ProjectX::buildRoot();
+
+        $install_root = "{$this->build_path}{$this->getInstallRoot()}";
+
+        if (!file_exists($this->build_path)) {
+            $this->_mkdir($this->build_path);
         }
         $this->runGitBuildDeploySetup();
 
         if (!file_exists($install_root)) {
             $this->_mkdir($install_root);
         }
-        $this->projectInstance()->onDeployBuild();
+        $this->projectInstance()->onDeployBuild($this->build_path);
 
         $status = $this->runGitBuildDeployCommit();
 
@@ -56,7 +71,6 @@ class DeployTasks extends TaskBase
      */
     protected function runGitBuildDeploySetup($branch_name = 'master', $origin = 'origin')
     {
-        $build_root = ProjectX::buildRoot();
         $deploy_options = $this->getDeployOptions();
 
         if (!isset($deploy_options['github_repo'])) {
@@ -65,7 +79,7 @@ class DeployTasks extends TaskBase
             );
         }
         $repo = $deploy_options['github_repo'];
-        $stack = $this->taskGitStack()->dir($build_root);
+        $stack = $this->getGitBuildStack();
 
         if ($this->buildHasGit()) {
             if (!$this->hasGitBranch($branch_name)) {
@@ -75,7 +89,7 @@ class DeployTasks extends TaskBase
                 ->exec("checkout {$branch_name}")
                 ->pull($origin, $branch_name);
         } else {
-            $stack->exec("clone git@github.com:{$repo} {$build_root}");
+            $stack->exec("clone git@github.com:{$repo} {$this->build_path}");
         }
 
         return $stack->run();
@@ -100,9 +114,8 @@ class DeployTasks extends TaskBase
         $stack
             ->add('.')
             ->commit("Build commit for {$build_version}.")
-            ->tag($build_version);
-
-        $stack->exec("push -u --tags {$origin} {$branch_name}");
+            ->tag($build_version)
+            ->exec("push -u --tags {$origin} {$branch_name}");
 
         return $stack->run();
     }
@@ -127,7 +140,7 @@ class DeployTasks extends TaskBase
      */
     protected function getGitBuildStack()
     {
-        return $this->taskGitStack()->dir(ProjectX::buildRoot());
+        return $this->taskGitStack()->dir($this->build_path);
     }
 
     /**
@@ -189,8 +202,7 @@ class DeployTasks extends TaskBase
      */
     protected function buildHasGit()
     {
-        $build_root = ProjectX::buildRoot();
-        return file_exists("{$build_root}/.git");
+        return file_exists("{$this->build_path}/.git");
     }
 
     /**

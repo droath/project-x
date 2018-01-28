@@ -94,8 +94,11 @@ abstract class ProjectType extends TaskSubType implements ProjectTypeInterface
 
     /**
      * React on the deploy build.
+     *
+     * @param $build_root
+     *   The build root directory.
      */
-    public function onDeployBuild()
+    public function onDeployBuild($build_root)
     {
         // Nothing to do at the parent level.
     }

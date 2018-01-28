@@ -266,10 +266,11 @@ class DrupalProjectType extends PhpProjectType implements TaskSubTypeInterface, 
     /**
      * {@inheritdoc}
      */
-    public function onDeployBuild()
+    public function onDeployBuild($build_root)
     {
-        $this->packageDrupalBuild();
-        parent::onDeployBuild();
+        $this->packageDrupalBuild($build_root);
+
+        parent::onDeployBuild($build_root);
     }
 
     /**
@@ -372,14 +373,13 @@ class DrupalProjectType extends PhpProjectType implements TaskSubTypeInterface, 
      *   - Copy config
      *   - Copy salt.txt
      *   - Copy themes, modules, and profile custom code.
-     *
+     * @param $build_root
+     *   The build root path.
      * @return self
      */
-    public function packageDrupalBuild()
+    public function packageDrupalBuild($build_root)
     {
-        $build_root = ProjectX::buildRoot();
         $project_root = ProjectX::projectRoot();
-
         $stack = $this->taskFilesystemStack()
             ->copy("{$project_root}/salt.txt", "{$build_root}/salt.txt");
 

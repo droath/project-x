@@ -92,7 +92,7 @@ class PhpProjectTypeTest extends TestTaskBase
         ], $this->projectDir);
 
         $build_root = ProjectX::buildRoot();
-        $this->phpProject->packagePhpBuild();
+        $this->phpProject->packagePhpBuild($build_root);
 
         $this->assertFileExists("{$build_root}/composer.json");
         $this->assertFileExists("{$build_root}/composer.lock");

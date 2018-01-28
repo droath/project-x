@@ -117,7 +117,7 @@ class DrupalProjectTypeTest extends TestTaskBase
         ], $this->projectDir);
 
         $build_root = ProjectX::buildRoot();
-        $this->drupalProject->packageDrupalBuild();
+        $this->drupalProject->packageDrupalBuild($build_root);
 
         $this->assertFileExists("{$build_root}/docroot/modules/custom/page_manager");
         $this->assertFileExists("{$build_root}/docroot/themes/custom/bootstrap");
