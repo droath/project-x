@@ -10,6 +10,7 @@ use Droath\ProjectX\Engine\DockerServices\NginxService;
 use Droath\ProjectX\Engine\DockerServices\PhpService;
 use Droath\ProjectX\Engine\DockerServices\PostgresService;
 use Droath\ProjectX\Engine\DockerServices\RedisService;
+use Droath\ProjectX\Exception\EngineRuntimeException;
 use Droath\ProjectX\ProjectX;
 use Droath\ProjectX\TaskSubTypeInterface;
 use Droath\RoboDockerCompose\Task\loadTasks as dockerComposerTasks;
@@ -60,7 +61,7 @@ class DockerEngineType extends EngineType implements TaskSubTypeInterface
         $continue = $this->runOpenPortStatusReport();
 
         if (!$continue) {
-            throw new \RuntimeException(
+            throw new EngineRuntimeException(
                 'Project startup has been aborted due to conflicting ports.'
             );
         }
