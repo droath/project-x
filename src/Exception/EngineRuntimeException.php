@@ -2,4 +2,6 @@
 
 namespace Droath\ProjectX\Exception;
 
-class EngineRuntimeException extends \RuntimeException {}
+class EngineRuntimeException extends \RuntimeException
+{
+}
