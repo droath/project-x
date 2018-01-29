@@ -14,24 +14,24 @@ docroot/sites/*/private
 
 # Ignore contrib modules. These should be created during build process.
 files-private
-docroot/modules/contrib
-docroot/themes/contrib
-docroot/profiles/contrib
-docroot/libraries
 drush/contrib
+docroot/themes/contrib
+docroot/modules/contrib
+docroot/profiles/contrib
 
 # Ignore custom theme folders
 docroot/themes/custom/*/node_modules
 
 # Ignore build artifacts
+/build
+/deploy
+/reports
 docroot/themes/custom/*/css
 docroot/themes/custom/*/styleguide
-docroot/themes/custom/*/.sass-cache
-docroot/themes/custom/*/.sass-cache/*
-/deploy
-bin/*
-tmp
-reports
+
+#Sass
+.sass-cache
+*.css.map
 
 # OS X
 .DS_Store
@@ -48,70 +48,25 @@ reports
 # Windows image file caches
 Thumbs.db
 ehthumbs.db
-
-# Folder config file
 Desktop.ini
-
-# Recycle Bin used on file shares
-$RECYCLE.BIN/
-
-# Eclipse
-*.pydevproject
-.project
-.metadata
-tmp/**
-tmp/**/*
-*.tmp
-*.bak
-*.swp
-*~.nib
-local.properties
-.classpath
-.settings/
-.loadpath
-
-# External tool builders
-.externalToolBuilders/
-
-# Locally stored "Eclipse launch configurations"
-*.launch
-
-# CDT-specific
-.cproject
-
-# PDT-specific
-.buildpathk
-
-# Emacs
-*~
-\#*\#
-/.emacs.desktop
-/.emacs.desktop.lock
-*.elc
-auto-save-list
-tramp
-.\#*
-
-# User-specific stuff:
-.idea/
 
 # XHProf
 xhprof_*
 
-# Composer vendor
+# Exports
+*.gz
+*.sql
+*.zip
+
+# Environment
+.env
+
+# Composer
 vendor/
 vendor/.git
 
-# Chosen wants to install components in /components
-/components
-
-#Sass
-.sass-cache
-*.css.map
-
-# Netbeans IDE
-nbproject
-nbproject/*
+# PhpStorm:
+.idea/
 
 # Sublime Text
 *.sublime-project
@@ -120,22 +75,11 @@ nbproject/*
 # DrupalVM
 .vagrant/
 
-# Drush
-drush/site-aliases/local.*
-
 # DevDesktop
 *.dd
 
-# Exports
-*.gz
-*.sql
-*.zip
-
-# PHPStorm
-atlassian-ide-plugin.xml
-
-# Drupal console
-console
+# Drush
+drush/site-aliases/local.*
 
 # Docker sync
 .docker-sync/*
@@ -143,6 +87,3 @@ console
 # Project-X
 .project-x/*
 .project-x.local.yml
-
-# Environment Variables
-.env
