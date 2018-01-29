@@ -67,8 +67,11 @@ class DockerEngineType extends EngineType implements TaskSubTypeInterface
 
         // Startup docker sync if found in project.
         if ($this->hasDockerSync()) {
-            $this->taskDockerSyncStart()
+            $result = $this->taskDockerSyncStart()
                 ->run();
+
+            // Determine if docker-sync task result are valid.
+            $this->validateTaskResult($result);
 
             // Set the docker-sync name in the .env file.
             $this->setDockerSyncNameInEnv();
@@ -78,11 +81,14 @@ class DockerEngineType extends EngineType implements TaskSubTypeInterface
         $this->setHostIPAddressInEnv();
 
         // Startup docker compose.
-        $this->taskDockerComposeUp()
+        $result = $this->taskDockerComposeUp()
             ->files($this->getDockerComposeFiles())
             ->detachedMode()
             ->removeOrphans()
             ->run();
+
+        // Determine if docker compose result are valid.
+        $this->validateTaskResult($result);
     }
 
     /**

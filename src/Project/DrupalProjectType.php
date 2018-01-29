@@ -704,7 +704,7 @@ class DrupalProjectType extends PhpProjectType implements TaskSubTypeInterface, 
         sleep(30);
 
         // Run Drupal site install via drush.
-        $this->taskDrushStack()
+        $result = $this->taskDrushStack()
             ->drupalRootDirectory($install_path)
             ->siteName($options['site']['name'])
             ->accountMail($options['account']['mail'])
@@ -713,6 +713,9 @@ class DrupalProjectType extends PhpProjectType implements TaskSubTypeInterface, 
             ->dbUrl("$db_protocol://$db_user:$db_pass@$db_host:$db_port/$db_name")
             ->siteInstall($options['site']['profile'])
             ->run();
+
+        // Determine if the drush result were valid.
+        $this->validateTaskResult($result);
 
         // Update permissions to ensure all files can be accessed on the
         // install path for both user and groups.

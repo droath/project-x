@@ -6,6 +6,7 @@ use Boedah\Robo\Task\Drush\loadTasks as drushTasks;
 use Droath\ProjectX\Database;
 use Droath\ProjectX\ProjectX;
 use Droath\ProjectX\Project\DrupalProjectType;
+use Droath\ProjectX\TaskResultTrait;
 use Robo\Task\Composer\loadTasks as composerTasks;
 use Robo\Tasks;
 use Symfony\Component\Console\Question\ChoiceQuestion;
@@ -18,6 +19,7 @@ class DrupalTasks extends Tasks
 {
     use drushTasks;
     use composerTasks;
+    use TaskResultTrait;
 
     /**
      * Install Drupal on the current environment.
@@ -111,8 +113,9 @@ class DrupalTasks extends Tasks
 
             $drush_stack->drush('cr');
         }
-
-        $drush_stack->run();
+        $result = $drush_stack->run();
+        
+        $this->validateTaskResult($result);
 
         if (!$opts['no-browser']) {
             $instance->projectLaunchBrowser();
@@ -144,13 +147,16 @@ class DrupalTasks extends Tasks
         if (isset($local_alias) && isset($remote_alias)) {
             $drupal = $this->getProjectInstance();
             $version = $drupal->getProjectVersion();
+            $drush_stack = $this->getDrushStack();
 
             if ($version === 8) {
-                $this->getDrushStack()
-                    ->drush("drush sql-sync '@$local_alias' '@$remote_alias'", true)
-                    ->drush('cr')
-                    ->run();
+                    $drush_stack
+                        ->drush("drush sql-sync '@$local_alias' '@$remote_alias'", true)
+                        ->drush('cr');
             }
+            $result = $drush_stack->run();
+
+            $this->validateTaskResult($result);
         }
 
         return $this;
@@ -195,11 +201,13 @@ class DrupalTasks extends Tasks
                 );
             }
 
-            $drush_stack
+            $result = $drush_stack
                 ->drush('cim')
                 ->drush('updb --entity-updates')
                 ->drush('cr')
                 ->run();
+
+            $this->validateTaskResult($result);
         }
 
         return $this;
@@ -263,8 +271,9 @@ class DrupalTasks extends Tasks
                 ->drush('updb')
                 ->drush('cc all');
         }
+        $result = $drush_stack->run();
 
-        $drush_stack->run();
+        $this->validateTaskResult($result);
 
         return $this;
     }

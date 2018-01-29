@@ -18,6 +18,7 @@ abstract class TaskSubType implements BuilderAwareInterface, ContainerAwareInter
     use IO;
     use LoadAllTasks;
     use ContainerAwareTrait;
+    use TaskResultTrait;
 
     /**
      * Sub-type task directories.
