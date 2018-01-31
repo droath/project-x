@@ -4,7 +4,7 @@ namespace Droath\ProjectX\Task;
 
 use Droath\ProjectX\Project\NullProjectType;
 use Droath\ProjectX\ProjectX;
-use Droath\RoboGitHub\Task\loadTasks as githubTasks;
+use Droath\RoboGitHub\Task\loadTasks;
 use Robo\Contract\TaskInterface;
 use Robo\Contract\VerbosityThresholdInterface;
 use Robo\Task\Filesystem\loadTasks as filesystemTasks;
@@ -16,7 +16,7 @@ use Symfony\Component\Console\Question\Question;
  */
 class DeployTasks extends TaskBase
 {
-    use githubTasks;
+    use loadTasks;
     use filesystemTasks;
 
     /**
