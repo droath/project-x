@@ -259,7 +259,7 @@ abstract class PhpProjectType extends ProjectType
             $stack->mirror("{$project_root}/patches", "{$build_root}/patches");
         }
         $stack->copy("{$project_root}/composer.json", "{$build_root}/composer.json");
-        $stack->copy("{$project_root}/composer.json", "{$build_root}/composer.lock");
+        $stack->copy("{$project_root}/composer.lock", "{$build_root}/composer.lock");
         $stack->run();
 
         return $this;
