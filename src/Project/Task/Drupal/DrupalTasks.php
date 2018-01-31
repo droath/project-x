@@ -116,8 +116,7 @@ class DrupalTasks extends Tasks
                 if ($workaround_config_import) {
                     $drush_stack
                         ->drush('cr');
-                }
-                else {
+                } else {
                     $drush_stack
                         ->drush('cr')
                         ->drush('cim');
