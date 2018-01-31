@@ -68,6 +68,7 @@ class DrupalTasks extends Tasks
      * @option bool $no-engine Don't start local development engine.
      * @option bool $no-import Don't import Drupal configurations.
      * @option bool $no-browser Don't launch a browser window after setup is complete.
+     * @option int $config-import-attempts The amount of times to retry config-import.
      *
      * @return self
      * @throws \Exception
@@ -86,6 +87,7 @@ class DrupalTasks extends Tasks
         'no-engine' => false,
         'no-import' => false,
         'no-browser' => false,
+        'config-import-attempts' => 1,
     ])
     {
         $database = $this->buildDatabase($opts);
@@ -102,20 +104,41 @@ class DrupalTasks extends Tasks
         $this->drupalDrushAlias();
         $drush_stack = $this->getDrushStack();
 
+        // Work-around drupal core assumptions on config import running it
+        // multiple times.
+        // See https://www.drupal.org/project/drupal/issues/2788777
+        $workaround_config_import = $opts['config-import-attempts'] > 1;
+
         if ($instance->getProjectVersion() === 8) {
             $this->setDrupalUuid();
 
             if (!$opts['no-import']) {
-                $drush_stack
-                    ->drush('cr')
-                    ->drush('cim');
+                if ($workaround_config_import) {
+                    $drush_stack
+                        ->drush('cr');
+                } else {
+                    $drush_stack
+                        ->drush('cr')
+                        ->drush('cim');
+                }
             }
 
             $drush_stack->drush('cr');
         }
+
         $result = $drush_stack->run();
-        
         $this->validateTaskResult($result);
+
+        if ($workaround_config_import) {
+            for ($i = 0; $i < $opts['config-import-attempts']; ++$i) {
+                $config_import_drush_stack = $this->getDrushStack();
+                $config_import_drush_stack
+                    ->drush('cim');
+                $result = $config_import_drush_stack->run();
+            }
+            // Only validate the last one.
+            $this->validateTaskResult($result);
+        }
 
         if (!$opts['no-browser']) {
             $instance->projectLaunchBrowser();
