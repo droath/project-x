@@ -100,7 +100,11 @@ abstract class ProjectType extends TaskSubType implements ProjectTypeInterface
      */
     public function onDeployBuild($build_root)
     {
-        // Nothing to do at the parent level.
+        $install_root = $build_root . static::INSTALL_ROOT;
+
+        if (!file_exists($install_root)) {
+            $this->_mkdir($install_root);
+        }
     }
 
     /**

@@ -2,324 +2,158 @@
 
 namespace Droath\ProjectX\Task;
 
-use Droath\ProjectX\Project\NullProjectType;
+use Droath\ProjectX\Deploy\DeployBase;
+use Droath\ProjectX\Exception\DeploymentRuntimeException;
 use Droath\ProjectX\ProjectX;
-use Droath\RoboGitHub\Task\loadTasks;
-use Robo\Contract\TaskInterface;
-use Robo\Contract\VerbosityThresholdInterface;
-use Robo\Task\Filesystem\loadTasks as filesystemTasks;
-use Robo\Task\Vcs\GitStack;
-use Symfony\Component\Console\Question\Question;
+use Symfony\Component\Console\Question\ConfirmationQuestion;
 
 /**
  * Define the deployment tasks.
  */
 class DeployTasks extends TaskBase
 {
-    use loadTasks;
-    use filesystemTasks;
-
     /**
-     * The deploy build path.
-     *
-     * @var string
-     */
-    protected $build_path;
-
-    /**
-     * Run the deployment build for the project.
+     * Run the deployment build process.
      *
      * @param array $opts
      * @option $build-path The build path it should be built at.
+     * @option $deploy-type The deployment type that should be used.
      */
     public function deployBuild($opts = [
-        'build-path' => null
+        'build-path' => null,
+        'deploy-type' => 'github',
     ])
     {
-        $this->build_path = isset($opts['build-path'])
-            ? $opts['build-path']
-            : ProjectX::buildRoot();
+        $build_path = $this->buildPath($opts);
+        $deploy_type = $opts['deploy-type'];
 
-        $install_root = "{$this->build_path}{$this->getInstallRoot()}";
-
-        if (!file_exists($this->build_path)) {
-            $this->_mkdir($this->build_path);
+        if (!file_exists($build_path)) {
+            $this->_mkdir($build_path);
         }
-        $this->runGitBuildDeploySetup();
+        $this->runBuild($build_path);
 
-        if (!file_exists($install_root)) {
-            $this->_mkdir($install_root);
+        $continue = !is_null($deploy_type)
+            ? $this->doAsk(new ConfirmationQuestion('Run deployment?', true))
+            : false;
+
+        if (!$continue) {
+            return;
         }
-        $this->projectInstance()->onDeployBuild($this->build_path);
 
-        $status = $this->runGitBuildDeployCommit();
+        /** @var DeployBase $deploy */
+        $deploy = $this->loadDeployTask($deploy_type, $build_path);
 
-        $message = false === $status
-            ? "Deployment build has completed.\n\nThe build wasn't deployed as no changes were detected."
-            : "Deployment build has completed.\n\nThe build has been committed and deployed to GitHub.";
-
-        $this->say($message);
+        $this->runDeploy($deploy);
     }
 
     /**
-     * Run the Git build deploy setup.
+     * Run the deployment push process.
      *
-     * @param $branch_name
-     * @param string $origin
-     *
-     * @return \Robo\Result
+     * @param array $opts
+     * @option $build-path The path that the build was built at.
+     * @option $deploy-type The deployment type that should be used.
      */
-    protected function runGitBuildDeploySetup($branch_name = 'master', $origin = 'origin')
+    public function deployPush($opts = [
+        'build-path' => null,
+        'deploy-type' => 'github',
+    ])
     {
-        $deploy_options = $this->getDeployOptions();
+        $build_path = $this->buildPath($opts);
 
-        if (!isset($deploy_options['github_repo'])) {
-            throw new \RuntimeException(
-                'Missing GitHub repository in deploy options.'
+        if (!file_exists($build_path)) {
+            throw new DeploymentRuntimeException(
+                'Build directory does not exist.'
             );
         }
-        $repo = $deploy_options['github_repo'];
-        $stack = $this->getGitBuildStack();
+        $deploy_type = $opts['deploy-type'];
 
-        if ($this->buildHasGit()) {
-            if (!$this->hasGitBranch($branch_name)) {
-                $stack->exec("branch {$branch_name}");
-            }
-            $stack
-                ->exec("checkout {$branch_name}")
-                ->pull($origin, $branch_name);
-        } else {
-            $stack->exec("clone git@github.com:{$repo} {$this->build_path}");
-        }
+        /** @var DeployBase $deploy */
+        $deploy = $this->loadDeployTask($deploy_type, $build_path);
 
-        return $stack->run();
+        $this->runDeploy($deploy);
     }
 
     /**
-     * Run Git build deploy commit.
+     * Run build process.
      *
-     * @param $branch_name
-     * @param string $origin
+     * @param $build_path
      *
-     * @return \Robo\Result|bool
+     * @return self
      */
-    protected function runGitBuildDeployCommit($branch_name = 'master', $origin = 'origin')
+    protected function runBuild($build_path)
     {
-        if (!$this->hasGitTrackedFilesChanged()) {
-            return false;
-        }
-        $stack = $this->getGitBuildStack();
-        $build_version = $this->askBuildVersion();
+        $this->say('Build has initialized!');
+        $this->projectInstance()->onDeployBuild($build_path);
+        $this->say('Build has completed!');
 
-        $stack
-            ->add('.')
-            ->commit("Build commit for {$build_version}.")
-            ->tag($build_version)
-            ->exec("push -u --tags {$origin} {$branch_name}");
-
-        return $stack->run();
+        return $this;
     }
 
     /**
-     * Get Project-x deploy options.
+     * Run deployment.
+     *
+     * @param DeployBase $deploy
+     *
+     * @return self
+     */
+    protected function runDeploy(DeployBase $deploy)
+    {
+        $this->say('Deploy has initialized!');
+        $deploy->beforeDeploy();
+        $deploy->onDeploy();
+        $deploy->afterDeploy();
+        $this->say('Deploy has completed!');
+
+        return $this;
+    }
+
+    /**
+     * Load deployment task.
+     *
+     * @param $type
+     * @param $build_path
+     * @param array $configurations
+     *
+     * @return DeployBase
+     */
+    protected function loadDeployTask($type, $build_path, array $configurations = [])
+    {
+        $definitions = $this->deployDefinitions();
+
+        $classname = isset($definitions[$type]) && class_exists($definitions[$type])
+                ? $definitions[$type]
+                : 'Droath\ProjectX\Deploy\NullDeploy';
+
+        return (new $classname($build_path, $configurations))
+            ->setInput($this->input())
+            ->setOutput($this->output())
+            ->setBuilder($this->getBuilder())
+            ->setContainer($this->getContainer());
+    }
+
+    /**
+     * Development build path.
+     *
+     * @param $options
+     *
+     * @return string
+     */
+    protected function buildPath($options)
+    {
+        return isset($options['build-path'])
+            ? $options['build-path']
+            : ProjectX::buildRoot();
+    }
+
+    /**
+     * Define deployment definitions.
      *
      * @return array
      */
-    protected function getDeployOptions()
+    protected function deployDefinitions()
     {
-        $options = ProjectX::getProjectConfig()->getOptions();
-        return isset($options['deploy'])
-            ? array_map('trim', $options['deploy'])
-            : [];
-    }
-
-    /**
-     * Get git build stack task object.
-     *
-     * @return GitStack
-     */
-    protected function getGitBuildStack()
-    {
-        return $this->taskGitStack()->dir($this->build_path);
-    }
-
-    /**
-     * Get the latest git version tag.
-     *
-     * @return string
-     */
-    protected function getGitLatestVersionTag()
-    {
-        $task = $this->getGitBuildStack()
-            ->exec('describe --abbrev=0 --tags');
-
-        $result = $this->runSilentCommand($task);
-        $version = trim($result->getMessage());
-
-        return !empty($version) ? $version : '0.0.0';
-    }
-
-    /**
-     * Has git tracked files changed.
-     *
-     * @return bool
-     */
-    protected function hasGitTrackedFilesChanged()
-    {
-        $task = $this->getGitBuildStack()
-            ->exec("status --porcelain");
-
-        $result = $this->runSilentCommand($task);
-
-        $changes = array_filter(
-            explode("\n", $result->getMessage())
-        );
-
-        return (bool) count($changes) != 0;
-    }
-
-    /**
-     * Has git branch.
-     *
-     * @param $branch_name
-     *
-     * @return bool
-     */
-    protected function hasGitBranch($branch_name)
-    {
-        $task = $this->getGitBuildStack()
-            ->exec("rev-parse -q --verify {$branch_name}");
-
-        $result = $this->runSilentCommand($task);
-
-        return !empty($result->getMessage());
-    }
-
-    /**
-     * Has build been gitified.
-     *
-     * @return bool
-     */
-    protected function buildHasGit()
-    {
-        return file_exists("{$this->build_path}/.git");
-    }
-
-    /**
-     * Compute if version is numeric.
-     *
-     * @param $version
-     *
-     * @return bool
-     */
-    protected function isVersionNumeric($version)
-    {
-        foreach (explode('.', $version) as $part) {
-            if (!is_numeric($part)) {
-                return false;
-            }
-        }
-
-        return true;
-    }
-
-    /**
-     * Ask build version.
-     *
-     * @return string
-     */
-    protected function askBuildVersion()
-    {
-        $last_version = $this->getGitLatestVersionTag();
-        $next_version = $this->incrementVersion($last_version);
-
-        $question = (new Question("Set build version [{$next_version}]: ", $next_version))
-            ->setValidator(function ($input_version) use ($last_version) {
-                $input_version = trim($input_version);
-
-                if (version_compare($input_version, $last_version, '==')) {
-                    throw new \RuntimeException(
-                        'Build version has already been used.'
-                    );
-                }
-
-                if (!$this->isVersionNumeric($input_version)) {
-                    throw new \RuntimeException(
-                        'Build version is not numeric.'
-                    );
-                }
-
-                return $input_version;
-            });
-
-        return $this->doAsk($question);
-    }
-
-    /**
-     * Increment the semantic version number.
-     *
-     * @param $version
-     * @param int $patch_limit
-     * @param int $minor_limit
-     *
-     * @return string
-     */
-    protected function incrementVersion($version, $patch_limit = 20, $minor_limit = 50)
-    {
-        if (!$this->isVersionNumeric($version)) {
-            throw new \RuntimeException(
-                'Unable to increment version.'
-            );
-        }
-        list($major, $minor, $patch) = explode('.', $version);
-
-        if ($patch < $patch_limit) {
-            ++$patch;
-        } else if ($minor < $minor_limit) {
-            ++$minor;
-            $patch = 0;
-        } else {
-            ++$major;
-            $patch = 0;
-            $minor = 0;
-        }
-
-        return "{$major}.{$minor}.{$patch}";
-    }
-
-    /**
-     * Run silent command.
-     */
-    protected function runSilentCommand(TaskInterface $task)
-    {
-        return $task->printOutput(false)
-            // This is weird as you would expect this to give you more
-            // information, but it suppresses the exit code from display.
-            ->setVerbosityThreshold(VerbosityThresholdInterface::VERBOSITY_DEBUG)
-            ->run();
-    }
-
-    /**
-     * Get project install root.
-     *
-     * @return string
-     */
-    protected function getInstallRoot()
-    {
-        $classname = $this->getProjectClassname();
-        return !is_null($classname)
-            ? $classname::INSTALL_ROOT
-            : NullProjectType::INSTALL_ROOT;
-    }
-
-    /**
-     * Get project type classname.
-     *
-     * @return string|null
-     */
-    protected function getProjectClassname()
-    {
-        $instance = $this->projectInstance();
-        return is_object($instance) ? get_class($instance) : null;
+        return [
+            'github' => '\Droath\ProjectX\Deploy\GitHubDeploy',
+        ];
     }
 }
