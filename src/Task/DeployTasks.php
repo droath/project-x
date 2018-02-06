@@ -33,7 +33,7 @@ class DeployTasks extends TaskBase
         $this->runBuild($build_path);
 
         $continue = !is_null($deploy_type)
-            ? $this->doAsk(new ConfirmationQuestion('Run deployment?', true))
+            ? $this->doAsk(new ConfirmationQuestion('Run deployment? (y/n) [yes] ', true))
             : false;
 
         if (!$continue) {
