@@ -6,6 +6,7 @@ use Boedah\Robo\Task\Drush\loadTasks as drushTasks;
 use Droath\ConsoleForm\Field\BooleanField;
 use Droath\ConsoleForm\Field\TextField;
 use Droath\ConsoleForm\Form;
+use Droath\ProjectX\Config\ComposerConfig;
 use Droath\ProjectX\Database;
 use Droath\ProjectX\DatabaseInterface;
 use Droath\ProjectX\Engine\EngineType;
@@ -14,7 +15,7 @@ use Droath\ProjectX\OptionFormAwareInterface;
 use Droath\ProjectX\ProjectX;
 use Droath\ProjectX\TaskSubTypeInterface;
 use Droath\ProjectX\Utility;
-use phpDocumentor\Reflection\Project;
+use Symfony\Component\Finder\Finder;
 
 /**
  * Define Drupal project type.
@@ -268,9 +269,13 @@ class DrupalProjectType extends PhpProjectType implements TaskSubTypeInterface, 
      */
     public function onDeployBuild($build_root)
     {
-        $this->packageDrupalBuild($build_root);
-
         parent::onDeployBuild($build_root);
+
+        // Git submodules cause problems when committing code in a
+        // parent repository. It could lead to missing files/directories.
+        $this->removeGitSubmoduleInInstallPath($build_root);
+
+        $this->packageDrupalBuild($build_root);
     }
 
     /**
@@ -833,6 +838,101 @@ class DrupalProjectType extends PhpProjectType implements TaskSubTypeInterface, 
         }
 
         return $default_database;
+    }
+
+    /**
+     * Remove git submodule in composer install path.
+     *
+     * @param null $base_path
+     *   The base path on which to check for composer installed paths.
+     *
+     * @return $this
+     */
+    public function removeGitSubmoduleInInstallPath($base_path = null)
+    {
+        $this->removeGitSubmodules(
+            $this->getValidComposerInstallPaths($base_path)
+        );
+
+        return $this;
+    }
+
+    /**
+     * Remove .git submodules.
+     *
+     * @param array $search_paths
+     *   An array of search paths to look for .git directories.
+     *
+     * @param int $depth
+     *   Set directory depth for searching.
+     *
+     * @return $this|void
+     */
+    public function removeGitSubmodules(array $search_paths, $depth = 1)
+    {
+        if (empty($search_paths)) {
+            return;
+        }
+        $finder = (new Finder())
+            ->in($search_paths)
+            ->ignoreVCS(false)
+            ->ignoreDotFiles(false)
+            ->depth($depth)
+            ->name('.git');
+
+        foreach ($finder as $file_info) {
+            if (!$file_info->isDir()) {
+                continue;
+            }
+            $this->_deleteDir($file_info->getPathname());
+        }
+
+        return $this;
+    }
+
+    /**
+     * Get valid composer install paths.
+     *
+     * @param null $base_path
+     *   The base path on which to check for composer installed paths.
+     *
+     * @return array
+     */
+    public function getValidComposerInstallPaths($base_path = null)
+    {
+        $filepaths = [];
+
+        /** @var ComposerConfig $composer */
+        $composer = $this->getComposer();
+        $composer_extra = $composer->getExtra();
+
+        $base_path = isset($base_path) && file_exists($base_path)
+            ? $base_path
+            : ProjectX::projectRoot();
+
+        $installed_paths = isset($composer_extra['installer-paths'])
+            ? array_keys($composer_extra['installer-paths'])
+            : [];
+
+        foreach ($installed_paths as $installed_path) {
+            $path_info = pathinfo($installed_path);
+            $directory = "/{$path_info['dirname']}";
+            if (strpos($directory, static::INSTALL_ROOT) === false) {
+                continue;
+            }
+            $filename = $path_info['filename'] !== '{$name}'
+                ? "/{$path_info['filename']}"
+                : null;
+            $filepath = $base_path . $directory . $filename;
+
+            if (!file_exists($filepath)) {
+                continue;
+            }
+
+            $filepaths[] = $filepath;
+        }
+
+        return $filepaths;
     }
 
     /**

@@ -279,6 +279,104 @@ class DrupalProjectTypeTest extends TestTaskBase
         )->asArray());
     }
 
+    public function testRemoveGitSubmoduleInInstallPath()
+    {
+        $this->drupalProject->setupProjectComposer();
+
+        vfsStream::create([
+            'build' => [
+                'docroot' => [
+                    'modules' => [
+                        'contrib' => [
+                            'google_tag' => [
+                                'google_tag.info.yml' => '',
+                                'google_tag.module' => '',
+                                'includes' => [],
+                                '.git' => []
+                            ]
+                        ]
+                    ],
+                    'themes' => [
+                        'contrib' => [
+                            'bootstrap' => [
+                                'bootstrap.info.yml' => '',
+                                'templates' => [],
+                            ]
+                        ]
+                    ]
+                ],
+            ]
+        ], $this->projectDir);
+
+        $this->assertProjectFileExists('build');
+        $this->assertProjectFileExists('build/docroot/modules/contrib/google_tag/.git');
+
+        $base_path = $this->projectRoot . '/build';
+        $this
+            ->drupalProject
+            ->removeGitSubmoduleInInstallPath($base_path);
+
+        // Verify the .git directory was removed.
+        $this->assertFileNotExists($base_path . '/docroot/modules/contrib/google_tag/.git');
+    }
+
+    public function testRemoveGitSubmodules()
+    {
+        vfsStream::create([
+            'contrib' => [
+                'module1' => [
+                    '.gittest' => [],
+                    '.gitignore' => '',
+                    'module.info.yml' => ''
+                ],
+                'module2' => [
+                    'module.info.yml' => '',
+                    '.git' => [],
+                ],
+                '.git' => [],
+            ]
+        ], $this->projectDir);
+
+        $this->assertProjectFileExists('contrib');
+        $base_path = $this->projectRoot . '/contrib';
+        $this->assertProjectFileExists('contrib/module2/.git');
+
+        $this->drupalProject->removeGitSubmodules([$base_path]);
+        $this->assertProjectFileExists('contrib/.git');
+
+        // Verify the .git directory was removed.
+        $this->assertFileNotExists($base_path . '/module2/.git');
+    }
+
+    public function testGetValidComposerInstallPaths()
+    {
+        $this->drupalProject->setupProjectComposer();
+
+        vfsStream::create([
+            'build' => [
+                'docroot' => [
+                    'modules' => [
+                        'contrib' => []
+                    ],
+                    'themes' => [
+                        'contrib' => []
+                    ]
+                ],
+            ]
+        ], $this->projectDir);
+
+        $this->assertProjectFileExists('build');
+        $base_path = $this->projectRoot . '/build';
+        $installed_paths = $this
+            ->drupalProject
+            ->getValidComposerInstallPaths($base_path);
+
+        $this->assertEquals([
+            $base_path . '/docroot/modules/contrib',
+            $base_path . '/docroot/themes/contrib',
+        ], $installed_paths);
+    }
+
     public function testRebuildSettings()
     {
         // Setup project using defined database information.
