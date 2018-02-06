@@ -111,6 +111,12 @@ class DrupalProjectTypeTest extends TestTaskBase
                     'custom' => [
                         'lighting' => []
                     ]
+                ],
+                'sites' => [
+                    'default' => [
+                        'settings.php' => '',
+                        'settings.local.php' => ''
+                    ]
                 ]
             ],
             'salt.txt' => '12334567',
@@ -123,6 +129,7 @@ class DrupalProjectTypeTest extends TestTaskBase
         $this->assertFileExists("{$build_root}/docroot/themes/custom/bootstrap");
         $this->assertFileExists("{$build_root}/docroot/profile/custom/lighting");
         $this->assertFileExists("{$build_root}/salt.txt");
+        $this->assertFileExists("{$build_root}/docroot/sites/default/settings.php");
         $this->assertFileExists("{$build_root}/config/configure1.yml");
     }
 

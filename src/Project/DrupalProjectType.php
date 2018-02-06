@@ -377,6 +377,7 @@ class DrupalProjectType extends PhpProjectType implements TaskSubTypeInterface, 
      * The process consist of the following:
      *   - Copy config
      *   - Copy salt.txt
+     *   - Copy settings.php
      *   - Copy themes, modules, and profile custom code.
      * @param $build_root
      *   The build root path.
@@ -385,8 +386,11 @@ class DrupalProjectType extends PhpProjectType implements TaskSubTypeInterface, 
     public function packageDrupalBuild($build_root)
     {
         $project_root = ProjectX::projectRoot();
+        $build_install = $build_root . static::INSTALL_ROOT;
+
         $stack = $this->taskFilesystemStack()
-            ->copy("{$project_root}/salt.txt", "{$build_root}/salt.txt");
+            ->copy("{$project_root}/salt.txt", "{$build_root}/salt.txt")
+            ->copy("{$this->getInstallPath()}/sites/default/settings.php", "{$build_install}/sites/default/settings.php");
 
         $mirror_directories = [
             '/config',
