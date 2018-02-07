@@ -141,7 +141,7 @@ class GitHubDeploy extends DeployBase
             if ($this->gitRemoteBranchExist()) {
                 $stack
                     ->exec('fetch --all')
-                    ->exec("reset --hard {$origin}/{$branch}")
+                    ->exec("reset --soft {$origin}/{$branch}")
                     ->checkout($branch);
             }
         } else {
