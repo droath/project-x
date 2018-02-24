@@ -853,7 +853,8 @@ class DrupalProjectType extends PhpProjectType implements TaskSubTypeInterface, 
      *
      * @return $this
      */
-    public function removeGitSubmodulesInVendor($base_path = null) {
+    public function removeGitSubmodulesInVendor($base_path = null)
+    {
         $base_path = isset($base_path) && file_exists($base_path)
             ? $base_path
             : ProjectX::projectRoot();
@@ -866,7 +867,8 @@ class DrupalProjectType extends PhpProjectType implements TaskSubTypeInterface, 
             : 'vendor';
 
         $this->removeGitSubmodules(
-            [$base_path . "/{$vendor_dir}"], 2
+            [$base_path . "/{$vendor_dir}"],
+            2
         );
 
         return $this;
