@@ -97,6 +97,11 @@ class DrupalProjectTypeTest extends TestTaskBase
                 'configure2.yml' => ''
             ],
             'docroot' => [
+                'index.php' => '',
+                '.htaccess' => '',
+                'robots.txt' => '',
+                'update.php' => '',
+                'web.config' => '',
                 'modules' => [
                     'custom' => [
                         'page_manager' => []
@@ -124,12 +129,17 @@ class DrupalProjectTypeTest extends TestTaskBase
 
         $build_root = ProjectX::buildRoot();
         $this->drupalProject->packageDrupalBuild($build_root);
-
-        $this->assertFileExists("{$build_root}/docroot/modules/custom/page_manager");
-        $this->assertFileExists("{$build_root}/docroot/themes/custom/bootstrap");
-        $this->assertFileExists("{$build_root}/docroot/profile/custom/lighting");
+        $install_root = $this->drupalProject::INSTALL_ROOT;
+        $this->assertFileExists("{$build_root}/{$install_root}/index.php");
+        $this->assertFileExists("{$build_root}/{$install_root}/.htaccess");
+        $this->assertFileExists("{$build_root}/{$install_root}/robots.txt");
+        $this->assertFileExists("{$build_root}/{$install_root}/update.php");
+        $this->assertFileExists("{$build_root}/{$install_root}/web.config");
+        $this->assertFileExists("{$build_root}/{$install_root}/modules/custom/page_manager");
+        $this->assertFileExists("{$build_root}/{$install_root}/themes/custom/bootstrap");
+        $this->assertFileExists("{$build_root}/{$install_root}/profile/custom/lighting");
         $this->assertFileExists("{$build_root}/salt.txt");
-        $this->assertFileExists("{$build_root}/docroot/sites/default/settings.php");
+        $this->assertFileExists("{$build_root}/{$install_root}/sites/default/settings.php");
         $this->assertFileExists("{$build_root}/config/configure1.yml");
     }
 

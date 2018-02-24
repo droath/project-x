@@ -377,8 +377,8 @@ class DrupalProjectType extends PhpProjectType implements TaskSubTypeInterface, 
      *
      * The process consist of the following:
      *   - Copy config
-     *   - Copy salt.txt
-     *   - Copy settings.php
+     *   - Copy salt.txt, index.php, settings.php, .htaccess, robots.txt,
+     *     update.php, and web.config.
      *   - Copy themes, modules, and profile custom code.
      * @param $build_root
      *   The build root path.
@@ -388,10 +388,25 @@ class DrupalProjectType extends PhpProjectType implements TaskSubTypeInterface, 
     {
         $project_root = ProjectX::projectRoot();
         $build_install = $build_root . static::INSTALL_ROOT;
+        $install_path = $this->getInstallPath();
 
-        $stack = $this->taskFilesystemStack()
-            ->copy("{$project_root}/salt.txt", "{$build_root}/salt.txt")
-            ->copy("{$this->getInstallPath()}/sites/default/settings.php", "{$build_install}/sites/default/settings.php");
+        $stack = $this->taskFilesystemStack();
+        $static_files = [
+            "{$project_root}/salt.txt" => "{$build_root}/salt.txt",
+            "{$install_path}/.htaccess" => "{$build_install}/.htaccess",
+            "{$install_path}/index.php" => "{$build_install}/index.php",
+            "{$install_path}/robots.txt" => "{$build_install}/robots.txt",
+            "{$install_path}/update.php" => "{$build_install}/update.php",
+            "{$install_path}/web.config" => "{$build_install}/web.config",
+            "{$install_path}/sites/default/settings.php" => "{$build_install}/sites/default/settings.php",
+        ];
+
+        foreach ($static_files as $source => $destination) {
+            if (!file_exists($source)) {
+                continue;
+            }
+            $stack->copy($source, $destination);
+        }
 
         $mirror_directories = [
             '/config',
