@@ -287,14 +287,15 @@ abstract class PhpProjectType extends ProjectType
 
         $this->packagePhpBuild($build_root);
 
-        $this->taskComposerUpdate()
+        $update_result = $this->taskComposerUpdate()
             ->noDev()
             ->preferDist()
             ->workingDir($build_root)
             ->option('lock')
             ->run();
+        $this->validateTaskResult($update_result);
 
-        $this->taskComposerInstall()
+        $install_result = $this->taskComposerInstall()
             ->noDev()
             ->preferDist()
             ->option('quiet')
@@ -302,6 +303,7 @@ abstract class PhpProjectType extends ProjectType
             ->workingDir($build_root)
             ->optimizeAutoloader()
             ->run();
+        $this->validateTaskResult($install_result);
     }
 
     /**
