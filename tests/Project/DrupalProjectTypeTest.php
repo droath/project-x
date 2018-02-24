@@ -286,6 +286,56 @@ class DrupalProjectTypeTest extends TestTaskBase
         )->asArray());
     }
 
+    public function testRemoveGitSubmoduleInVendor() {
+        $this->drupalProject->setupProjectComposer();
+
+        // Update composer.json file to declare a vendor dir.
+        $composer = $this->drupalProject->getComposer();
+        $composer->setConfig(['vendor-dir' => 'vendor1']);
+        $this->drupalProject->saveComposer();
+
+        // Build the directory structure that we're anticipating
+        vfsStream::create([
+            'build' => [
+                'docroot' => [],
+                'vendor1' => [
+                    'symfony' => [
+                        'package1' => [
+                            'file1' => '',
+                            'package_dir1' => [
+                                '.git' => []
+                            ],
+                        ],
+                        'package2' => [
+                            'file1' => '',
+                            'package_dir1' => [],
+                        ],
+                    ],
+                    'guzzle' => [
+                        'guzzle' => [
+                            'file' => '',
+                            '.git' => [],
+                            'file2' => '',
+                            'dir1' => [],
+                        ],
+                    ],
+                ],
+            ],
+        ], $this->projectDir);
+
+        $this->assertProjectFileExists('build');
+        $this->assertProjectFileExists('build/vendor1/symfony/package1/package_dir1/.git');
+        $this->assertProjectFileExists('build/vendor1/guzzle/guzzle/.git');
+
+        $base_path = $this->projectRoot . '/build';
+        $this
+            ->drupalProject
+            ->removeGitSubmodulesInVendor($base_path);
+
+        $this->assertProjectFileExists('build/vendor1/symfony/package1/package_dir1/.git');
+        $this->assertFileNotExists($base_path . '/vendor1/guzzle/guzzle.git');
+    }
+
     public function testRemoveGitSubmoduleInInstallPath()
     {
         $this->drupalProject->setupProjectComposer();

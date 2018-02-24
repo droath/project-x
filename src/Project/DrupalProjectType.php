@@ -273,6 +273,7 @@ class DrupalProjectType extends PhpProjectType implements TaskSubTypeInterface, 
 
         // Git submodules cause problems when committing code in a
         // parent repository. It could lead to missing files/directories.
+        $this->removeGitSubmodulesInVendor($build_root);
         $this->removeGitSubmoduleInInstallPath($build_root);
 
         $this->packageDrupalBuild($build_root);
@@ -842,6 +843,33 @@ class DrupalProjectType extends PhpProjectType implements TaskSubTypeInterface, 
         }
 
         return $default_database;
+    }
+
+    /**
+     * Remove git submodule in vendor.
+     *
+     * @param null $base_path
+     *   The base path on which to check for composer installed paths.
+     *
+     * @return $this
+     */
+    public function removeGitSubmodulesInVendor($base_path = null) {
+        $base_path = isset($base_path) && file_exists($base_path)
+            ? $base_path
+            : ProjectX::projectRoot();
+
+        $composer = $this->getComposer();
+        $composer_config = $composer->getConfig();
+
+        $vendor_dir = isset($composer_config['vendor-dir'])
+            ? $composer_config['vendor-dir']
+            : 'vendor';
+
+        $this->removeGitSubmodules(
+            [$base_path . "/{$vendor_dir}"], 2
+        );
+
+        return $this;
     }
 
     /**
