@@ -129,7 +129,7 @@ class DrupalProjectTypeTest extends TestTaskBase
 
         $build_root = ProjectX::buildRoot();
         $this->drupalProject->packageDrupalBuild($build_root);
-        $install_root = $this->drupalProject::INSTALL_ROOT;
+        $install_root = DrupalProjectType::INSTALL_ROOT;
         $this->assertFileExists("{$build_root}/{$install_root}/index.php");
         $this->assertFileExists("{$build_root}/{$install_root}/.htaccess");
         $this->assertFileExists("{$build_root}/{$install_root}/robots.txt");
