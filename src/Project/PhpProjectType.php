@@ -289,12 +289,14 @@ abstract class PhpProjectType extends ProjectType
 
         $this->taskComposerUpdate()
             ->noDev()
+            ->preferDist()
             ->workingDir($build_root)
             ->option('lock')
             ->run();
 
         $this->taskComposerInstall()
             ->noDev()
+            ->preferDist()
             ->option('quiet')
             ->noInteraction()
             ->workingDir($build_root)
