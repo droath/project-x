@@ -12,9 +12,11 @@ class ProjectTasks extends TaskBase
      */
     public function projectSetup()
     {
+        $this->executeCommandHook(__FUNCTION__, 'before');
         $this
             ->projectBuild()
             ->projectInstall();
+        $this->executeCommandHook(__FUNCTION__, 'after');
     }
 
     /**
@@ -22,7 +24,9 @@ class ProjectTasks extends TaskBase
      */
     public function projectBuild()
     {
+        $this->executeCommandHook(__FUNCTION__, 'before');
         $this->projectInstance()->build();
+        $this->executeCommandHook(__FUNCTION__, 'after');
 
         return $this;
     }
@@ -32,7 +36,9 @@ class ProjectTasks extends TaskBase
      */
     public function projectInstall()
     {
+        $this->executeCommandHook(__FUNCTION__, 'before');
         $this->projectInstance()->install();
+        $this->executeCommandHook(__FUNCTION__, 'after');
 
         return $this;
     }

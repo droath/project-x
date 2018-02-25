@@ -18,12 +18,15 @@ class DeployTasks extends TaskBase
      * @param array $opts
      * @option $build-path The build path it should be built at.
      * @option $deploy-type The deployment type that should be used.
+     * @throws \Psr\Container\ContainerExceptionInterface
+     * @throws \Psr\Container\NotFoundExceptionInterface
      */
     public function deployBuild($opts = [
         'build-path' => null,
         'deploy-type' => 'github',
     ])
     {
+        $this->executeCommandHook(__FUNCTION__, 'before');
         $build_path = $this->buildPath($opts);
         $deploy_type = $opts['deploy-type'];
 
@@ -31,6 +34,7 @@ class DeployTasks extends TaskBase
             $this->_mkdir($build_path);
         }
         $this->runBuild($build_path);
+        $this->executeCommandHook(__FUNCTION__, 'after');
 
         $continue = !is_null($deploy_type)
             ? $this->doAsk(new ConfirmationQuestion('Run deployment? (y/n) [yes] ', true))
@@ -52,12 +56,15 @@ class DeployTasks extends TaskBase
      * @param array $opts
      * @option $build-path The path that the build was built at.
      * @option $deploy-type The deployment type that should be used.
+     * @throws \Psr\Container\ContainerExceptionInterface
+     * @throws \Psr\Container\NotFoundExceptionInterface
      */
     public function deployPush($opts = [
         'build-path' => null,
         'deploy-type' => 'github',
     ])
     {
+        $this->executeCommandHook(__FUNCTION__, 'before');
         $build_path = $this->buildPath($opts);
 
         if (!file_exists($build_path)) {
@@ -71,6 +78,7 @@ class DeployTasks extends TaskBase
         $deploy = $this->loadDeployTask($deploy_type, $build_path);
 
         $this->runDeploy($deploy);
+        $this->executeCommandHook(__FUNCTION__, 'after');
     }
 
     /**

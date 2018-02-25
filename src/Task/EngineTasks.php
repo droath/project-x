@@ -21,6 +21,7 @@ class EngineTasks extends TaskBase
      */
     public function engineUp($opts = ['no-hostname' => false, 'no-browser' => false])
     {
+        $this->executeCommandHook(__FUNCTION__, 'before');
         $status = $this->engineInstance()->up();
 
         if ($status !== false) {
@@ -32,6 +33,7 @@ class EngineTasks extends TaskBase
                 $this->addHostName($opts['no-browser']);
             }
         }
+        $this->executeCommandHook(__FUNCTION__, 'after');
 
         return $this;
     }
@@ -41,8 +43,10 @@ class EngineTasks extends TaskBase
      */
     public function engineRebuild()
     {
+        $this->executeCommandHook(__FUNCTION__, 'before');
         $this->engineInstance()->rebuild();
         $this->projectInstance()->rebuildSettings();
+        $this->executeCommandHook(__FUNCTION__, 'after');
 
         return $this;
     }
@@ -52,6 +56,7 @@ class EngineTasks extends TaskBase
      */
     public function engineDown()
     {
+        $this->executeCommandHook(__FUNCTION__, 'before');
         $this->engineInstance()->down();
 
         // Allow projects to react to the engine shutdown.
@@ -59,6 +64,7 @@ class EngineTasks extends TaskBase
 
         // Remove hostname from the system hosts file.
         $this->removeHostName();
+        $this->executeCommandHook(__FUNCTION__, 'after');
 
         return $this;
     }
@@ -68,7 +74,9 @@ class EngineTasks extends TaskBase
      */
     public function engineResume()
     {
+        $this->executeCommandHook(__FUNCTION__, 'before');
         $this->engineInstance()->start();
+        $this->executeCommandHook(__FUNCTION__, 'after');
 
         return $this;
     }
@@ -78,7 +86,9 @@ class EngineTasks extends TaskBase
      */
     public function engineRestart()
     {
+        $this->executeCommandHook(__FUNCTION__, 'before');
         $this->engineInstance()->restart();
+        $this->executeCommandHook(__FUNCTION__, 'after');
 
         return $this;
     }
@@ -88,7 +98,9 @@ class EngineTasks extends TaskBase
      */
     public function engineHalt()
     {
+        $this->executeCommandHook(__FUNCTION__, 'before');
         $this->engineInstance()->suspend();
+        $this->executeCommandHook(__FUNCTION__, 'after');
     }
 
     /**
@@ -96,7 +108,9 @@ class EngineTasks extends TaskBase
      */
     public function engineInstall()
     {
+        $this->executeCommandHook(__FUNCTION__, 'before');
         $this->engineInstance()->install();
+        $this->executeCommandHook(__FUNCTION__, 'after');
 
         return $this;
     }

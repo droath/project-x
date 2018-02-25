@@ -2,12 +2,10 @@
 
 namespace Droath\ProjectX\Task;
 
-use Robo\Tasks;
-
 /**
  * Define Project-X task base.
  */
-abstract class TaskBase extends Tasks
+abstract class TaskBase extends EventTaskBase
 {
     /**
      * Engine type instance.

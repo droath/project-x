@@ -63,6 +63,13 @@ class ProjectXConfig extends YamlConfigBase
      */
     protected $options = [];
 
+    /**
+     * Project command hooks.
+     *
+     * @var array
+     */
+    protected $command_hooks = [];
+
     public function setName($name)
     {
         $this->name = $name;
@@ -160,5 +167,17 @@ class ProjectXConfig extends YamlConfigBase
     public function getOptions()
     {
         return $this->options;
+    }
+
+    public function getCommandHooks()
+    {
+        return $this->command_hooks;
+    }
+
+    public function setCommandHooks(array $hooks)
+    {
+        $this->command_hooks = $hooks;
+
+        return $this;
     }
 }

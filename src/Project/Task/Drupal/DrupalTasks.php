@@ -7,16 +7,16 @@ use Droath\ProjectX\Database;
 use Droath\ProjectX\Exception\TaskResultRuntimeException;
 use Droath\ProjectX\ProjectX;
 use Droath\ProjectX\Project\DrupalProjectType;
+use Droath\ProjectX\Task\EventTaskBase;
 use Droath\ProjectX\TaskResultTrait;
 use Robo\Task\Composer\loadTasks as composerTasks;
-use Robo\Tasks;
 use Symfony\Component\Console\Question\ChoiceQuestion;
 use Symfony\Component\Console\Question\ConfirmationQuestion;
 
 /**
  * Define Drupal specific tasks.
  */
-class DrupalTasks extends Tasks
+class DrupalTasks extends EventTaskBase
 {
     use drushTasks;
     use composerTasks;
@@ -48,8 +48,10 @@ class DrupalTasks extends Tasks
         'db-protocol' => null,
     ])
     {
+        $this->executeCommandHook(__FUNCTION__, 'before');
         $this->getProjectInstance()
             ->setupDrupalInstall($this->buildDatabase($opts));
+        $this->executeCommandHook(__FUNCTION__, 'after');
 
         return $this;
     }
@@ -91,6 +93,7 @@ class DrupalTasks extends Tasks
         'reimport-attempts' => 1,
     ])
     {
+        $this->executeCommandHook(__FUNCTION__, 'before');
         $database = $this->buildDatabase($opts);
         $instance = $this
             ->getProjectInstance()
@@ -157,6 +160,7 @@ class DrupalTasks extends Tasks
         if (!$opts['no-browser']) {
             $instance->projectLaunchBrowser();
         }
+        $this->executeCommandHook(__FUNCTION__, 'after');
 
         return $this;
     }
@@ -166,6 +170,7 @@ class DrupalTasks extends Tasks
      */
     public function drupalRemotePush()
     {
+        $this->executeCommandHook(__FUNCTION__, 'before');
         $this
             ->io()
             ->warning("This command will push the local database to the remote " .
@@ -195,6 +200,7 @@ class DrupalTasks extends Tasks
 
             $this->validateTaskResult($result);
         }
+        $this->executeCommandHook(__FUNCTION__, 'after');
 
         return $this;
     }
@@ -204,6 +210,7 @@ class DrupalTasks extends Tasks
      */
     public function drupalLocalSync()
     {
+        $this->executeCommandHook(__FUNCTION__, 'before');
         $drupal = $this->getProjectInstance();
         $version = $drupal->getProjectVersion();
 
@@ -246,6 +253,7 @@ class DrupalTasks extends Tasks
 
             $this->validateTaskResult($result);
         }
+        $this->executeCommandHook(__FUNCTION__, 'after');
 
         return $this;
     }
@@ -279,6 +287,7 @@ class DrupalTasks extends Tasks
         'hard' => false,
     ])
     {
+        $this->executeCommandHook(__FUNCTION__, 'before');
         $instance = $this->getProjectInstance();
         $version = $instance->getProjectVersion();
 
@@ -311,6 +320,7 @@ class DrupalTasks extends Tasks
         $result = $drush_stack->run();
 
         $this->validateTaskResult($result);
+        $this->executeCommandHook(__FUNCTION__, 'after');
 
         return $this;
     }
@@ -322,6 +332,7 @@ class DrupalTasks extends Tasks
      */
     public function drupalDrushAlias($opts = ['exclude-remote' => false])
     {
+        $this->executeCommandHook(__FUNCTION__, 'before');
         $project_root = ProjectX::projectRoot();
 
         if (!file_exists("$project_root/drush")) {
@@ -341,6 +352,7 @@ class DrupalTasks extends Tasks
 
         $this->getProjectInstance()
             ->setupDrushAlias($opts['exclude-remote']);
+        $this->executeCommandHook(__FUNCTION__, 'after');
 
         return $this;
     }
