@@ -112,48 +112,12 @@ class DrupalTasks extends EventTaskBase
             $this->setDrupalUuid();
 
             if (!$opts['no-import']) {
-                try {
-                    $result = $this->getDrushStack()
-                        ->drush('cr')
-                        ->drush('cim')
-                        ->run();
-                    $this->validateTaskResult($result);
-                } catch (TaskResultRuntimeException $exception) {
-                    $reimport_attempts = $opts['reimport-attempts'];
-
-                    if ($reimport_attempts < 1) {
-                        throw $exception;
-                    }
-                    $errors = 0;
-                    $result = null;
-
-                    // Attempt to resolve import issues by reimporting the
-                    // configurations again. This workaround was added due to
-                    // the following issue:
-                    // @see https://www.drupal.org/project/drupal/issues/2923899
-                    for ($i = 0; $i < $reimport_attempts; $i++) {
-                        $result = $this->getDrushStack()
-                            ->drush('cim')
-                            ->run();
-
-                        if ($result->getExitCode() == 0) {
-                            break;
-                        }
-
-                        ++$errors;
-                    }
-
-                    if (!isset($result)) {
-                        throw new \Exception('Missing result object.');
-                    } else if ($errors == $reimport_attempts) {
-                        throw new TaskResultRuntimeException($result);
-                    }
-                }
+                $this->drupalImportConfig(
+                    $opts['reimport-attempts']
+                );
             }
-
             $drush_stack->drush('cr');
         }
-
         $result = $drush_stack->run();
         $this->validateTaskResult($result);
 
@@ -308,10 +272,11 @@ class DrupalTasks extends EventTaskBase
         $drush_stack = $this->getDrushStack();
 
         if ($version === 8) {
-            $drush_stack
+            $this->getDrushStack()
                 ->drush('updb --entity-updates')
-                ->drush('cim')
-                ->drush('cr');
+                ->run();
+            $this->drupalImportConfig();
+            $drush_stack->drush('cr');
         } else {
             $drush_stack
                 ->drush('updb')
@@ -353,6 +318,57 @@ class DrupalTasks extends EventTaskBase
         $this->getProjectInstance()
             ->setupDrushAlias($opts['exclude-remote']);
         $this->executeCommandHook(__FUNCTION__, 'after');
+
+        return $this;
+    }
+
+    /**
+     * Drupal import configurations.
+     *
+     * @param int $reimport_attempts
+     *
+     * @return DrupalTasks
+     * @throws \Exception
+     * @throws \Psr\Container\ContainerExceptionInterface
+     * @throws \Psr\Container\NotFoundExceptionInterface
+     * @throws \Robo\Exception\TaskException
+     */
+    protected function drupalImportConfig($reimport_attempts = 1)  {
+        try {
+            $result = $this->getDrushStack()
+                ->drush('cr')
+                ->drush('cim')
+                ->run();
+            $this->validateTaskResult($result);
+        } catch (TaskResultRuntimeException $exception) {
+            if ($reimport_attempts < 1) {
+                throw $exception;
+            }
+            $errors = 0;
+            $result = null;
+
+            // Attempt to resolve import issues by reimporting the
+            // configurations again. This workaround was added due to
+            // the following issue:
+            // @see https://www.drupal.org/project/drupal/issues/2923899
+            for ($i = 0; $i < $reimport_attempts; $i++) {
+                $result = $this->getDrushStack()
+                    ->drush('cim')
+                    ->run();
+
+                if ($result->getExitCode() == 0) {
+                    break;
+                }
+
+                ++$errors;
+            }
+
+            if (!isset($result)) {
+                throw new \Exception('Missing result object.');
+            } else if ($errors == $reimport_attempts) {
+                throw new TaskResultRuntimeException($result);
+            }
+        }
 
         return $this;
     }
