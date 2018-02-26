@@ -9,6 +9,7 @@ use Droath\ProjectX\ProjectX;
 use Droath\ProjectX\Project\DrupalProjectType;
 use Droath\ProjectX\Task\EventTaskBase;
 use Droath\ProjectX\TaskResultTrait;
+use Droath\RoboDockerCompose\Task\loadTasks as dockerComposeTasks;
 use Robo\Task\Composer\loadTasks as composerTasks;
 use Symfony\Component\Console\Question\ChoiceQuestion;
 use Symfony\Component\Console\Question\ConfirmationQuestion;
@@ -21,6 +22,7 @@ class DrupalTasks extends EventTaskBase
     use drushTasks;
     use composerTasks;
     use TaskResultTrait;
+    use dockerComposeTasks;
 
     /**
      * Install Drupal on the current environment.
@@ -165,6 +167,52 @@ class DrupalTasks extends EventTaskBase
             $this->validateTaskResult($result);
         }
         $this->executeCommandHook(__FUNCTION__, 'after');
+
+        return $this;
+    }
+
+    /**
+     * Drupal drush command.
+     *
+     * @param $drush_command
+     *   The drush command to execute.
+     * @param array $opts
+     * @option string $remote-root-dir The remote Drupal root directory.
+     * @option string $remote-binary-path The path to the Drush binary.
+     *
+     * @return $this
+     * @throws \Exception
+     * @throws \Psr\Container\ContainerExceptionInterface
+     * @throws \Psr\Container\NotFoundExceptionInterface
+     */
+    public function drupalDrush($drush_command = null, $opts = [
+        'remote-root-dir' => '/var/www/html',
+        'remote-binary-path' => 'vendor/bin/drush'
+    ])
+    {
+        /** @var DrupalProjectType $project */
+        $instance = $this->getProjectInstance();
+
+        if (ProjectX::engineType() && $instance->hasDockerSupport()) {
+            $install_path = DrupalProjectType::INSTALL_ROOT;
+            $drupal_dir = "{$opts['remote-root-dir']}{$install_path}";
+            $drush_binary = "{$opts['remote-root-dir']}/{$opts['remote-binary-path']}";
+            $command = $this
+                ->taskDrushStack($drush_binary)
+                ->drupalRootDirectory($drupal_dir)
+                ->drush($drush_command);
+            $container = $instance->getPhpServiceName('php');
+
+            $result = $this->taskDockerComposeExecute()
+                ->setContainer($container)
+                ->exec($command)
+                ->run();
+        } else {
+            $result = $this->getDrushStack()
+                ->drush($drush_command)
+                ->run();
+        }
+        $this->validateTaskResult($result);
 
         return $this;
     }
@@ -333,7 +381,8 @@ class DrupalTasks extends EventTaskBase
      * @throws \Psr\Container\NotFoundExceptionInterface
      * @throws \Robo\Exception\TaskException
      */
-    protected function drupalImportConfig($reimport_attempts = 1)  {
+    protected function drupalImportConfig($reimport_attempts = 1)
+    {
         try {
             $result = $this->getDrushStack()
                 ->drush('cr')

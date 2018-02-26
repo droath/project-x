@@ -11,6 +11,9 @@ RUN apt-get update && apt-get install -y libpng12-dev libjpeg-dev libwebp-dev li
   && docker-php-ext-configure gd --with-png-dir=/usr --with-jpeg-dir=/usr  --with-webp-dir=/usr \
   && docker-php-ext-install gd mbstring opcache pdo pdo_mysql pdo_pgsql zip mcrypt
 
+# Install PHP composer.
+RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
+
 # Run cleanup tasks on environment.
 RUN apt-get clean; rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/* /usr/share/doc/*
 

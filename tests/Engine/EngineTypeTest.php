@@ -39,6 +39,12 @@ class EngineTypeTest extends TestBase
         $this->assertArrayHasKey('database2', $services);
     }
 
+    public function testGetServiceNamesByType()
+    {
+        $names = $this->engineType->getServiceNamesByType('apache');
+        $this->assertEquals('web', $names[0]);
+    }
+
     public function testGetInstallPath()
     {
         $this->assertEquals('vfs://root', $this->engineType->getInstallPath());

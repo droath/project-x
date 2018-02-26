@@ -31,7 +31,7 @@
         "boedah/robo-drush": "^3.0",
         "droath/console-form": "~0.0.7",
         "droath/robo-github": "^0.0.2",
-        "droath/robo-docker-compose": "^0.0.4",
+        "droath/robo-docker-compose": "^0.0.5",
         "droath/robo-google-lighthouse": "^1.0",
         "droath/robo-docker-sync": "^0.0.1",
         "droath/hostsfile-manager": "^0.0.1",

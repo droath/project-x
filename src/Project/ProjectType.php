@@ -204,6 +204,21 @@ abstract class ProjectType extends TaskSubType implements ProjectTypeInterface
     }
 
     /**
+     * Get project engine service names by type.
+     *
+     * @param $type
+     *   The service type on what to search for.
+     *
+     * @return mixed
+     * @throws \Psr\Container\ContainerExceptionInterface
+     * @throws \Psr\Container\NotFoundExceptionInterface
+     */
+    public function getEngineServiceNamesByType($type)
+    {
+        return $this->getEngineInstance()->getServiceNamesByType($type);
+    }
+
+    /**
      * Get project install path.
      *
      * @return string

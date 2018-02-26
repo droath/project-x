@@ -80,6 +80,18 @@ class PhpProjectTypeTest extends TestTaskBase
         $this->assertTrue($this->phpProject->hasPhpCodeSniffer());
     }
 
+    public function testPhpCodeSniffer()
+    {
+        $this->phpProject->setupPhpCodeSniffer();
+        $this->assertTrue($this->phpProject->hasPhpCodeSniffer());
+    }
+
+    public function testGetPhpServiceName()
+    {
+        $name = $this->phpProject->getPhpServiceName();
+        $this->assertEquals('php', $name);
+    }
+
     public function testPackagePhpBuild()
     {
         vfsStream::create([

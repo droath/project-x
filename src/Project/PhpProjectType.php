@@ -217,6 +217,19 @@ abstract class PhpProjectType extends ProjectType
     }
 
     /**
+     * Get PHP service name.
+     *
+     * @return string
+     * @throws \Psr\Container\ContainerExceptionInterface
+     * @throws \Psr\Container\NotFoundExceptionInterface
+     */
+    public function getPhpServiceName()
+    {
+        $names = $this->getEngineServiceNamesByType('php');
+        return reset($names);
+    }
+
+    /**
      * Get composer instance.
      *
      * @return \Droath\ProjectX\Config\ComposerConfig
