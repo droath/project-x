@@ -21,14 +21,6 @@ class GitHubDeploy extends DeployBase
     {
         parent::beforeDeploy();
         $this->runGitInitAdd();
-
-        if ($this->hasGitTrackedFilesChanged()) {
-            $version = $this->askBuildVersion();
-            $this->getGitBuildStack()
-                ->commit("Build commit for {$version}.")
-                ->tag($version)
-                ->run();
-        }
     }
 
     /**
@@ -37,9 +29,20 @@ class GitHubDeploy extends DeployBase
     public function onDeploy()
     {
         parent::onDeploy();
-        $this->getGitBuildStack()
-            ->exec("push -u --tags {$this->gitOrigin()} {$this->gitBranch()}")
-            ->run();
+
+        if ($this->hasGitTrackedFilesChanged()) {
+            $version = $this->askBuildVersion();
+            $this->getGitBuildStack()
+                ->commit("Build commit for {$version}.")
+                ->tag($version)
+                ->run();
+
+            $this->getGitBuildStack()
+                ->exec("push -u --tags {$this->gitOrigin()} {$this->gitBranch()}")
+                ->run();
+        } else {
+            $this->say("Deploy build has't changed.");
+        }
     }
 
     /**
