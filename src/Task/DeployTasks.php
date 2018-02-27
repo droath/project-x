@@ -33,7 +33,7 @@ class DeployTasks extends TaskBase
         if (!file_exists($build_path)) {
             $this->_mkdir($build_path);
         }
-        $this->runBuild($build_path);
+        $this->executeBuild(__FUNCTION__, $build_path);
         $this->executeCommandHook(__FUNCTION__, 'after');
 
         $continue = !is_null($deploy_type)
@@ -44,10 +44,10 @@ class DeployTasks extends TaskBase
             return;
         }
 
-        /** @var DeployBase $deploy */
-        $deploy = $this->loadDeployTask($deploy_type, $build_path);
-
-        $this->runDeploy($deploy);
+        $this->deployPush([
+            'build-path' => $build_path,
+            'deploy-type' => $deploy_type
+        ]);
     }
 
     /**
@@ -72,43 +72,54 @@ class DeployTasks extends TaskBase
                 'Build directory does not exist.'
             );
         }
-        $deploy_type = $opts['deploy-type'];
-
         /** @var DeployBase $deploy */
-        $deploy = $this->loadDeployTask($deploy_type, $build_path);
+        $deploy = $this->loadDeployTask(
+            $opts['deploy-type'],
+            $build_path
+        );
 
-        $this->runDeploy($deploy);
+        $this->executeDeploy(__FUNCTION__, $deploy);
         $this->executeCommandHook(__FUNCTION__, 'after');
     }
 
     /**
-     * Run build process.
+     * Execute build process.
      *
+     * @param $method
      * @param $build_path
      *
      * @return self
+     * @throws \Psr\Container\ContainerExceptionInterface
+     * @throws \Psr\Container\NotFoundExceptionInterface
      */
-    protected function runBuild($build_path)
+    protected function executeBuild($method, $build_path)
     {
         $this->say('Build has initialized!');
+        $this->executeCommandHook($method, 'before_build');
         $this->projectInstance()->onDeployBuild($build_path);
+        $this->executeCommandHook($method, 'after_build');
         $this->say('Build has completed!');
 
         return $this;
     }
 
     /**
-     * Run deployment.
+     * Execute deployment process.
      *
+     * @param $method
      * @param DeployBase $deploy
      *
      * @return self
+     * @throws \Psr\Container\ContainerExceptionInterface
+     * @throws \Psr\Container\NotFoundExceptionInterface
      */
-    protected function runDeploy(DeployBase $deploy)
+    protected function executeDeploy($method, DeployBase $deploy)
     {
         $this->say('Deploy has initialized!');
         $deploy->beforeDeploy();
+        $this->executeCommandHook($method, 'before_deploy');
         $deploy->onDeploy();
+        $this->executeCommandHook($method, 'after_deploy');
         $deploy->afterDeploy();
         $this->say('Deploy has completed!');
 
