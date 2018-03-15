@@ -117,6 +117,9 @@ class DrupalProjectTypeTest extends TestTaskBase
                         'lighting' => []
                     ]
                 ],
+                'libraries' => [
+                    'jquery_colorpicker' => []
+                ],
                 'sites' => [
                     'default' => [
                         'settings.php' => '',
@@ -138,6 +141,7 @@ class DrupalProjectTypeTest extends TestTaskBase
         $this->assertFileExists("{$build_root}/{$install_root}/modules/custom/page_manager");
         $this->assertFileExists("{$build_root}/{$install_root}/themes/custom/bootstrap");
         $this->assertFileExists("{$build_root}/{$install_root}/profile/custom/lighting");
+        $this->assertFileExists("{$build_root}/{$install_root}/libraries/jquery_colorpicker");
         $this->assertFileExists("{$build_root}/salt.txt");
         $this->assertFileExists("{$build_root}/{$install_root}/sites/default/settings.php");
         $this->assertFileExists("{$build_root}/config/configure1.yml");

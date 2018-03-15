@@ -410,6 +410,7 @@ class DrupalProjectType extends PhpProjectType implements TaskSubTypeInterface, 
 
         $mirror_directories = [
             '/config',
+            static::INSTALL_ROOT . '/libraries',
             static::INSTALL_ROOT . '/themes/custom',
             static::INSTALL_ROOT . '/modules/custom',
             static::INSTALL_ROOT . '/profile/custom'
