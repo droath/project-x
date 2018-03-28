@@ -18,12 +18,14 @@ class DeployTasks extends TaskBase
      * @param array $opts
      * @option $build-path The build path it should be built at.
      * @option $deploy-type The deployment type that should be used.
+     * @option $include-asset Include directory/file to the build.
      * @throws \Psr\Container\ContainerExceptionInterface
      * @throws \Psr\Container\NotFoundExceptionInterface
      */
     public function deployBuild($opts = [
         'build-path' => null,
         'deploy-type' => 'github',
+        'include-asset' => [],
     ])
     {
         $this->executeCommandHook(__FUNCTION__, 'before');
@@ -34,6 +36,7 @@ class DeployTasks extends TaskBase
             $this->_mkdir($build_path);
         }
         $this->executeBuild(__FUNCTION__, $build_path);
+        $this->executeIncludeAssets($opts['include-asset'], $build_path);
         $this->executeCommandHook(__FUNCTION__, 'after');
 
         $continue = !is_null($deploy_type)
@@ -80,6 +83,31 @@ class DeployTasks extends TaskBase
 
         $this->executeDeploy(__FUNCTION__, $deploy);
         $this->executeCommandHook(__FUNCTION__, 'after');
+    }
+
+    /**
+     * Execute including assets to the build directory.
+     *
+     * @param array $assets
+     * @param $build_path
+     */
+    protected function executeIncludeAssets(array $assets, $build_path)
+    {
+        $root_path = ProjectX::projectRoot();
+
+        foreach ($assets as $asset) {
+            $file_info = new \splFileInfo("{$root_path}/{$asset}");
+            if (!file_exists($file_info)) {
+                continue;
+            }
+            $file_path = $file_info->getRealPath();
+            $file_method = $file_info->isFile() ? '_copy' : '_mirrorDir';
+
+            call_user_func_array([$this, $file_method], [
+                $file_path,
+                "{$build_path}/{$file_info->getFilename()}"
+            ]);
+        }
     }
 
     /**
