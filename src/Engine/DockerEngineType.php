@@ -55,6 +55,9 @@ class DockerEngineType extends EngineType implements TaskSubTypeInterface
     {
         parent::up();
 
+        // Ensure the project is running the latest docker images.
+        $this->updateDockerImages();
+
         // Run open port status report. Display a confirmation message if
         // warning(s) have been issued. User will need to confirm if they want
         // to continue or not.
@@ -316,6 +319,21 @@ class DockerEngineType extends EngineType implements TaskSubTypeInterface
         $ports = array_unique($ports);
 
         return array_values($ports);
+    }
+
+    /**
+     * Update docker compose images.
+     *
+     * @return $this
+     */
+    protected function updateDockerImages()
+    {
+        $this->taskDockerComposePull()
+            ->parallel()
+            ->quiet()
+            ->run();
+
+        return $this;
     }
 
     /**
