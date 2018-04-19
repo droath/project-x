@@ -55,9 +55,6 @@ class DockerEngineType extends EngineType implements TaskSubTypeInterface
     {
         parent::up();
 
-        // Ensure the project is running the latest docker images.
-        $this->updateDockerImages();
-
         // Run open port status report. Display a confirmation message if
         // warning(s) have been issued. User will need to confirm if they want
         // to continue or not.
@@ -68,6 +65,9 @@ class DockerEngineType extends EngineType implements TaskSubTypeInterface
                 'Project startup has been aborted due to conflicting ports.'
             );
         }
+
+        // Ensure we're running the latest docker images.
+        $this->updateDockerImages();
 
         // Startup docker sync if found in project.
         if ($this->hasDockerSync()) {
