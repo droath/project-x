@@ -42,8 +42,9 @@ class ApacheService extends DockerServiceBase implements ServiceInterface
             ->setImage('httpd', $this->getVersion())
             ->setPorts(['80:80'])
             ->setVolumes([
-               './:/var/www/html',
-               './docker/services/apache/httpd.conf:/usr/local/apache2/conf/httpd.conf'
+                './:/var/www/html',
+                './docker/services/apache/httpd.conf:/usr/local/apache2/conf/httpd.conf',
+                './docker/services/apache/httpd-mpm.conf:/usr/local/apache2/conf/extra/httpd-mpm.conf'
             ]);
     }
 
@@ -54,6 +55,7 @@ class ApacheService extends DockerServiceBase implements ServiceInterface
     {
         $files = [
             'httpd.conf' => [],
+            'httpd-mpm.conf' => []
         ];
 
         if ($php_service = $this->getLinkServiceNameByType('php')) {
