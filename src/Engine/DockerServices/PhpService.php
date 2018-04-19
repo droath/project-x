@@ -68,7 +68,7 @@ class PhpService extends DockerServiceBase implements ServiceInterface
     public function templateFiles()
     {
         return [
-            'DockerFile' => [
+            'Dockerfile' => [
                 'variables' => [
                     'DOCKER_PHP_VERSION' => $this->getVersion(),
                 ],

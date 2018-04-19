@@ -58,7 +58,7 @@ class PhpServiceTest extends TestBase
     public function testTemplateFiles()
     {
         $this->assertEquals([
-            'DockerFile' => [
+            'Dockerfile' => [
                 'variables' => [
                     'DOCKER_PHP_VERSION' => 7.1,
                 ],
