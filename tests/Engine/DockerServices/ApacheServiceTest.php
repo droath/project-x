@@ -34,7 +34,8 @@ class ApacheServiceTest extends TestBase
             'ports'       => ['80:80'],
             'volumes'     => [
                 './:/var/www/html',
-                './docker/services/apache/httpd.conf:/usr/local/apache2/conf/httpd.conf'
+                './docker/services/apache/httpd.conf:/usr/local/apache2/conf/httpd.conf',
+                './docker/services/apache/httpd-mpm.conf:/usr/local/apache2/conf/extra/httpd-mpm.conf'
             ],
         ], $service->asArray());
     }
@@ -42,6 +43,7 @@ class ApacheServiceTest extends TestBase
     public function testTemplateFiles()
     {
         $this->assertEquals([
+            'httpd-mpm.conf' => [],
             'httpd.conf' => [
                 'variables' => [
                     'PHP_SERVICE' => 'php'

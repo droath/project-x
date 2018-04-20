@@ -32,6 +32,7 @@ class PhpService extends DockerServiceBase implements ServiceInterface
             ->setExpose(['9000'])
             ->setVolumes([
                 './:/var/www/html',
+                './docker/services/php/www.conf:/usr/local/etc/php-fpm.d/www.conf',
                 './docker/services/php/php-overrides.ini:/usr/local/etc/php/conf.d/99-php-overrides.ini'
             ]);
     }
@@ -67,12 +68,13 @@ class PhpService extends DockerServiceBase implements ServiceInterface
     public function templateFiles()
     {
         return [
-            'DockerFile' => [
+            'Dockerfile' => [
                 'variables' => [
                     'DOCKER_PHP_VERSION' => $this->getVersion(),
                 ],
                 'overwrite' => true,
             ],
+            'www.conf' => [],
             'php-overrides.ini' => []
         ];
     }

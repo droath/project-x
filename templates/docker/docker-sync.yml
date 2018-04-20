@@ -1,11 +1,16 @@
 version: '2'
+config_path: "config_path"
 syncs:
   ${SYNC_NAME}-docker-sync:
     src: './'
     sync_userid: 33
+    host_disk_mount_mode: 'cached'
     sync_host_ip: '127.0.0.1'
     notify_terminal: true
-    sync_excludes_type: 'Name'
+    monit_enable: true
+    monit_interval: 15
+    monit_high_cpu_cycles: 2
+    sync_excludes_type: 'Path'
     sync_excludes:
       - docs
       - tests

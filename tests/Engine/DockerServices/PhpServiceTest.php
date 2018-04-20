@@ -30,6 +30,7 @@ class PhpServiceTest extends TestBase
         $this->assertEquals(['9000'], $service->getExpose());
         $this->assertEquals([
             './:/var/www/html',
+            './docker/services/php/www.conf:/usr/local/etc/php-fpm.d/www.conf',
             './docker/services/php/php-overrides.ini:/usr/local/etc/php/conf.d/99-php-overrides.ini'
         ], $service->getVolumes());
     }
@@ -57,12 +58,13 @@ class PhpServiceTest extends TestBase
     public function testTemplateFiles()
     {
         $this->assertEquals([
-            'DockerFile' => [
+            'Dockerfile' => [
                 'variables' => [
                     'DOCKER_PHP_VERSION' => 7.1,
                 ],
                 'overwrite' => true,
             ],
+            'www.conf' => [],
             'php-overrides.ini' => []
         ], $this->service->templateFiles());
     }
