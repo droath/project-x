@@ -76,7 +76,7 @@ abstract class DefaultYamlFileStore
                 $filename = static::FILE_NAME;
                 $contents = file_get_contents("{$this->filepath}/{$filename}");
 
-                if (!empty($contents) && $contents !== FALSE) {
+                if (!empty($contents) && $contents !== false) {
                     $data = Yaml::parse($contents);
                 }
             }
