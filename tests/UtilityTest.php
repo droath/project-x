@@ -51,7 +51,8 @@ class UtilityTest extends TestCase
     {
         return [
             ['Project X', 'project-x'],
-            ['Pr0*o()j999e<<>>ct~!@#-X', 'project-x'],
+            ['Project 1', 'project-1'],
+            ['Pr*o()je<<>>ct~!@#-X', 'project-x'],
         ];
     }
 }

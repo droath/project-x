@@ -33,10 +33,13 @@ class Utility
      * @param string $string
      *   The machine name input.
      *
+     * @param string $pattern
+     *   The pattern on which characters are allowed.
+     *
      * @return string
      *   The formatted machine name.
      */
-    public static function machineName($string)
+    public static function machineName($string, $pattern = '/[^a-zA-Z0-9\-]/')
     {
         if (!is_string($string)) {
             throw new \InvalidArgumentException(
@@ -45,7 +48,7 @@ class Utility
         }
         $string = strtr($string, ' ', '-');
 
-        return strtolower(self::cleanString($string));
+        return strtolower(self::cleanString($string, $pattern));
     }
 
     /**
