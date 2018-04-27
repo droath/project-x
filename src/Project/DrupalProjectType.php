@@ -26,15 +26,15 @@ class DrupalProjectType extends PhpProjectType implements TaskSubTypeInterface, 
      * Composer package version constants.
      */
     const DRUSH_VERSION = '^8.1';
-    const DRUPAL_8_VERSION = '^8.4';
+    const DRUPAL_8_VERSION = '^8.5';
 
     /**
      * Service constants.
      */
     const DEFAULT_PHP7 = 7.1;
     const DEFAULT_PHP5 = 5.6;
-    const DEFAULT_MYSQL = 'latest';
-    const DEFAULT_APACHE = 'latest';
+    const DEFAULT_MYSQL = '5.6';
+    const DEFAULT_APACHE = '2.4';
 
     /**
      * Database constants.
