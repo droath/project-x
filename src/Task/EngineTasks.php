@@ -94,6 +94,18 @@ class EngineTasks extends TaskBase
     }
 
     /**
+     * Reboot engine environment.
+     */
+    public function engineReboot()
+    {
+        $this->executeCommandHook(__FUNCTION__, 'before');
+        $this->engineInstance()->reboot();
+        $this->executeCommandHook(__FUNCTION__, 'after');
+
+        return $this;
+    }
+
+    /**
      * Halt engine environment.
      */
     public function engineHalt()

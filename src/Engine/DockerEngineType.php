@@ -93,6 +93,8 @@ class DockerEngineType extends EngineType implements TaskSubTypeInterface
 
         // Determine if docker compose result are valid.
         $this->validateTaskResult($result);
+
+        return $this;
     }
 
     /**
@@ -110,6 +112,8 @@ class DockerEngineType extends EngineType implements TaskSubTypeInterface
         if ($this->hasDockerSync()) {
             $this->runDockerSyncDownCollection();
         }
+
+        return $this;
     }
 
     /**
@@ -121,6 +125,8 @@ class DockerEngineType extends EngineType implements TaskSubTypeInterface
 
         $this->taskDockerComposeStart()
             ->run();
+
+        return $this;
     }
 
     /**
@@ -132,6 +138,8 @@ class DockerEngineType extends EngineType implements TaskSubTypeInterface
 
         $this->taskDockerComposeRestart()
             ->run();
+
+        return $this;
     }
 
     /**
@@ -143,6 +151,8 @@ class DockerEngineType extends EngineType implements TaskSubTypeInterface
 
         $this->taskDockerComposePause()
             ->run();
+        
+        return $this;
     }
 
     /**
@@ -156,6 +166,8 @@ class DockerEngineType extends EngineType implements TaskSubTypeInterface
         if ($this->useDockerSync()) {
             $this->setupDockerSync();
         }
+        
+        return $this;
     }
 
     /**
@@ -166,6 +178,18 @@ class DockerEngineType extends EngineType implements TaskSubTypeInterface
         parent::rebuild();
 
         $this->rebuildDocker();
+
+        return $this;
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function reboot()
+    {
+        parent::reboot();
+
+        $this->down()->up();
 
         return $this;
     }

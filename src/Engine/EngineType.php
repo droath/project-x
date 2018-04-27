@@ -83,6 +83,14 @@ abstract class EngineType extends TaskSubType implements EngineTypeInterface
     }
 
     /**
+     * {@inheritdoc}
+     */
+    public function reboot()
+    {
+        $this->say('Project engine is rebooting.');
+    }
+
+    /**
      * Get defined services in configuration.
      *
      * @return array

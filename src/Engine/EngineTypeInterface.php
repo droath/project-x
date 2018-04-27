@@ -28,6 +28,11 @@ interface EngineTypeInterface
     public function restart();
 
     /**
+     * Reboot the engine infrastructure.
+     */
+    public function reboot();
+
+    /**
      * Suspend the engine infrastructure.
      */
     public function suspend();
