@@ -400,7 +400,7 @@ class PhpClassDiscovery
             && !empty($token_info['use'])
             && strpos($classname, DIRECTORY_SEPARATOR) === false) {
             foreach ($token_info['use'] as $use) {
-                if (strpos($use, $classname) === false) {
+                if (strpos($use, "\\{$classname}") === false) {
                     continue;
                 }
 
