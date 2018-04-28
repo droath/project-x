@@ -2,9 +2,9 @@
 
 namespace Droath\ProjectX\Task;
 
-use Droath\HostsFileManager\HostsFile;
-use Droath\HostsFileManager\HostsFileWriter;
 use Droath\ProjectX\ProjectX;
+use Symfony\Component\Console\Input\InputInterface;
+use Symfony\Component\Console\Output\OutputInterface;
 
 /**
  * Define Project-X engine task commands.
@@ -14,25 +14,22 @@ class EngineTasks extends TaskBase
     /**
      * Startup engine environment.
      *
+     * @param array $opts An array of command options.
      * @option $no-hostname Don't add hostname to the system hosts file
      *   regardless if it's defined in the project-x config.
      * @option $no-browser Don't open the browser window on startup regardless
      *   if it's defined in the project-x config.
+     *
+     * @hidden
+     * @deprecated
+     *
+     * @return EngineTasks
+     * @throws \Exception
      */
     public function engineUp($opts = ['no-hostname' => false, 'no-browser' => false])
     {
         $this->executeCommandHook(__FUNCTION__, 'before');
-        $status = $this->engineInstance()->up();
-
-        if ($status !== false) {
-            // Allow projects to react to the engine startup.
-            $this->projectInstance()->onEngineUp();
-
-            // Add hostname to the system hosts file.
-            if (!$opts['no-hostname']) {
-                $this->addHostName($opts['no-browser']);
-            }
-        }
+        $this->executeExistingCommand('env:up');
         $this->executeCommandHook(__FUNCTION__, 'after');
 
         return $this;
@@ -40,12 +37,14 @@ class EngineTasks extends TaskBase
 
     /**
      * Rebuild engine configuration.
+     *
+     * @hidden
+     * @deprecated
      */
     public function engineRebuild()
     {
         $this->executeCommandHook(__FUNCTION__, 'before');
-        $this->engineInstance()->rebuild();
-        $this->projectInstance()->rebuildSettings();
+        $this->executeExistingCommand('env:rebuild');
         $this->executeCommandHook(__FUNCTION__, 'after');
 
         return $this;
@@ -53,17 +52,14 @@ class EngineTasks extends TaskBase
 
     /**
      * Shutdown engine environment.
+     *
+     * @hidden
+     * @deprecated
      */
     public function engineDown()
     {
         $this->executeCommandHook(__FUNCTION__, 'before');
-        $this->engineInstance()->down();
-
-        // Allow projects to react to the engine shutdown.
-        $this->projectInstance()->onEngineDown();
-
-        // Remove hostname from the system hosts file.
-        $this->removeHostName();
+        $this->executeExistingCommand('env:down');
         $this->executeCommandHook(__FUNCTION__, 'after');
 
         return $this;
@@ -71,11 +67,14 @@ class EngineTasks extends TaskBase
 
     /**
      * Resume halted engine environment.
+     *
+     * @hidden
+     * @deprecated
      */
     public function engineResume()
     {
         $this->executeCommandHook(__FUNCTION__, 'before');
-        $this->engineInstance()->start();
+        $this->executeExistingCommand('env:resume');
         $this->executeCommandHook(__FUNCTION__, 'after');
 
         return $this;
@@ -83,11 +82,14 @@ class EngineTasks extends TaskBase
 
     /**
      * Restart engine environment.
+     *
+     * @hidden
+     * @deprecated
      */
     public function engineRestart()
     {
         $this->executeCommandHook(__FUNCTION__, 'before');
-        $this->engineInstance()->restart();
+        $this->executeExistingCommand('env:restart');
         $this->executeCommandHook(__FUNCTION__, 'after');
 
         return $this;
@@ -95,11 +97,14 @@ class EngineTasks extends TaskBase
 
     /**
      * Reboot engine environment.
+     *
+     * @hidden
+     * @deprecated
      */
     public function engineReboot()
     {
         $this->executeCommandHook(__FUNCTION__, 'before');
-        $this->engineInstance()->reboot();
+        $this->executeExistingCommand('env:reboot');
         $this->executeCommandHook(__FUNCTION__, 'after');
 
         return $this;
@@ -107,77 +112,69 @@ class EngineTasks extends TaskBase
 
     /**
      * Halt engine environment.
+     *
+     * @hidden
+     * @deprecated
      */
     public function engineHalt()
     {
         $this->executeCommandHook(__FUNCTION__, 'before');
-        $this->engineInstance()->suspend();
+        $this->executeExistingCommand('env:halt');
         $this->executeCommandHook(__FUNCTION__, 'after');
     }
 
     /**
      * Install engine configuration setup.
+     *
+     * @hidden
+     * @deprecated
      */
     public function engineInstall()
     {
         $this->executeCommandHook(__FUNCTION__, 'before');
-        $this->engineInstance()->install();
+        $this->executeExistingCommand('env:install');
         $this->executeCommandHook(__FUNCTION__, 'after');
 
         return $this;
     }
 
     /**
-     * Add hostname to hosts file.
+     * Execute existing command.
      *
-     * @param bool $no_browser
-     *   Don't open the browser window.
+     * @param $command_name
+     *   The name of the command.
      *
-     * @return self
+     * @param InputInterface|null $input
+     * @param OutputInterface|null $output
+     *
+     * @return int
+     *   The execute command exit code.
+     * @throws \Exception
      */
-    protected function addHostName($no_browser)
-    {
-        $host = ProjectX::getProjectConfig()
-            ->getHost();
-
-        if (!empty($host)) {
-            $hostsfile = (new HostsFile())
-                ->setLine('127.0.0.1', $host['name']);
-
-            (new HostsFileWriter($hostsfile))->add();
-
-            $this->say(
-                sprintf('Added %s to hosts file.', $host['name'])
-            );
-
-            if (!$no_browser && $host['open_on_startup'] == 'true') {
-                $this->taskOpenBrowser('http://' . $host['name'])
-                    ->run();
-            }
+    protected function executeExistingCommand(
+        $command_name,
+        InputInterface $input = null,
+        OutputInterface $output = null
+    ) {
+        if (!isset($command_name)) {
+            return 1;
         }
+        $input = isset($input) ? $input : $this->input();
+        $output = isset($output) ? $output : $this->output();
 
-        return $this;
+        return $this->getApplication()
+            ->find($command_name)
+            ->run($input, $output);
     }
 
     /**
-     * Remove hostname from hosts file.
+     * Get the CLI application object.
+     *
+     * @return ProjectX
+     *   The application object.
      */
-    protected function removeHostName()
+    protected function getApplication()
     {
-        $host = ProjectX::getProjectConfig()
-            ->getHost();
-
-        if (!empty($host)) {
-            $hostsfile = (new HostsFile())
-                ->setLine('127.0.0.1', $host['name']);
-
-            (new HostsFileWriter($hostsfile))->remove();
-
-            $this->say(
-                sprintf('Removed %s from hosts file.', $host['name'])
-            );
-        }
-
-        return $this;
+        return $this->container->get('application');
     }
 }
