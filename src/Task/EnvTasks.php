@@ -132,6 +132,18 @@ class EnvTasks extends TaskBase
     }
 
     /**
+     * SSH into the environment engine.
+     */
+    public function envSsh()
+    {
+        $this->executeCommandHook(__FUNCTION__, 'before');
+        $this->engineInstance()->ssh();
+        $this->executeCommandHook(__FUNCTION__, 'after');
+
+        return $this;
+    }
+
+    /**
      * Add hostname to hosts file.
      *
      * @param bool $no_browser

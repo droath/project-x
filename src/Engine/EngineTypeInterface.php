@@ -13,6 +13,11 @@ interface EngineTypeInterface
     public function up();
 
     /**
+     * SSH in the environment engine.
+     */
+    public function ssh();
+
+    /**
      * Shutdown the engine infrastructure.
      */
     public function down();

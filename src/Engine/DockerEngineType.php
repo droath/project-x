@@ -14,10 +14,15 @@ use Droath\ProjectX\Exception\EngineRuntimeException;
 use Droath\ProjectX\ProjectX;
 use Droath\ProjectX\TaskSubTypeInterface;
 use Droath\RoboDockerCompose\Task\loadTasks as dockerComposerTasks;
+use Droath\RoboDockerCompose\Task\Ps;
 use Droath\RoboDockerSync\Task\loadTasks as dockerSyncTasks;
+use Robo\ResultData;
+use Robo\Task\Docker\Exec;
+use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Helper\Table;
 use Symfony\Component\Console\Helper\TableCell;
 use Symfony\Component\Console\Helper\TableSeparator;
+use Symfony\Component\Console\Question\ChoiceQuestion;
 
 /**
  * Define docker engine type.
@@ -151,7 +156,7 @@ class DockerEngineType extends EngineType implements TaskSubTypeInterface
 
         $this->taskDockerComposePause()
             ->run();
-        
+
         return $this;
     }
 
@@ -166,7 +171,7 @@ class DockerEngineType extends EngineType implements TaskSubTypeInterface
         if ($this->useDockerSync()) {
             $this->setupDockerSync();
         }
-        
+
         return $this;
     }
 
@@ -192,6 +197,107 @@ class DockerEngineType extends EngineType implements TaskSubTypeInterface
         $this->down()->up();
 
         return $this;
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function ssh()
+    {
+        $container = $this->doAsk(
+            new ChoiceQuestion(
+                'Select the service container to ssh into:',
+                array_keys($this->getServices())
+            )
+        );
+        $container_id = $this->getServiceContainerId($container);
+
+        if ($container_id === false) {
+            throw new EngineRuntimeException(
+                sprintf('Unable to obtain the container identifier for the %s service.', $container)
+            );
+        }
+
+        $this->runCommandInContainer(
+            $container_id,
+            'bash',
+            ['-t' => null],
+            true
+        );
+    }
+
+    /**
+     * Run a command in docker container.
+     *
+     * @param $container_id
+     *   The docker container id.
+     * @param string|Command $command
+     *   A string or command object.
+     * @param array $options
+     *   An array of command options.
+     * @param bool $interactive
+     *   Determine if the command should run in interactive mode.
+     *
+     * @return bool|string
+     */
+    protected function runCommandInContainer(
+        $container_id,
+        $command,
+        array $options = [],
+        $interactive = false
+    ) {
+        if (!isset($container_id) || !isset($command)) {
+            return false;
+        }
+        /** @var Exec $docker_execute */
+        $docker_execute = $this->taskDockerExec($container_id);
+
+        if ($interactive) {
+            $docker_execute->interactive(true);
+        }
+
+        if (!empty($options)) {
+            $docker_execute->options($options);
+        }
+        $result = $docker_execute->exec($command)->run();
+
+        if ($result->getExitCode() !== ResultData::EXITCODE_OK) {
+            return false;
+        }
+
+        if (!$interactive) {
+            return $result->getMessage();
+        }
+    }
+
+    /**
+     * Get service container identifier.
+     *
+     * @param string $container
+     *   The container name.
+     *
+     * @return bool|string
+     *   Return container id; otherwise false if error occurred.
+     */
+    protected function getServiceContainerId($container)
+    {
+        if (!isset($container)) {
+            return false;
+        }
+        /** @var Ps $task */
+        $task = $this->taskDockerComposePs();
+
+        $result = $task
+            ->printOutput(false)
+            ->setService($container)
+            ->quiet()
+            ->run();
+
+        if ($result->getExitCode() !== ResultData::EXITCODE_OK) {
+            return false;
+        }
+
+        return $result->getMessage();
     }
 
     /**

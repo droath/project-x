@@ -91,6 +91,17 @@ abstract class EngineType extends TaskSubType implements EngineTypeInterface
     }
 
     /**
+     * {@inheritdoc}
+     */
+    public function ssh()
+    {
+        throw new \Exception(
+            "Environment engine doesn't support the SSH command."
+        );
+    }
+
+
+    /**
      * Get defined services in configuration.
      *
      * @return array
