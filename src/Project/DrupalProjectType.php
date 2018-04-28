@@ -247,7 +247,7 @@ class DrupalProjectType extends PhpProjectType implements TaskSubTypeInterface, 
             ->setupDrupalFilesystem()
             ->setupDrupalSettings()
             ->setupDrupalLocalSettings()
-            ->projectEngineUp()
+            ->projectEnvironmentUp()
             ->setupDrupalInstall()
             ->exportDrupalConfig()
             ->projectLaunchBrowser();

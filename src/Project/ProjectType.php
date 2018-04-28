@@ -72,8 +72,8 @@ abstract class ProjectType extends TaskSubType implements ProjectTypeInterface
      */
     public function install()
     {
-        $this->projectEngineInstall();
-        $this->say('The project install process has begun. 🤘');
+        $this->say('The project environment install process has begun. 🤘');
+        $this->projectEnvironmentInstall();
     }
 
     /**
@@ -120,9 +120,9 @@ abstract class ProjectType extends TaskSubType implements ProjectTypeInterface
      *
      * @return self
      */
-    public function projectEngineUp()
+    public function projectEnvironmentUp()
     {
-        $this->taskSymfonyCommand($this->getAppCommand('engine:up'))
+        $this->taskSymfonyCommand($this->getAppCommand('env:up'))
             ->opt('no-browser')
             ->run();
 
@@ -134,9 +134,9 @@ abstract class ProjectType extends TaskSubType implements ProjectTypeInterface
      *
      * @return self
      */
-    public function projectEngineInstall()
+    public function projectEnvironmentInstall()
     {
-        $this->taskSymfonyCommand($this->getAppCommand('engine:install'))
+        $this->taskSymfonyCommand($this->getAppCommand('env:install'))
             ->run();
 
         return $this;
