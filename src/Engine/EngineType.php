@@ -93,7 +93,7 @@ abstract class EngineType extends TaskSubType implements EngineTypeInterface
     /**
      * {@inheritdoc}
      */
-    public function ssh()
+    public function ssh($service = null)
     {
         throw new \Exception(
             "Environment engine doesn't support the SSH command."
@@ -103,10 +103,20 @@ abstract class EngineType extends TaskSubType implements EngineTypeInterface
     /**
      * {@inheritdoc}
      */
-    public function logs()
+    public function logs($show = 'all', $follow = false, $service = null)
     {
         throw new \Exception(
             "Environment engine doesn't support the logs command."
+        );
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function exec($command, $service = null)
+    {
+        throw new \Exception(
+            "Environment engine doesn't support the execute command."
         );
     }
 

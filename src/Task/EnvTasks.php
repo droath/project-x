@@ -132,31 +132,56 @@ class EnvTasks extends TaskBase
     }
 
     /**
-     * Display logs for the environment engine.
+     * SSH into the environment engine.
      *
      * @param array $opts An array of command options.
-     * @option bool $follow Determine if we should follow the log output.
-     * @option string $show Set all or a numeric value on how many lines to
-     * output.
+     * @option string $service The service name on which to ssh into.
      *
      * @return $this
      */
-    public function envLogs($opts = ['follow' => false, 'show' => 'all'])
+    public function envSsh($opts = ['service' => null])
     {
         $this->executeCommandHook(__FUNCTION__, 'before');
-        $this->engineInstance()->logs($opts['follow'], $opts['show']);
+        $this->engineInstance()->ssh($opts['service']);
         $this->executeCommandHook(__FUNCTION__, 'after');
 
         return $this;
     }
 
     /**
-     * SSH into the environment engine.
+     * Display logs for the environment engine.
+     *
+     * @param array $opts An array of command options.
+     * @option bool $follow Determine if we should follow the log output.
+     * @option string $show Set all or a numeric value on how many lines to
+     * output.
+     * @option string $service The service name on which to show the logs for.
+     *
+     * @return $this
      */
-    public function envSsh()
+    public function envLogs($opts = ['show' => 'all', 'follow' => false, 'service' => null])
     {
         $this->executeCommandHook(__FUNCTION__, 'before');
-        $this->engineInstance()->ssh();
+        $this->engineInstance()->logs($opts['show'], $opts['follow'], $opts['service']);
+        $this->executeCommandHook(__FUNCTION__, 'after');
+
+        return $this;
+    }
+
+    /**
+     * Execute an arbitrary command in the environment engine.
+     *
+     * @param $execute The commend string to execute.
+     * @param array $opts An array of the command options
+     * @option string $service The service name on which to execute the
+     * command inside the container.
+     *
+     * @return $this
+     */
+    public function envExec($execute, $opts = ['service' => null])
+    {
+        $this->executeCommandHook(__FUNCTION__, 'before');
+        $this->engineInstance()->exec($execute, $opts['service']);
         $this->executeCommandHook(__FUNCTION__, 'after');
 
         return $this;

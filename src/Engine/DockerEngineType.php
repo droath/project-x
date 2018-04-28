@@ -202,16 +202,28 @@ class DockerEngineType extends EngineType implements TaskSubTypeInterface
     /**
      * {@inheritdoc}
      */
-    public function logs($follow = false, $show = 'all')
+    public function ssh($service = null)
     {
-        $service_id = $this->doAsk(
-            new ChoiceQuestion(
-                'Select the service container to show logs for:',
-                array_keys($this->getServices())
-            )
+        $container_id = $this->askForServiceContainerId($service);
+
+        $this->runCommandInContainer(
+            $container_id,
+            'bash',
+            ['-t' => null],
+            true
         );
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function logs($show = 'all', $follow = false, $service = null)
+    {
+        if (!isset($service)) {
+            $service = $this->askForServiceName();
+        }
         $docker_logs = $this->taskDockerComposeLogs()
-            ->setService($service_id)
+            ->setService($service)
             ->tail($show);
 
         if ($follow) {
@@ -224,102 +236,11 @@ class DockerEngineType extends EngineType implements TaskSubTypeInterface
     /**
      * {@inheritdoc}
      */
-    public function ssh()
+    public function exec($command, $service = null)
     {
-        $container = $this->doAsk(
-            new ChoiceQuestion(
-                'Select the service container to ssh into:',
-                array_keys($this->getServices())
-            )
-        );
-        $container_id = $this->getServiceContainerId($container);
+        $container_id = $this->askForServiceContainerId($service);
 
-        if ($container_id === false) {
-            throw new EngineRuntimeException(
-                sprintf('Unable to obtain the container identifier for the %s service.', $container)
-            );
-        }
-
-        $this->runCommandInContainer(
-            $container_id,
-            'bash',
-            ['-t' => null],
-            true
-        );
-    }
-
-    /**
-     * Run a command in docker container.
-     *
-     * @param $container_id
-     *   The docker container id.
-     * @param string|Command $command
-     *   A string or command object.
-     * @param array $options
-     *   An array of command options.
-     * @param bool $interactive
-     *   Determine if the command should run in interactive mode.
-     *
-     * @return bool|string
-     */
-    protected function runCommandInContainer(
-        $container_id,
-        $command,
-        array $options = [],
-        $interactive = false
-    ) {
-        if (!isset($container_id) || !isset($command)) {
-            return false;
-        }
-        /** @var Exec $docker_execute */
-        $docker_execute = $this->taskDockerExec($container_id);
-
-        if ($interactive) {
-            $docker_execute->interactive(true);
-        }
-
-        if (!empty($options)) {
-            $docker_execute->options($options);
-        }
-        $result = $docker_execute->exec($command)->run();
-
-        if ($result->getExitCode() !== ResultData::EXITCODE_OK) {
-            return false;
-        }
-
-        if (!$interactive) {
-            return $result->getMessage();
-        }
-    }
-
-    /**
-     * Get service container identifier.
-     *
-     * @param string $container
-     *   The container name.
-     *
-     * @return bool|string
-     *   Return container id; otherwise false if error occurred.
-     */
-    protected function getServiceContainerId($container)
-    {
-        if (!isset($container)) {
-            return false;
-        }
-        /** @var Ps $task */
-        $task = $this->taskDockerComposePs();
-
-        $result = $task
-            ->printOutput(false)
-            ->setService($container)
-            ->quiet()
-            ->run();
-
-        if ($result->getExitCode() !== ResultData::EXITCODE_OK) {
-            return false;
-        }
-
-        return $result->getMessage();
+        return $this->runCommandInContainer($container_id, $command);
     }
 
     /**
@@ -502,6 +423,47 @@ class DockerEngineType extends EngineType implements TaskSubTypeInterface
             'mariadb' => MariadbService::class,
             'postgres' => PostgresService::class
         ];
+    }
+
+    /**
+     * Ask for the service name.
+     *
+     * @return string
+     *   The service container name.
+     */
+    protected function askForServiceName()
+    {
+        return $this->doAsk(
+            new ChoiceQuestion(
+                'Select the service container:',
+                array_keys($this->getServices())
+            )
+        );
+    }
+
+    /**
+     * Ask for the service container identifier.
+     *
+     * @param null $service
+     *   The service name without having to prompt.
+     *
+     * @return bool|string
+     */
+    protected function askForServiceContainerId($service = null)
+    {
+        if (!isset($service)) {
+            $service = $this->askForServiceName();
+        }
+        $container_id = $this->getServiceContainerId($service);
+
+        if ($container_id === false) {
+            throw new EngineRuntimeException(
+                sprintf('Unable to obtain the container identifier for the
+                     %s service.', $service)
+            );
+        }
+
+        return $container_id;
     }
 
     /**
@@ -772,6 +734,80 @@ class DockerEngineType extends EngineType implements TaskSubTypeInterface
             ->addTask($this->taskDockerSyncStop())
             ->completion($this->taskDockerSyncClean())
             ->run();
+    }
+
+    /**
+     * Run a command in docker container.
+     *
+     * @param $container_id
+     *   The docker container id.
+     * @param string|Command $command
+     *   A string or command object.
+     * @param array $options
+     *   An array of command options.
+     * @param bool $interactive
+     *   Determine if the command should run in interactive mode.
+     *
+     * @return bool|string
+     */
+    protected function runCommandInContainer(
+        $container_id,
+        $command,
+        array $options = [],
+        $interactive = false
+    ) {
+        if (!isset($container_id) || !isset($command)) {
+            return false;
+        }
+        /** @var Exec $docker_execute */
+        $docker_execute = $this->taskDockerExec($container_id);
+
+        if ($interactive) {
+            $docker_execute->interactive(true);
+        }
+
+        if (!empty($options)) {
+            $docker_execute->options($options);
+        }
+        $result = $docker_execute->exec($command)->run();
+
+        if ($result->getExitCode() !== ResultData::EXITCODE_OK) {
+            return false;
+        }
+
+        if (!$interactive) {
+            return $result->getMessage();
+        }
+    }
+
+    /**
+     * Get service container identifier.
+     *
+     * @param string $container
+     *   The container name.
+     *
+     * @return bool|string
+     *   Return container id; otherwise false if error occurred.
+     */
+    protected function getServiceContainerId($container)
+    {
+        if (!isset($container)) {
+            return false;
+        }
+        /** @var Ps $task */
+        $task = $this->taskDockerComposePs();
+
+        $result = $task
+            ->printOutput(false)
+            ->setService($container)
+            ->quiet()
+            ->run();
+
+        if ($result->getExitCode() !== ResultData::EXITCODE_OK) {
+            return false;
+        }
+
+        return $result->getMessage();
     }
 
     /**
