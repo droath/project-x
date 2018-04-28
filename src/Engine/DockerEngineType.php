@@ -202,6 +202,28 @@ class DockerEngineType extends EngineType implements TaskSubTypeInterface
     /**
      * {@inheritdoc}
      */
+    public function logs($follow = false, $show = 'all')
+    {
+        $service_id = $this->doAsk(
+            new ChoiceQuestion(
+                'Select the service container to show logs for:',
+                array_keys($this->getServices())
+            )
+        );
+        $docker_logs = $this->taskDockerComposeLogs()
+            ->setService($service_id)
+            ->tail($show);
+
+        if ($follow) {
+            $docker_logs->follow();
+        }
+
+        $docker_logs->run();
+    }
+
+    /**
+     * {@inheritdoc}
+     */
     public function ssh()
     {
         $container = $this->doAsk(

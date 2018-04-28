@@ -132,6 +132,25 @@ class EnvTasks extends TaskBase
     }
 
     /**
+     * Display logs for the environment engine.
+     *
+     * @param array $opts An array of command options.
+     * @option bool $follow Determine if we should follow the log output.
+     * @option string $show Set all or a numeric value on how many lines to
+     * output.
+     *
+     * @return $this
+     */
+    public function envLogs($opts = ['follow' => false, 'show' => 'all'])
+    {
+        $this->executeCommandHook(__FUNCTION__, 'before');
+        $this->engineInstance()->logs($opts['follow'], $opts['show']);
+        $this->executeCommandHook(__FUNCTION__, 'after');
+
+        return $this;
+    }
+
+    /**
      * SSH into the environment engine.
      */
     public function envSsh()

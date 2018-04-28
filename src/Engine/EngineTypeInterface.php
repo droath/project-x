@@ -18,6 +18,11 @@ interface EngineTypeInterface
     public function ssh();
 
     /**
+     * Display logs from the environment engine.
+     */
+    public function logs();
+
+    /**
      * Shutdown the engine infrastructure.
      */
     public function down();

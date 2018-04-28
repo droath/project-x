@@ -100,6 +100,15 @@ abstract class EngineType extends TaskSubType implements EngineTypeInterface
         );
     }
 
+    /**
+     * {@inheritdoc}
+     */
+    public function logs()
+    {
+        throw new \Exception(
+            "Environment engine doesn't support the logs command."
+        );
+    }
 
     /**
      * Get defined services in configuration.
