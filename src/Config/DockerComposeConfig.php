@@ -14,6 +14,7 @@ class DockerComposeConfig extends YamlConfigBase
     public $version;
     public $services = [];
     public $volumes = [];
+    public $networks = [];
 
     /**
      * Docker compose version.
@@ -26,6 +27,20 @@ class DockerComposeConfig extends YamlConfigBase
     public function setVersion($version)
     {
         $this->version = $version;
+
+        return $this;
+    }
+
+    /**
+     * Set docker compose networks.
+     *
+     * @param array $networks
+     *
+     * @return $this
+     */
+    public function setNetworks(array $networks)
+    {
+        $this->networks = $networks;
 
         return $this;
     }

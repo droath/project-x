@@ -23,6 +23,22 @@ class DockerComposeConfigTest extends TestBase
         $this->assertEquals(3, $compose->version);
     }
 
+    public function testSetNetworks()
+    {
+        $compose = $this->compose
+            ->setNetworks([
+                'internal',
+                'project-x-proxy'
+            ]);
+
+        $this->assertEquals([
+            'networks' => [
+                'internal',
+                'project-x-proxy'
+            ]
+        ], $compose->toArray());
+    }
+
     public function testSetServices()
     {
         $service = (new DockerService())
