@@ -2,6 +2,7 @@
 
 namespace Droath\ProjectX;
 
+use Dotenv\Dotenv;
 use Droath\ProjectX\Config\ProjectXConfig;
 use Droath\ProjectX\Discovery\PhpClassDiscovery;
 use League\Container\ContainerAwareTrait;
@@ -19,6 +20,13 @@ class ProjectX extends Application
      * Application name.
      */
     const APP_NAME = 'Project-X';
+
+    /**
+     * Project-X environment variables.
+     *
+     * @var array
+     */
+    protected static $projectEnv;
 
     /**
      * Project-X project path.
@@ -79,6 +87,25 @@ class ProjectX extends Application
     public static function getProjectPath()
     {
         return self::$projectPath;
+    }
+
+    /**
+     * Set Project-x environment variables.
+     */
+    public static function setEnvVariables()
+    {
+        self::$projectEnv = (new Dotenv(static::projectRoot()))->load();
+    }
+
+    /**
+     * Get Project-x environment variables.
+     *
+     * @return array
+     *   The environment variables in the .env file.
+     */
+    public static function getEnvVariables()
+    {
+        return self::$projectEnv;
     }
 
     /**

@@ -3,6 +3,7 @@
 namespace Droath\ProjectX\Tests;
 
 use Droath\ProjectX\ProjectX;
+use org\bovigo\vfs\vfsStream;
 use phpDocumentor\Reflection\Project;
 
 /**
@@ -15,6 +16,20 @@ class ProjectXTest extends TestBase
         $this->projectX->discoverCommands();
         $this->assertInstanceOf('\Droath\ProjectX\Command\Robo', $this->projectX->find('robo'));
         $this->assertInstanceOf('\Droath\ProjectX\Command\Initialize', $this->projectX->find('init'));
+    }
+
+    public function testGetEnvVariables()
+    {
+        vfsStream::create([
+            'docroot' => [],
+            '.env' => "SYNC_NAME=project-x-test\nHOST_IP=127.0.0.1"
+        ], $this->projectDir);
+
+        ProjectX::setEnvVariables();
+
+        $this->assertEquals('127.0.0.1', getenv('HOST_IP'));
+        $this->assertEquals('project-x-test', getenv('SYNC_NAME'));
+        $this->assertEquals(2, count(ProjectX::getEnvVariables()));
     }
 
     public function testGetContainer()

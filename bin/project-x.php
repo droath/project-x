@@ -31,6 +31,9 @@ $output = new ConsoleOutput();
 $app = (new ProjectX())
     ->discoverCommands();
 
+// Set the environment variables.
+ProjectX::setEnvVariables();
+
 $projectPath = (new ProjectXDiscovery())->execute();
 ProjectX::setProjectPath($projectPath);
 
