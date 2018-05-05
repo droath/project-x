@@ -121,10 +121,6 @@ class DrupalProjectType extends PhpProjectType implements TaskSubTypeInterface, 
             'web' => [
                 'type' => 'apache',
                 'version' => static::DEFAULT_APACHE,
-                'links' => [
-                    'php',
-                    'database'
-                ]
             ],
             'php' => [
                 'type' => 'php',
