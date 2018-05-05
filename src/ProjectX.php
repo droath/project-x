@@ -94,7 +94,14 @@ class ProjectX extends Application
      */
     public static function setEnvVariables()
     {
-        self::$projectEnv = (new Dotenv(static::projectRoot()))->load();
+        $env_variables = [];
+
+        if (file_exists(static::projectRoot() . '/.env')) {
+            $env_variables = (new Dotenv(static::projectRoot()))
+                ->load();
+        }
+
+        self::$projectEnv = $env_variables;
     }
 
     /**
