@@ -47,9 +47,8 @@ class MysqlService extends DockerServiceBase implements ServiceInterface, Servic
         $db_type = $this->dbType();
         $database = $this->getProjectType();
 
-        return (new DockerService())
-           ->setImage($db_type, $this->getVersion())
-           ->setPorts($this->getPorts())
+        $service = (new DockerService())
+            ->setImage($db_type, $this->getVersion())
             ->setEnvironment([
                 'MYSQL_USER=admin',
                 'MYSQL_PASSWORD=root',
@@ -60,6 +59,8 @@ class MysqlService extends DockerServiceBase implements ServiceInterface, Servic
                'mysql-data:/var/lib/mysql',
                "./docker/services/{$db_type}/mysql-overrides.cnf:/etc/mysql/mysql.conf.d/99-mysql-overrides.cnf"
            ]);
+
+        return $this->alterService($service);
     }
 
     /**

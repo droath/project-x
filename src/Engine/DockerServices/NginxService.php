@@ -47,14 +47,15 @@ class NginxService extends DockerServiceBase implements ServiceInterface
      */
     public function service()
     {
-        return (new DockerService())
+        $service = (new DockerService())
            ->setImage('nginx', $this->getVersion())
-           ->setPorts($this->getPorts())
            ->setVolumes([
                './:/var/www/html',
                './docker/nginx/nginx.conf:/etc/nginx/nginx.conf',
                './docker/nginx/default.conf:/etc/nginx/conf.d/default.conf'
            ]);
+
+        return $this->alterService($service);
     }
 
     /**

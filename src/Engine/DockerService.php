@@ -18,6 +18,8 @@ class DockerService
     public $ports = [];
     public $environment = [];
     public $volumes = [];
+    public $networks = [];
+    public $labels = [];
 
     /**
      * Define the __call method.

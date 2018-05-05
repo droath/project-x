@@ -25,12 +25,21 @@ class RedisService extends DockerServiceBase implements ServiceInterface
     /**
      * {@inheritdoc}
      */
+    public function ports()
+    {
+        return ['6379'];
+    }
+
+    /**
+     * {@inheritdoc}
+     */
     public function service()
     {
-        return (new DockerService())
+        $service = (new DockerService())
             ->setImage('redis', $this->getVersion())
-            ->setPorts(['6379:6379'])
             ->setVolumes(['redis-data:/data']);
+
+        return $this->alterService($service);
     }
 
     /**

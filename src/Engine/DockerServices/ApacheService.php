@@ -37,16 +37,25 @@ class ApacheService extends DockerServiceBase implements ServiceInterface
     /**
      * {@inheritdoc}
      */
+    public function ports()
+    {
+        return ['80'];
+    }
+
+    /**
+     * {@inheritdoc}
+     */
     public function service()
     {
-        return (new DockerService())
+        $service = (new DockerService())
             ->setImage('httpd', $this->getVersion())
-            ->setPorts(['80:80'])
             ->setVolumes([
                 './:/var/www/html',
                 './docker/services/apache/httpd.conf:/usr/local/apache2/conf/httpd.conf',
                 './docker/services/apache/httpd-mpm.conf:/usr/local/apache2/conf/extra/httpd-mpm.conf'
             ]);
+
+        return $this->alterService($service);
     }
 
     /**

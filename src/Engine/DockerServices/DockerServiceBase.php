@@ -6,9 +6,7 @@ use Droath\ProjectX\Engine\DockerService;
 use Droath\ProjectX\ProjectX;
 
 /**
- * Class DockerServiceBase
- *
- * @package Droath\ProjectX\Engine\DockerServices
+ * Define the docker service base class.
  */
 abstract class DockerServiceBase
 {
@@ -20,6 +18,13 @@ abstract class DockerServiceBase
     ];
 
     /**
+     * The docker service name.
+     *
+     * @var string
+     */
+    protected $name;
+
+    /**
      * The service version.
      *
      * @var string
@@ -27,9 +32,29 @@ abstract class DockerServiceBase
     protected $version;
 
     /**
+     * The docker service.
+     *
      * @var DockerService
      */
     protected $service;
+
+    /**
+     * The docker service internal flag.
+     *
+     * @var bool
+     */
+    protected $internal = false;
+
+    /**
+     * Docker service base.
+     *
+     * @param string|null $name
+     *   The service machine name.
+     */
+    public function __construct($name = null)
+    {
+        $this->name = $name;
+    }
 
     /**
      * Docker service groups.
@@ -52,6 +77,18 @@ abstract class DockerServiceBase
     public function setVersion($version)
     {
         $this->version = $version;
+
+        return $this;
+    }
+
+    /**
+     * Set docker service as internal.
+     *
+     * @return $this
+     */
+    public function setInternal()
+    {
+        $this->internal = true;
 
         return $this;
     }
@@ -123,6 +160,16 @@ abstract class DockerServiceBase
     }
 
     /**
+     * Get docker service name.
+     *
+     * @return string|null
+     */
+    public function getName()
+    {
+        return $this->name;
+    }
+
+    /**
      * Get complete service object.
      *
      * @return \Droath\ProjectX\Engine\DockerService
@@ -163,7 +210,7 @@ abstract class DockerServiceBase
     {
         $name = strtolower($name);
         $service = $this->getService();
-        
+
         foreach ($service->getEnvironment() as $environment) {
             list($key, $value) = explode('=', $environment);
             if (strtolower($key) !== $name) {
@@ -246,6 +293,32 @@ abstract class DockerServiceBase
     {
         $types = $this->getServiceLinkTypes();
         return isset($types[$type]) ? $types[$type] : null;
+    }
+
+    /**
+     * Default alternations to the service object.
+     *
+     * @param DockerService $service
+     *   The docker service object.
+     *
+     * @return DockerService
+     *   The alter service.
+     */
+    protected function alterService(DockerService $service)
+    {
+        if ($this->internal) {
+            $service
+                ->setNetworks([
+                    'internal'
+                ])
+                ->setlabels([
+                    'traefik.enable=false'
+                ]);
+        } else {
+            $service->setPorts($this->getPorts());
+        }
+
+        return $service;
     }
 
     /**

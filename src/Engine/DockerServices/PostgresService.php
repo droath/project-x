@@ -45,9 +45,8 @@ class PostgresService extends DockerServiceBase implements ServiceInterface, Ser
     public function service()
     {
         $database = $this->getProjectType();
-        return (new DockerService())
+        $service =  (new DockerService())
             ->setImage('postgres', $this->getVersion())
-            ->setPorts($this->getPorts())
             ->setEnvironment([
                 'POSTGRES_USER=admin',
                 'POSTGRES_PASSWORD=root',
@@ -57,6 +56,8 @@ class PostgresService extends DockerServiceBase implements ServiceInterface, Ser
             ->setVolumes([
                'pgsql-data:/var/lib/postgresql/data'
             ]);
+
+        return $this->alterService($service);
     }
 
     /**

@@ -27,7 +27,7 @@ class PhpService extends DockerServiceBase implements ServiceInterface
      */
     public function service()
     {
-        return (new DockerService())
+        $service = (new DockerService())
             ->setBuild('./docker/services/php')
             ->setExpose(['9000'])
             ->setVolumes([
@@ -35,6 +35,8 @@ class PhpService extends DockerServiceBase implements ServiceInterface
                 './docker/services/php/www.conf:/usr/local/etc/php-fpm.d/www.conf',
                 './docker/services/php/php-overrides.ini:/usr/local/etc/php/conf.d/99-php-overrides.ini'
             ]);
+
+        return $this->alterService($service);
     }
 
     public function devService()
