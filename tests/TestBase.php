@@ -195,6 +195,9 @@ abstract class TestBase extends TestCase
                 'name' => 'local.project-x-test.com',
                 'open_on_startup' => 'true',
             ],
+            'network' => [
+                'proxy' => 'true',
+            ],
             'options' => [
                 'drupal' => [
                     'site' => [

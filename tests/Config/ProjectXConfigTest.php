@@ -38,6 +38,11 @@ class ProjectXConfigTest extends TestBase
         $this->assertEquals('docker', $this->projectXConfig->getEngine());
     }
 
+    public function testGetNetwork()
+    {
+        $this->assertEquals(['proxy' => 'true'], $this->projectXConfig->getNetwork());
+    }
+
     public function getGetGithub()
     {
         $github = $this->projectXConfig->getGithub();

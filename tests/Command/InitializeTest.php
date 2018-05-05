@@ -57,6 +57,7 @@ class InitializeTest extends TestBase
         $this->assertEquals('docker', $config->getEngine());
         $this->assertEquals('local.testing.com', $config->getHost()['name']);
         $this->assertEquals('true', $config->getHost()['open_on_startup']);
+        $this->assertEquals('true', $config->getNetwork()['proxy']);
         $this->assertContains('Success, the project-x configuration have been saved.', $output);
         $this->assertEquals('standard', $config->getOptions()['drupal']['site']['profile']);
         $this->assertEquals('Whatever you Say!!!!', $config->getOptions()['drupal']['site']['name']);
@@ -122,10 +123,12 @@ class InitializeTest extends TestBase
                         }
                         $index++;
                         return 'stg';
+                    case 'use_proxy':
                     case 'setup_host':
                     case 'setup_github':
                     case 'setup_remote':
                     case 'save_results':
+                    case 'setup_network':
                     case 'setup_build_deploy':
                     case 'open_browser_on_startup':
                     case 'setup_drupal_site_options':

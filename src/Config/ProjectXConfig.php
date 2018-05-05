@@ -57,6 +57,13 @@ class ProjectXConfig extends YamlConfigBase
     protected $host = [];
 
     /**
+     * Project network information.
+     *
+     * @var array
+     */
+    protected $network = [];
+
+    /**
      * Project GitHub information.
      *
      * @var array
@@ -142,6 +149,18 @@ class ProjectXConfig extends YamlConfigBase
         $this->host = $values;
 
         return $this;
+    }
+
+    public function setNetwork(array $values)
+    {
+        $this->network = $values;
+
+        return $this;
+    }
+
+    public function getNetwork()
+    {
+        return $this->network;
     }
 
     public function setRemote(array $remote)

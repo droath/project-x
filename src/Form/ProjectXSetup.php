@@ -102,6 +102,15 @@ class ProjectXSetup implements FormInterface
                             ]);
                         }
                     }),
+                (new BooleanField('network', 'Setup network?'))
+                    ->setSubform(function ($subform, $value) {
+                        if ($value === true) {
+                            $subform->addFields([
+                                (new BooleanField('proxy', 'Use Proxy'))
+                                    ->setDefault('true'),
+                            ]);
+                        }
+                })
             ]);
     }
 
