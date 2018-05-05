@@ -12,6 +12,7 @@ use Droath\ProjectX\Engine\DockerServices\PostgresService;
 use Droath\ProjectX\Engine\DockerServices\RedisService;
 use Droath\ProjectX\Exception\EngineRuntimeException;
 use Droath\ProjectX\ProjectX;
+use Droath\ProjectX\TaskCommonTrait;
 use Droath\ProjectX\TaskSubTypeInterface;
 use Droath\RoboDockerCompose\Task\loadTasks as dockerComposerTasks;
 use Droath\RoboDockerCompose\Task\Ps;
@@ -29,6 +30,7 @@ use Symfony\Component\Console\Question\ChoiceQuestion;
  */
 class DockerEngineType extends EngineType implements TaskSubTypeInterface
 {
+    use TaskCommonTrait;
     use dockerSyncTasks;
     use dockerComposerTasks;
 
@@ -36,6 +38,31 @@ class DockerEngineType extends EngineType implements TaskSubTypeInterface
      * Engine install path.
      */
     const INSTALL_ROOT = '/docker';
+
+    /**
+     * Define the docker version.
+     */
+    const DOCKER_VERSION = '3';
+
+    /**
+     * Define the traefik required ports.
+     */
+    const TRAEFIK_PORTS = ['80', '8080'];
+
+    /**
+     * Define the traefik version number.
+     */
+    const TRAEFIK_VERSION = '1.6-alpine';
+
+    /**
+     * Define the traefik network name.
+     */
+    const TRAEFIK_NETWORK = 'project-x-proxy';
+
+    /**
+     * Define the traefik container name.
+     */
+    const TRAEFIK_CONTAINER_NAME = 'project-x-traefik';
 
     /**
      * {@inheritdoc}.
@@ -60,30 +87,31 @@ class DockerEngineType extends EngineType implements TaskSubTypeInterface
     {
         parent::up();
 
-        // Run open port status report. Display a confirmation message if
-        // warning(s) have been issued. User will need to confirm if they want
-        // to continue or not.
-        $continue = $this->runOpenPortStatusReport();
+        $continue = $this->showRequiredPortsTable(
+            $this->getPortsToScan()
+        );
 
         if (!$continue) {
             throw new EngineRuntimeException(
-                'Project startup has been aborted due to conflicting ports.'
+                'Environment engine was aborted due to conflicting ports.'
             );
         }
 
-        // Ensure we're running the latest docker images.
-        $this->updateDockerImages();
+        // Start traefik to route docker containers in the networks.
+        $this->startTraefik();
+
+        // Update the latest docker compose images.
+        $this->updateDockerComposeImages();
 
         // Startup docker sync if found in project.
-        if ($this->hasDockerSync()) {
-            $result = $this->taskDockerSyncStart()
-                ->run();
-
-            // Determine if docker-sync task result are valid.
-            $this->validateTaskResult($result);
-
+        if ($this->hasDockerSync() && !$this->isDockerSyncRunning()) {
             // Set the docker-sync name in the .env file.
             $this->setDockerSyncNameInEnv();
+
+            // Start and determine if docker-sync task result are valid.
+            $this->validateTaskResult(
+                $this->taskDockerSyncStart()->run()
+            );
         }
 
         // Set host IP address in the .env file.
@@ -105,9 +133,9 @@ class DockerEngineType extends EngineType implements TaskSubTypeInterface
     /**
      * {@inheritdoc}
      */
-    public function down()
+    public function down($include_network = false)
     {
-        parent::down();
+        parent::down($include_network);
 
         // Shutdown docker compose.
         $this->taskDockerComposeDown()
@@ -116,6 +144,11 @@ class DockerEngineType extends EngineType implements TaskSubTypeInterface
         // Shutdown docker sync if config is found.
         if ($this->hasDockerSync()) {
             $this->runDockerSyncDownCollection();
+        }
+
+        // Shutdown the docker traefik container.
+        if ($this->hasTraefik() && $include_network) {
+            $this->stopTraefik();
         }
 
         return $this;
@@ -190,11 +223,11 @@ class DockerEngineType extends EngineType implements TaskSubTypeInterface
     /**
      * {@inheritdoc}
      */
-    public function reboot()
+    public function reboot($include_network = false)
     {
-        parent::reboot();
+        parent::reboot($include_network);
 
-        $this->down()->up();
+        $this->down($include_network)->up();
 
         return $this;
     }
@@ -346,6 +379,31 @@ class DockerEngineType extends EngineType implements TaskSubTypeInterface
     }
 
     /**
+     * Using the traefik network proxy.
+     *
+     * @return bool
+     */
+    public function hasTraefik()
+    {
+        $network = ProjectX::getProjectConfig()->getNetwork();
+
+        return isset($network['proxy']) && $network['proxy']
+            ? $network['proxy']
+            : false;
+    }
+
+    /**
+     * Determine if the traefik network proxy is running.
+     *
+     * @return bool
+     */
+    public function isTraefikRunning()
+    {
+        return $this->hasDockerContainer(self::TRAEFIK_CONTAINER_NAME)
+            && $this->isContainerRunning(self::TRAEFIK_CONTAINER_NAME);
+    }
+
+    /**
      * Has docker sync configuration.
      *
      * @return bool
@@ -356,6 +414,41 @@ class DockerEngineType extends EngineType implements TaskSubTypeInterface
         $project_root = ProjectX::projectRoot();
 
         return file_exists("{$project_root}/docker-sync.yml");
+    }
+
+    /**
+     * Determine if docker sync running.
+     *
+     * @return bool
+     */
+    public function isDockerSyncRunning()
+    {
+        $container = $this->getDockerSyncContainer();
+
+        return $this->hasDockerContainer($container)
+            && $this->isContainerRunning($container);
+    }
+
+    /**
+     * Get docker sync unique name.
+     *
+     * @return string|null
+     *   The docker sync name set in the environment file.
+     */
+    public function getDockerSyncName()
+    {
+        return getenv('SYNC_NAME') ?: null;
+    }
+
+    /**
+     * Get docker sync container name.
+     *
+     * @return string
+     *   The docker sync container name.
+     */
+    public function getDockerSyncContainer()
+    {
+        return $this->getDockerSyncName() . '-docker-sync';
     }
 
     /**
@@ -395,14 +488,32 @@ class DockerEngineType extends EngineType implements TaskSubTypeInterface
     }
 
     /**
+     * Get the docker ports to verify.
+     *
+     * @return array
+     *   Ports that should be verified for use.
+     */
+    protected function getPortsToScan()
+    {
+        if ($this->hasTraefik()) {
+            if ($this->isTraefikRunning()) {
+                return [];
+            }
+
+            return self::TRAEFIK_PORTS;
+        }
+
+        return $this->requiredPorts();
+    }
+
+    /**
      * Update docker compose images.
      *
      * @return $this
      */
-    protected function updateDockerImages()
+    protected function updateDockerComposeImages()
     {
         $this->taskDockerComposePull()
-            ->parallel()
             ->quiet()
             ->run();
 
@@ -467,6 +578,161 @@ class DockerEngineType extends EngineType implements TaskSubTypeInterface
     }
 
     /**
+     * Start the traefik container if not already running.
+     */
+    protected function startTraefik()
+    {
+        if ($this->hasTraefik()) {
+            $this->createTraefikNetworkProxy();
+
+            if (!$this->isTraefikRunning()) {
+                $container = self::TRAEFIK_CONTAINER_NAME;
+
+                if ($this->hasDockerContainer($container)) {
+                    $result = $this->taskDockerStart($container)
+                        ->run();
+                } else {
+                    $version = self::TRAEFIK_VERSION;
+                    $result = $this->taskDockerRun("traefik:{$version}")
+                        ->detached()
+                        ->printOutput(false)
+                        ->exec('--api --docker')
+                        ->name($container)
+                        ->option('publish', '80:80')
+                        ->option('publish', '8080:8080')
+                        ->option('network', self::TRAEFIK_NETWORK)
+                        ->volume('/var/run/docker.sock', '/var/run/docker.sock')
+                        ->run();
+                }
+
+                $this->validateTaskResult($result);
+            }
+        }
+
+        return $this;
+    }
+
+    /**
+     * Stop traefik project-x container.
+     */
+    protected function stopTraefik()
+    {
+        if ($this->hasTraefik()) {
+            $container = self::TRAEFIK_CONTAINER_NAME;
+
+            // Shutdown and remove the traefik container.
+            if ($this->isTraefikRunning()
+                && $this->hasDockerContainer($container)) {
+                $this->say(sprintf('Container "%s" has been stopped.', $container));
+                $this->taskDockerStop($container)
+                    ->printOutput(false)
+                    ->run();
+
+                $this->say(sprintf('Container "%s" has been removed.', $container));
+                $this->taskDockerRemove($container)
+                    ->printOutput(false)
+                    ->run();
+            }
+
+            // Remove the traefik network proxy.
+            $this->removeTraefikNetworkProxy();
+        }
+
+        return $this;
+    }
+
+    /**
+     * Create the traefik network proxy.
+     */
+    protected function createTraefikNetworkProxy()
+    {
+        $network = self::TRAEFIK_NETWORK;
+
+        if (!$this->hasDockerNetwork($network)) {
+            $this->say("Creating '{$network}' network...");
+            $this->taskExec("docker network create {$network}")
+                ->printOutput(false)
+                ->run();
+        }
+
+        return $this;
+    }
+
+    /**
+     * Remove the traefik network proxy.
+     */
+    protected function removeTraefikNetworkProxy()
+    {
+        $network = self::TRAEFIK_NETWORK;
+
+        if ($this->hasDockerNetwork($network)) {
+            $this->say("Removing '{$network}' network...");
+            $this->taskExec("docker network rm {$network}")
+                ->printOutput(false)
+                ->run();
+        }
+
+        return $this;
+    }
+
+    /**
+     * Has the docker network been defined.
+     *
+     * @param $name
+     *   The container name.
+     *
+     * @return bool
+     */
+    protected function hasDockerNetwork($name)
+    {
+        /** @var ResultData $result */
+        $result = $this->runSilentCommand(
+            $this->taskExec("docker network ls --filter='name={$name}' -q")
+        );
+        $output = $result->getMessage();
+
+        return isset($output) && !empty($output);
+    }
+
+    /**
+     * Has the docker container been defined.
+     *
+     * @param $name
+     *   The container name.
+     *
+     * @return bool
+     */
+    protected function hasDockerContainer($name)
+    {
+        /** @var ResultData $result */
+        $result = $this->runSilentCommand(
+            $this->taskExec("docker ps --filter='name={$name}' -q")
+        );
+        $output = $result->getMessage();
+
+        return isset($output) && !empty($output);
+    }
+
+    /**
+     * Determine if docker container is running.
+     *
+     * @param string $container
+     *   The container name or identifier.
+     *
+     * @return bool
+     */
+    protected function isContainerRunning($container)
+    {
+        /** @var ResultData $result */
+        $result = $this->runSilentCommand(
+            $this->taskExec("docker inspect -f {{.State.Running}} {$container}")
+        );
+
+        return $result->getExitCode() === Resultdata::EXITCODE_OK
+            && $result->getMessage() == 'true';
+    }
+
+    /**
      * Generate docker-compose object.
      *
      * @param bool $dev
@@ -477,14 +743,20 @@ class DockerEngineType extends EngineType implements TaskSubTypeInterface
     protected function generateDockerCompose($dev = false)
     {
         $docker_compose = new DockerComposeConfig();
-        $docker_compose->setVersion('2');
+        $docker_compose->setVersion(static::DOCKER_VERSION);
+
+        $has_proxy = $this->hasTraefik() ? true : false;
 
         foreach ($this->getServices() as $name => $info) {
             if (!isset($info['type'])) {
                 continue;
             }
             $type = $info['type'];
-            $instance = self::loadService($type);
+            $instance = self::loadService($type, $name);
+
+            if (!$dev && $has_proxy) {
+                $instance->setInternal();
+            }
 
             if (isset($info['version'])) {
                 $instance->setVersion($info['version']);
@@ -499,6 +771,19 @@ class DockerEngineType extends EngineType implements TaskSubTypeInterface
             if (!$service->isEmpty()) {
                 $docker_compose->setService($name, $service);
             }
+        }
+
+        if (!$dev && $has_proxy) {
+            $docker_compose->setNetworks([
+                'internal' => [
+                    'external' => 'false',
+                ],
+                static::TRAEFIK_NETWORK => [
+                    'external' => [
+                        'name' => static::TRAEFIK_NETWORK
+                    ]
+                ]
+            ]);
         }
 
         return $docker_compose;
@@ -571,17 +856,20 @@ class DockerEngineType extends EngineType implements TaskSubTypeInterface
     }
 
     /**
-     * Run open port status report.
+     * Show required ports table.
+     *
+     * @param array $ports
+     *   An array of ports to check.
+     *
+     * @param string $host
+     *   The host IP address to check.
      *
      * @return bool
      *   Return true if it's okay to continue; otherwise false.
-     * @throws \Psr\Container\ContainerExceptionInterface
-     * @throws \Psr\Container\NotFoundExceptionInterface
      */
-    protected function runOpenPortStatusReport()
+    protected function showRequiredPortsTable(array $ports, $host = '127.0.0.1')
     {
-        $host = '127.0.0.1';
-        $status = $this->getPortStatus($host, $this->requiredPorts());
+        $status = $this->getPortStatus($host, $ports);
 
         if (!empty($status)) {
             $has_warning = isset($status['state']['warning'])
@@ -714,10 +1002,10 @@ class DockerEngineType extends EngineType implements TaskSubTypeInterface
         $files = [
             'docker-compose.yml',
         ];
-
         $root = ProjectX::projectRoot();
-        $path = "{$root}/docker-compose-dev.yml";
 
+        // Add docker compose dev configurations.
+        $path = "{$root}/docker-compose-dev.yml";
         if ($this->hasDockerSync() && file_exists($path)) {
             $files[] = $path;
         }

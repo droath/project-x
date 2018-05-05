@@ -57,11 +57,18 @@ class EnvTasks extends TaskBase
 
     /**
      * Shutdown environment engine.
+     *
+     * @param array $opts
+     * @option $include-network Shutdown the shared network proxy.
+     *
+     * @return EnvTasks
      */
-    public function envDown()
+    public function envDown($opts = [
+        'include-network' => false,
+    ])
     {
         $this->executeCommandHook(__FUNCTION__, 'before');
-        $this->engineInstance()->down();
+        $this->engineInstance()->down($opts['include-network']);
 
         // Allow projects to react to the engine shutdown.
         $this->projectInstance()->onEngineDown();
@@ -99,11 +106,18 @@ class EnvTasks extends TaskBase
 
     /**
      * Reboot environment engine.
+     *
+     * @param array $opts
+     * @option $include-network Reboot the shared network proxy.
+     *
+     * @return EnvTasks
      */
-    public function envReboot()
+    public function envReboot($opts = [
+        'include-network' => false,
+    ])
     {
         $this->executeCommandHook(__FUNCTION__, 'before');
-        $this->engineInstance()->reboot();
+        $this->engineInstance()->reboot($opts['include-network']);
         $this->executeCommandHook(__FUNCTION__, 'after');
 
         return $this;

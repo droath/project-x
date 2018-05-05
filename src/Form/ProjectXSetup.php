@@ -110,7 +110,7 @@ class ProjectXSetup implements FormInterface
                                     ->setDefault('true'),
                             ]);
                         }
-                })
+                    })
             ]);
     }
 

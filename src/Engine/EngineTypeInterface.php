@@ -14,8 +14,10 @@ interface EngineTypeInterface
 
     /**
      * Shutdown the engine infrastructure.
+     *
+     * @param bool $include_network Reboot the network.
      */
-    public function down();
+    public function down($include_network);
 
     /**
      * Start the engine infrastructure.
@@ -29,8 +31,10 @@ interface EngineTypeInterface
 
     /**
      * Reboot the engine infrastructure.
+     *
+     * @param bool $include_network Reboot the network.
      */
-    public function reboot();
+    public function reboot($include_network);
 
     /**
      * Suspend the engine infrastructure.

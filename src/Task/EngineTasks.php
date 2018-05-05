@@ -53,10 +53,17 @@ class EngineTasks extends TaskBase
     /**
      * Shutdown engine environment.
      *
+     * @param array $opts
+     * @option $include-network Shutdown the shared network proxy.
+     *
      * @hidden
      * @deprecated
+     * @return EngineTasks
+     * @throws \Exception
      */
-    public function engineDown()
+    public function engineDown($opts = [
+        'include-network' => false
+    ])
     {
         $this->executeCommandHook(__FUNCTION__, 'before');
         $this->executeExistingCommand('env:down');

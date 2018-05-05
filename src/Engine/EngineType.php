@@ -37,7 +37,7 @@ abstract class EngineType extends TaskSubType implements EngineTypeInterface
     /**
      * {@inheritdoc}
      */
-    public function down()
+    public function down($include_network = false)
     {
         $this->say('Project engine is preparing to shutdown. 💥');
     }
@@ -85,7 +85,7 @@ abstract class EngineType extends TaskSubType implements EngineTypeInterface
     /**
      * {@inheritdoc}
      */
-    public function reboot()
+    public function reboot($include_network = false)
     {
         $this->say('Project engine is rebooting.');
     }
@@ -211,14 +211,16 @@ abstract class EngineType extends TaskSubType implements EngineTypeInterface
     /**
      * Load engine service.
      *
-     * @param $name
-     *   The service name.
+     * @param string $type
+     *   The service type.
+     * @param string|null $name
+     *   The service machine name.
      *
      * @return \Droath\ProjectX\Engine\ServiceInterface
      */
-    public static function loadService($name)
+    public static function loadService($type, $name = null)
     {
-        $classname = static::serviceClassname($name);
+        $classname = static::serviceClassname($type);
 
         if (!class_exists($classname)) {
             throw new \RuntimeException(
@@ -226,7 +228,7 @@ abstract class EngineType extends TaskSubType implements EngineTypeInterface
             );
         }
 
-        return new $classname();
+        return new $classname($name);
     }
 
     /**

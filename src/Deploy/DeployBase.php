@@ -4,8 +4,7 @@ namespace Droath\ProjectX\Deploy;
 
 use Droath\ProjectX\Exception\DeploymentRuntimeException;
 use Droath\ProjectX\ProjectX;
-use Robo\Contract\TaskInterface;
-use Robo\Contract\VerbosityThresholdInterface;
+use Droath\ProjectX\TaskCommonTrait;
 use Robo\Tasks;
 
 /**
@@ -15,6 +14,7 @@ use Robo\Tasks;
  */
 abstract class DeployBase extends Tasks
 {
+    use TaskCommonTrait;
 
     /**
      * Deployment build path.
@@ -143,18 +143,6 @@ abstract class DeployBase extends Tasks
                 'Deployment process has been stopped.'
             );
         }
-    }
-
-    /**
-     * Run silent command.
-     */
-    protected function runSilentCommand(TaskInterface $task)
-    {
-        return $task->printOutput(false)
-            // This is weird as you would expect this to give you more
-            // information, but it suppresses the exit code from display.
-            ->setVerbosityThreshold(VerbosityThresholdInterface::VERBOSITY_DEBUG)
-            ->run();
     }
 
     /**
