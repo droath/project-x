@@ -97,13 +97,15 @@ class DrupalTasks extends EventTaskBase
     {
         $this->executeCommandHook(__FUNCTION__, 'before');
         $database = $this->buildDatabase($opts);
+
+        /** @var DrupalProjectType $instance */
         $instance = $this
             ->getProjectInstance()
             ->setupDrupalFilesystem()
             ->setupDrupalLocalSettings($database);
 
         if (!$opts['no-engine']) {
-            $instance->projectEngineUp();
+            $instance->projectEnvironmentUp();
         }
         $instance->setupDrupalInstall($database);
 
