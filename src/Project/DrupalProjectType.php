@@ -2,6 +2,7 @@
 
 namespace Droath\ProjectX\Project;
 
+use Boedah\Robo\Task\Drush\DrushStack;
 use Boedah\Robo\Task\Drush\loadTasks as drushTasks;
 use Droath\ConsoleForm\Field\BooleanField;
 use Droath\ConsoleForm\Field\TextField;
@@ -9,12 +10,13 @@ use Droath\ConsoleForm\Form;
 use Droath\ProjectX\Config\ComposerConfig;
 use Droath\ProjectX\Database;
 use Droath\ProjectX\DatabaseInterface;
-use Droath\ProjectX\Engine\EngineType;
+use Droath\ProjectX\Engine\DockerEngineType;
 use Droath\ProjectX\Engine\ServiceDbInterface;
 use Droath\ProjectX\OptionFormAwareInterface;
 use Droath\ProjectX\ProjectX;
 use Droath\ProjectX\TaskSubTypeInterface;
 use Droath\ProjectX\Utility;
+use Robo\Contract\TaskInterface;
 use Symfony\Component\Finder\Finder;
 
 /**
@@ -692,14 +694,13 @@ class DrupalProjectType extends PhpProjectType implements TaskSubTypeInterface, 
      *
      * @param DatabaseInterface|null $database
      *   The database object.
+     * @param bool $localhost
+     *   A flag to determine if Drupal should be installed using localhost.
      *
      * @return self
-     * @throws \Exception
-     * @throws \Psr\Container\ContainerExceptionInterface
-     * @throws \Psr\Container\NotFoundExceptionInterface
      * @throws \Robo\Exception\TaskException
      */
-    public function setupDrupalInstall(DatabaseInterface $database = null)
+    public function setupDrupalInstall(DatabaseInterface $database = null, $localhost = false)
     {
         $this->say('Waiting on Drupal database to become available...');
 
@@ -707,50 +708,44 @@ class DrupalProjectType extends PhpProjectType implements TaskSubTypeInterface, 
             ? $this->getDatabaseInfo()
             : $this->getDatabaseInfoWithOverrides($database);
 
-        $db_user = $database->getUser();
-        $db_port = $database->getPort();
-        $db_pass = $database->getPassword();
-        $db_name = $database->getDatabase();
-        $db_host = $database->getHostname();
-        $db_protocol = $database->getProtocol();
-
-        // Since drush is running from the host, docker hosts are not
-        // discoverable outside the container. We work around this by using
-        // 127.0.0.1 as the db host since the database container ports have been
-        // binded to the host.
-        if (ProjectX::engineType() === 'docker') {
-            $db_host = '127.0.0.1';
-        }
-
-        if (!$this->hasDatabaseConnection($db_host, $db_port)) {
-            throw new \Exception(
-                sprintf('Unable to connection to Drupal database %s', $db_host)
-            );
-        }
-        $options = $this->getInstallOptions();
+        $engine = $this->getEngineInstance();
         $install_path = $this->getInstallPath();
 
-        // Sometimes it takes awhile after the mysql host is up on the network
-        // to become totally available to except connections. Due to the
-        // uncertainty we'll need to sleep for about 30 seconds.
-        sleep(30);
+        if ($engine instanceof DockerEngineType && !$localhost) {
+            $drush = $this->drushInstallCommonStack(
+                '/var/www/html/vendor/bin/drush',
+                '/var/www/html' . static::INSTALL_ROOT,
+                $database
+            );
+            $result = $engine->execRaw(
+                $drush->getCommand(),
+                $this->getPhpServiceName()
+            );
+        } else {
+            // Run the drupal installation from the host machine. The host will
+            // need to have the database client binaries installed.
+            $database->setHostname('127.0.0.1');
 
-        // Run Drupal site install via drush.
-        $result = $this->taskDrushStack()
-            ->drupalRootDirectory($install_path)
-            ->siteName($options['site']['name'])
-            ->accountMail($options['account']['mail'])
-            ->accountName($options['account']['name'])
-            ->accountPass($options['account']['pass'])
-            ->dbUrl("$db_protocol://$db_user:$db_pass@$db_host:$db_port/$db_name")
-            ->siteInstall($options['site']['profile'])
-            ->run();
+            if (!$this->hasDatabaseConnection($database->getHostname(), $database->getPort())) {
+                throw new \Exception(
+                    sprintf('Unable to connection to Drupal database %s', $database->getHostname())
+                );
+            }
+            // Sometimes it takes awhile after the mysql host is up on the
+            // network to become totally available to except connections. Due to
+            // the uncertainty we'll need to sleep for about 30 seconds.
+            sleep(30);
 
-        // Determine if the drush result were valid.
+            $result = $this->drushInstallCommonStack(
+                'drush',
+                $install_path,
+                $database
+            )->run();
+        }
         $this->validateTaskResult($result);
 
-        // Update permissions to ensure all files can be accessed on the
-        // install path for both user and groups.
+        // Update permissions to ensure all files can be accessed on the install
+        // path for both user and groups.
         $this->_chmod($install_path, 0775, 0000, true);
 
         return $this;
@@ -767,11 +762,7 @@ class DrupalProjectType extends PhpProjectType implements TaskSubTypeInterface, 
         $version = $this->getProjectVersion();
 
         if ($version === 8) {
-            $this->taskDrushStack()
-                ->drupalRootDirectory($this->getInstallPath())
-                ->drush('cex')
-                ->run();
-
+            $this->runDrushCommand('cex');
             $this->saveDrupalUuid();
         }
 
@@ -807,25 +798,19 @@ class DrupalProjectType extends PhpProjectType implements TaskSubTypeInterface, 
      */
     public function getDatabaseInfo()
     {
-        /** @var EngineType $engine */
-        $engine = $this->getEngineInstance();
-        foreach ($engine->getServiceInstances() as $hostname => $info) {
-            if (!isset($info['instance'])) {
-                continue;
-            }
-            $instance = $info['instance'];
+        $instance = $this->getEngineInstance()
+            ->getServiceInstanceByInterface(ServiceDbInterface::class);
 
-            if ($instance instanceof ServiceDbInterface) {
-                $port = current($instance->getHostPorts());
+        if ($instance !== false) {
+            $port = current($instance->getHostPorts());
 
-                return (new Database($this->databaseInfoMapping()))
-                    ->setPort($port)
-                    ->setUser($instance->username())
-                    ->setPassword($instance->password())
-                    ->setProtocol($instance->protocol())
-                    ->setHostname($hostname)
-                    ->setDatabase($instance->database());
-            }
+            return (new Database($this->databaseInfoMapping()))
+                ->setPort($port)
+                ->setUser($instance->username())
+                ->setPassword($instance->password())
+                ->setProtocol($instance->protocol())
+                ->setHostname($instance->getName())
+                ->setDatabase($instance->database());
         }
 
         return (new Database($this->databaseInfoMapping()))
@@ -991,6 +976,58 @@ class DrupalProjectType extends PhpProjectType implements TaskSubTypeInterface, 
         }
 
         return $filepaths;
+    }
+
+    /**
+     * @param $command
+     * @param bool $quiet
+     * @param bool $localhost
+     *
+     * @return string
+     * @throws \Robo\Exception\TaskException
+     */
+    public function runDrushCommand($command, $quiet = false, $localhost = false)
+    {
+        $stack = $this->taskDrushStack();
+        $engine = $this->getEngineInstance();
+
+        if ($engine instanceof DockerEngineType && !$localhost) {
+            $task = $stack
+                ->executable('/var/www/html/vendor/bin/drush')
+                ->drupalRootDirectory('/var/www/html' . static::INSTALL_ROOT)
+                ->drush($command);
+
+            $result = $engine->execRaw(
+                $task->getCommand(),
+                $this->getPhpServiceName(),
+                [],
+                $quiet
+            );
+        } else {
+            if ($quiet) {
+                $stack->printOutput(false);
+            }
+            $result = $stack
+                ->drupalRootDirectory($this->getInstallPath())
+                ->drush($command)
+                ->run();
+        }
+        $this->validateTaskResult($result);
+
+        return $result->getMessage();
+    }
+
+    /**
+     * @param DrushStack $stack
+     * @param bool $quiet
+     * @param bool $localhost
+     *
+     * @return string
+     * @throws \Robo\Exception\TaskException
+     */
+    public function runDrushStackCommand(DrushStack $stack, $quiet = false, $localhost = false)
+    {
+        return $this->runDrushCommand($stack->getCommand(), $quiet, $localhost);
     }
 
     /**
@@ -1173,13 +1210,7 @@ class DrupalProjectType extends PhpProjectType implements TaskSubTypeInterface, 
         $version = $this->getProjectVersion();
 
         if ($version === 8) {
-            $result = $this->taskDrushStack()
-                ->printOutput(false)
-                ->drupalRootDirectory($this->getInstallPath())
-                ->drush('cget system.site uuid')
-                ->run();
-
-            $message = $result->getMessage();
+            $message = $this->runDrushCommand('cget system.site uuid', true);
 
             if (isset($message)) {
                 $uuid = trim(
@@ -1211,6 +1242,42 @@ class DrupalProjectType extends PhpProjectType implements TaskSubTypeInterface, 
             ->save(ProjectX::getProjectPath());
 
         return $this;
+    }
+
+    /**
+     * Drush install common command.
+     *
+     * @param $executable
+     *   The drush executable.
+     * @param $drupal_root
+     *   The drupal install root.
+     * @param DatabaseInterface $database
+     *   The database object.
+     *
+     * @return DrushStack
+     */
+    protected function drushInstallCommonStack(
+        $executable,
+        $drupal_root,
+        DatabaseInterface $database
+    ) {
+        $options = $this->getInstallOptions();
+
+        $db_user = $database->getUser();
+        $db_port = $database->getPort();
+        $db_pass = $database->getPassword();
+        $db_name = $database->getDatabase();
+        $db_host = $database->getHostname();
+        $db_protocol = $database->getProtocol();
+
+        return $this->taskDrushStack($executable)
+            ->drupalRootDirectory($drupal_root)
+            ->siteName($options['site']['name'])
+            ->accountMail($options['account']['mail'])
+            ->accountName($options['account']['name'])
+            ->accountPass($options['account']['pass'])
+            ->dbUrl("$db_protocol://$db_user:$db_pass@$db_host:$db_port/$db_name")
+            ->siteInstall($options['site']['profile']);
     }
 
     /**

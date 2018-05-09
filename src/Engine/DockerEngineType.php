@@ -103,6 +103,9 @@ class DockerEngineType extends EngineType implements TaskSubTypeInterface
         // Update the latest docker compose images.
         $this->updateDockerComposeImages();
 
+        // Build the docker compose services based on changes in the Dockerfile.
+        $this->buildDockerComposeServices();
+
         // Startup docker sync if found in project.
         if ($this->hasDockerSync() && !$this->isDockerSyncRunning()) {
             // Set the docker-sync name in the .env file.
@@ -243,6 +246,7 @@ class DockerEngineType extends EngineType implements TaskSubTypeInterface
             $container_id,
             'bash',
             ['-t' => null],
+            false,
             true
         );
     }
@@ -271,9 +275,34 @@ class DockerEngineType extends EngineType implements TaskSubTypeInterface
      */
     public function exec($command, $service = null)
     {
+        $result = $this->execRaw($command, $service);
+
+        if ($result->getExitCode() !== ResultData::EXITCODE_OK) {
+            return false;
+        }
+
+        return $result->getMessage();
+    }
+
+    /**
+     * Execute raw command.
+     *
+     * @param $command
+     *   The command to run.
+     * @param null $service
+     *   The service container to execute within.
+     * @param array $options
+     *   An array of command options.
+     * @param bool $quiet
+     *   Determine if the command should print output.
+     *
+     * @return ResultData
+     */
+    public function execRaw($command, $service = null, $options = [], $quiet = false)
+    {
         $container_id = $this->askForServiceContainerId($service);
 
-        return $this->runCommandInContainer($container_id, $command);
+        return $this->runCommandInContainer($container_id, $command, $options, $quiet);
     }
 
     /**
@@ -515,6 +544,22 @@ class DockerEngineType extends EngineType implements TaskSubTypeInterface
     {
         $this->taskDockerComposePull()
             ->quiet()
+            ->run();
+
+        return $this;
+    }
+
+    /**
+     * Build docker composer services.
+     *
+     * @return $this
+     */
+    protected function buildDockerComposeServices()
+    {
+        $this->say('Docker compose build process is running...');
+        $this->taskDockerComposeBuild()
+            ->printOutput(false)
+            ->pull()
             ->run();
 
         return $this;
@@ -1033,15 +1078,18 @@ class DockerEngineType extends EngineType implements TaskSubTypeInterface
      *   A string or command object.
      * @param array $options
      *   An array of command options.
+     * @param bool $quiet
+     *   Determine if the command should print output.
      * @param bool $interactive
      *   Determine if the command should run in interactive mode.
      *
-     * @return bool|string
+     * @return ResultData
      */
     protected function runCommandInContainer(
         $container_id,
         $command,
         array $options = [],
+        $quiet = false,
         $interactive = false
     ) {
         if (!isset($container_id) || !isset($command)) {
@@ -1050,6 +1098,10 @@ class DockerEngineType extends EngineType implements TaskSubTypeInterface
         /** @var Exec $docker_execute */
         $docker_execute = $this->taskDockerExec($container_id);
 
+        if ($quiet) {
+            $docker_execute->printOutput(false);
+        }
+
         if ($interactive) {
             $docker_execute->interactive(true);
         }
@@ -1057,15 +1109,8 @@ class DockerEngineType extends EngineType implements TaskSubTypeInterface
         if (!empty($options)) {
             $docker_execute->options($options);
         }
-        $result = $docker_execute->exec($command)->run();
 
-        if ($result->getExitCode() !== ResultData::EXITCODE_OK) {
-            return false;
-        }
-
-        if (!$interactive) {
-            return $result->getMessage();
-        }
+        return $docker_execute->exec($command)->run();
     }
 
     /**

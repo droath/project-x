@@ -35,6 +35,7 @@ class DrupalTasks extends EventTaskBase
      * @option string $db-host Set the database host.
      * @option string $db-port Set the database port.
      * @option string $db-protocol Set the database protocol.
+     * @option bool $localhost Install database using localhost.
      *
      * @return self
      * @throws \Exception
@@ -48,11 +49,12 @@ class DrupalTasks extends EventTaskBase
         'db-host' => null,
         'db-port' => null,
         'db-protocol' => null,
+        'localhost' => false,
     ])
     {
         $this->executeCommandHook(__FUNCTION__, 'before');
         $this->getProjectInstance()
-            ->setupDrupalInstall($this->buildDatabase($opts));
+            ->setupDrupalInstall($this->buildDatabase($opts), $opts['localhost']);
         $this->executeCommandHook(__FUNCTION__, 'after');
 
         return $this;
@@ -74,6 +76,7 @@ class DrupalTasks extends EventTaskBase
      * @option bool $no-import Don't import Drupal configurations.
      * @option bool $no-browser Don't launch a browser window after setup is complete.
      * @option int $reimport-attempts The amount of times to retry config-import.
+     * @option bool $localhost Install database using localhost.
      *
      * @return self
      * @throws \Exception
@@ -93,6 +96,7 @@ class DrupalTasks extends EventTaskBase
         'no-import' => false,
         'no-browser' => false,
         'reimport-attempts' => 1,
+        'localhost' => false,
     ])
     {
         $this->executeCommandHook(__FUNCTION__, 'before');
@@ -107,7 +111,7 @@ class DrupalTasks extends EventTaskBase
         if (!$opts['no-engine']) {
             $instance->projectEnvironmentUp();
         }
-        $instance->setupDrupalInstall($database);
+        $instance->setupDrupalInstall($database, $opts['localhost']);
 
         $this->drupalDrushAlias();
         $drush_stack = $this->getDrushStack();
@@ -284,6 +288,7 @@ class DrupalTasks extends EventTaskBase
      * @option string $db-port Set the database port.
      * @option string $db-protocol Set the database protocol.
      * @option bool $hard Refresh the site by destroying the database and rebuilding.
+     * @option bool $localhost Reinstall database using localhost.
      *
      * @return self
      * @throws \Exception
@@ -299,6 +304,7 @@ class DrupalTasks extends EventTaskBase
         'db-port' => null,
         'db-protocol' => null,
         'hard' => false,
+        'localhost' => false,
     ])
     {
         $this->executeCommandHook(__FUNCTION__, 'before');
@@ -312,7 +318,8 @@ class DrupalTasks extends EventTaskBase
             // Reinstall the Drupal database, which drops the existing data.
             $this->getProjectInstance()
                 ->setupDrupalInstall(
-                    $this->buildDatabase($opts)
+                    $this->buildDatabase($opts),
+                    $opts['localhost']
                 );
 
             if ($version === 8) {

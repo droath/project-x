@@ -401,6 +401,7 @@ abstract class ProjectType extends TaskSubType implements ProjectTypeInterface
      */
     protected function getEngineInstance()
     {
-        return ProjectX::getEngineType();
+        return ProjectX::getEngineType()
+            ->setBuilder($this->getBuilder());
     }
 }

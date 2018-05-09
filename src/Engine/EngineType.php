@@ -191,11 +191,35 @@ abstract class EngineType extends TaskSubType implements EngineTypeInterface
             $instances[$name] = [
                 'type' => $type,
                 'options' => $info,
-                'instance' => static::loadService($type),
+                'instance' => static::loadService($type, $name),
             ];
         }
 
         return $instances;
+    }
+
+    /**
+     * Get service instance by interface.
+     *
+     * @param $interface
+     *
+     * @return bool|ServiceInterface
+     *   Return the engine service; otherwise false if not found.
+     */
+    public function getServiceInstanceByInterface($interface)
+    {
+        foreach ($this->getServiceInstances() as $info) {
+            if (!isset($info['instance'])) {
+                continue;
+            }
+            $instance = $info['instance'];
+
+            if ($instance instanceof $interface) {
+                return $instance;
+            }
+        }
+
+        return false;
     }
 
     /**
