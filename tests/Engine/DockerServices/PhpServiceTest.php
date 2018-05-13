@@ -57,15 +57,23 @@ class PhpServiceTest extends TestBase
 
     public function testTemplateFiles()
     {
-        $this->assertEquals([
+        $expected = [
             'Dockerfile' => [
                 'variables' => [
                     'DOCKER_PHP_VERSION' => 7.1,
+                    'PHP_XDEBUG_VERSION' => null,
                 ],
                 'overwrite' => true,
             ],
             'www.conf' => [],
             'php-overrides.ini' => []
-        ], $this->service->templateFiles());
+        ];
+        $this->assertEquals($expected, $this->service->templateFiles());
+        // Update the PHP service to use a lower version.
+        $this->service->setVersion('5.6');
+        $expected['Dockerfile']['variables']['DOCKER_PHP_VERSION'] = '5.6';
+        $expected['Dockerfile']['variables']['PHP_XDEBUG_VERSION'] = '-2.5.5';
+        // Verify that we're now get the property xdebug version.
+        $this->assertEquals($expected, $this->service->templateFiles());
     }
 }

@@ -71,6 +71,9 @@ class PhpService extends DockerServiceBase implements ServiceInterface
             'Dockerfile' => [
                 'variables' => [
                     'DOCKER_PHP_VERSION' => $this->getVersion(),
+                    'PHP_XDEBUG_VERSION' => version_compare($this->getVersion(), 7.0, '<')
+                        ? '-2.5.5'
+                        : null,
                 ],
                 'overwrite' => true,
             ],

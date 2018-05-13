@@ -5,7 +5,7 @@ MAINTAINER Travis Tomka <ttomka@isovera.com>
 RUN apt-get update && apt-get install -y libpng12-dev libjpeg-dev libwebp-dev libpq-dev libmcrypt-dev libmagickwand-dev \
   && rm -rf /var/lib/apt/lists/* \
   && pecl install redis \
-  && pecl install xdebug \
+  && pecl install xdebug{PHP_XDEBUG_VERSION} \
   && pecl install imagick-3.4.3 \
   && docker-php-ext-enable imagick xdebug redis \
   && docker-php-ext-configure gd --with-png-dir=/usr --with-jpeg-dir=/usr  --with-webp-dir=/usr \
