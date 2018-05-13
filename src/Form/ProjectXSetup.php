@@ -9,9 +9,6 @@ use Droath\ConsoleForm\FieldGroup;
 use Droath\ConsoleForm\Form;
 use Droath\ConsoleForm\FormInterface;
 use Droath\ProjectX\ProjectX;
-use Droath\ProjectX\Project\DrupalProjectType;
-use Droath\ProjectX\Project\NullProjectType;
-use Droath\ProjectX\Project\ProjectTypeResolver;
 use Droath\ProjectX\Utility;
 
 /**
@@ -36,6 +33,8 @@ class ProjectXSetup implements FormInterface
             ->addFields([
                 (new TextField('name', 'Project name'))
                     ->setDefault($this->getDefaultName()),
+                (new TextField('root', 'Project root'))
+                    ->setDefault('/docroot'),
                 (new SelectField('type', 'Project type'))
                     ->setOptions($this->getTypeOptions())
                     ->setDefault('drupal'),

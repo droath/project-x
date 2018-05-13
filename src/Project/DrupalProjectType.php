@@ -290,6 +290,12 @@ class DrupalProjectType extends PhpProjectType implements TaskSubTypeInterface, 
             $this->composer
                 ->addDevRequire('drupal/drupal-extension', '^3.2');
         }
+        $root_path = ProjectX::projectRoot();
+
+        $this->taskWriteToFile("{$root_path}/tests/Behat/behat.yml")
+            ->append()
+            ->place('PROJECT_ROOT', substr(static::installRoot(), 1))
+            ->run();
 
         return $this;
     }
@@ -319,11 +325,10 @@ class DrupalProjectType extends PhpProjectType implements TaskSubTypeInterface, 
      */
     public function setupProject()
     {
-        $this->_copy(
-            $this->getTemplateFilePath('.gitignore.txt'),
-            ProjectX::projectRoot() . '/.gitignore',
-            true
-        );
+        $this->taskWriteToFile(ProjectX::projectRoot() . '/.gitignore')
+            ->text($this->loadTemplateContents('.gitignore.txt'))
+            ->place('PROJECT_ROOT', $this->getInstallRoot(true))
+            ->run();
 
         return $this;
     }
@@ -336,6 +341,7 @@ class DrupalProjectType extends PhpProjectType implements TaskSubTypeInterface, 
     public function setupProjectComposer()
     {
         $this->mergeProjectComposerTemplate();
+        $install_root = substr(static::installRoot(), 1);
 
         $this->composer
             ->setType('project')
@@ -362,10 +368,10 @@ class DrupalProjectType extends PhpProjectType implements TaskSubTypeInterface, 
                 'omit-defaults' => false
             ])
             ->addExtra('installer-paths', [
-                'docroot/core' => ['type:drupal-core'],
-                'docroot/modules/contrib/{$name}' => ['type:drupal-module'],
-                'docroot/profiles/custom/{$name}' => ['type:drupal-profile'],
-                'docroot/themes/contrib/{$name}'=> ['type:drupal-theme'],
+                $install_root . '/core' => ['type:drupal-core'],
+                $install_root . '/modules/contrib/{$name}' => ['type:drupal-module'],
+                $install_root . '/profiles/custom/{$name}' => ['type:drupal-profile'],
+                $install_root . '/themes/contrib/{$name}'=> ['type:drupal-theme'],
                 'drush/contrib/{$name}'=> ['type:drupal-drush']
             ]);
 
@@ -387,7 +393,7 @@ class DrupalProjectType extends PhpProjectType implements TaskSubTypeInterface, 
     public function packageDrupalBuild($build_root)
     {
         $project_root = ProjectX::projectRoot();
-        $build_install = $build_root . static::INSTALL_ROOT;
+        $build_install = $build_root . static::installRoot();
         $install_path = $this->getInstallPath();
 
         $stack = $this->taskFilesystemStack();
@@ -410,10 +416,10 @@ class DrupalProjectType extends PhpProjectType implements TaskSubTypeInterface, 
 
         $mirror_directories = [
             '/config',
-            static::INSTALL_ROOT . '/libraries',
-            static::INSTALL_ROOT . '/themes/custom',
-            static::INSTALL_ROOT . '/modules/custom',
-            static::INSTALL_ROOT . '/profile/custom'
+            static::installRoot() . '/libraries',
+            static::installRoot() . '/themes/custom',
+            static::installRoot() . '/modules/custom',
+            static::installRoot() . '/profile/custom'
         ];
 
         foreach ($mirror_directories as $directory) {
@@ -446,11 +452,15 @@ class DrupalProjectType extends PhpProjectType implements TaskSubTypeInterface, 
             ->copy($this->getTemplateFilePath('drush.wrapper'), "$project_root/drush.wrapper")
             ->run();
 
+        $this->taskWriteToFile("{$project_root}/drush/drushrc.php")
+            ->append()
+            ->place('PROJECT_ROOT', $this->getInstallRoot(true))
+            ->run();
+
         $this->composer
             ->addDevRequire('drush/drush', static::DRUSH_VERSION);
 
-        $this
-            ->setupDrushAlias();
+        $this->setupDrushAlias();
 
         return $this;
     }
@@ -964,10 +974,12 @@ class DrupalProjectType extends PhpProjectType implements TaskSubTypeInterface, 
             ? array_keys($composer_extra['installer-paths'])
             : [];
 
+        $installed_directory = substr(static::getInstallPath(), strrpos(static::getInstallPath(), '/'));
+
         foreach ($installed_paths as $installed_path) {
             $path_info = pathinfo($installed_path);
             $directory = "/{$path_info['dirname']}";
-            if (strpos($directory, static::INSTALL_ROOT) === false) {
+            if (strpos($directory, $installed_directory) === false) {
                 continue;
             }
             $filename = $path_info['filename'] !== '{$name}'

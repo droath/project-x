@@ -29,6 +29,13 @@ class ProjectXConfig extends YamlConfigBase
     protected $version;
 
     /**
+     * Project root.
+     *
+     * @var string
+     */
+    protected $root;
+
+    /**
      * Project engine.
      *
      * @var string
@@ -116,6 +123,18 @@ class ProjectXConfig extends YamlConfigBase
     public function getEngine()
     {
         return $this->engine;
+    }
+
+    public function setRoot($root)
+    {
+        $this->root = $root;
+
+        return $this;
+    }
+
+    public function getRoot()
+    {
+        return $this->root;
     }
 
     public function setHost(array $values)

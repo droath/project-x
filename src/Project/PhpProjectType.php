@@ -100,7 +100,11 @@ abstract class PhpProjectType extends ProjectType
      */
     public function setupProboCi()
     {
-        $this->copyTemplateFileToProject('.probo.yml');
+        $filename = ProjectX::projectRoot() . '/.probo.yml';
+        $this->taskWriteToFile($filename)
+            ->text($this->loadTemplateContents('.probo.yml'))
+            ->place('PROJECT_ROOT', $this->getInstallRoot())
+            ->run();
 
         return $this;
     }
@@ -195,8 +199,9 @@ abstract class PhpProjectType extends ProjectType
     {
         $root_path = ProjectX::projectRoot();
 
-        $this->taskFilesystemStack()
-            ->copy($this->getTemplateFilePath('phpcs.xml.dist'), "{$root_path}/phpcs.xml.dist")
+        $this->taskWriteToFile("{$root_path}/phpcs.xml.dist")
+            ->text($this->loadTemplateContents('phpcs.xml.dist'))
+            ->place('PROJECT_ROOT', $this->getInstallRoot())
             ->run();
 
         $this->composer->addRequires([

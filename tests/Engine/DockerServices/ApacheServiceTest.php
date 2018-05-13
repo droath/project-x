@@ -46,7 +46,8 @@ class ApacheServiceTest extends TestBase
             'httpd-mpm.conf' => [],
             'httpd.conf' => [
                 'variables' => [
-                    'PHP_SERVICE' => 'php'
+                    'PHP_SERVICE' => 'php',
+                    'PROJECT_ROOT' => '/www'
                 ],
                 'overwrite' => true,
             ]], $this->service->templateFiles());

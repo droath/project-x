@@ -11,7 +11,7 @@ use Droath\ProjectX\TaskSubType;
 abstract class ProjectType extends TaskSubType implements ProjectTypeInterface
 {
     /**
-     * Project install root.
+     * Project default install root.
      */
     const INSTALL_ROOT = '/docroot';
 
@@ -46,6 +46,43 @@ abstract class ProjectType extends TaskSubType implements ProjectTypeInterface
      * @var bool
      */
     protected $supportsDocker = false;
+
+    /**
+     * Project current install root.
+     */
+    public static function installRoot()
+    {
+        $install_root = ProjectX::getProjectConfig()
+            ->getRoot();
+
+        // Ensure a forward slash has been added to the install root.
+        $install_root = substr($install_root, 0, 1) != '/'
+            ? "/{$install_root}"
+            : $install_root;
+
+        if (isset($install_root) && !empty($install_root)) {
+            return $install_root;
+        }
+
+        return static::INSTALL_ROOT;
+    }
+
+    /**
+     * Get project current install root.
+     *
+     * @param bool $strip_slash
+     *   Strip the the beginning slash from the install root.
+     *
+     * @return string
+     */
+    public function getInstallRoot($strip_slash = false)
+    {
+        $install_root = static::installRoot();
+
+        return $strip_slash === false
+            ? $install_root
+            : substr($install_root, 1);
+    }
 
     /**
      * Project supports docker.
@@ -100,7 +137,7 @@ abstract class ProjectType extends TaskSubType implements ProjectTypeInterface
      */
     public function onDeployBuild($build_root)
     {
-        $install_root = $build_root . static::INSTALL_ROOT;
+        $install_root = $build_root . static::installRoot();
 
         if (!file_exists($install_root)) {
             $this->_mkdir($install_root);
@@ -226,7 +263,7 @@ abstract class ProjectType extends TaskSubType implements ProjectTypeInterface
      */
     public function getInstallPath()
     {
-        return ProjectX::projectRoot() . static::INSTALL_ROOT;
+        return ProjectX::projectRoot() . static::installRoot();
     }
 
     /**

@@ -5,29 +5,29 @@ project-x.local.yml
 development.services.yml
 
 # Ignore drupal core.
-docroot/core
+{PROJECT_ROOT}/core
 
 # Ignore paths that contain user-generated content.
-docroot/sites/*/files
-docroot/sites/*/files-private
-docroot/sites/*/private
+{PROJECT_ROOT}/sites/*/files
+{PROJECT_ROOT}/sites/*/files-private
+{PROJECT_ROOT}/sites/*/private
 
 # Ignore contrib modules. These should be created during build process.
 files-private
 drush/contrib
-docroot/themes/contrib
-docroot/modules/contrib
-docroot/profiles/contrib
+{PROJECT_ROOT}/themes/contrib
+{PROJECT_ROOT}/modules/contrib
+{PROJECT_ROOT}/profiles/contrib
 
 # Ignore custom theme folders
-docroot/themes/custom/*/node_modules
+{PROJECT_ROOT}/themes/custom/*/node_modules
 
 # Ignore build artifacts
 /build
 /deploy
 /reports
-docroot/themes/custom/*/css
-docroot/themes/custom/*/styleguide
+{PROJECT_ROOT}/themes/custom/*/css
+{PROJECT_ROOT}/themes/custom/*/styleguide
 
 #Sass
 .sass-cache

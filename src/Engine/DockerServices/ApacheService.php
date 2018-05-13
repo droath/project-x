@@ -5,6 +5,7 @@ namespace Droath\ProjectX\Engine\DockerServices;
 use Droath\ProjectX\Engine\DockerFrontendServiceTrait;
 use Droath\ProjectX\Engine\DockerService;
 use Droath\ProjectX\Engine\ServiceInterface;
+use Droath\ProjectX\ProjectX;
 
 /**
  * Class ApacheService
@@ -54,7 +55,11 @@ class ApacheService extends DockerServiceBase implements ServiceInterface
     public function templateFiles()
     {
         $files = [
-            'httpd.conf' => [],
+            'httpd.conf' => [
+                'variables' => [
+                    'PROJECT_ROOT' => ProjectX::getProjectType()->getInstallRoot(),
+                ]
+            ],
             'httpd-mpm.conf' => []
         ];
 

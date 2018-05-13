@@ -59,8 +59,8 @@
  * affects the loading of Drush configuration files.
  */
 
-if (file_exists(__DIR__ . '/../docroot/sites/default/local.drushrc.php')) {
-  require __DIR__ . '/../docroot/sites/default/local.drushrc.php';
+if (file_exists(__DIR__ . '/../{PROJECT_ROOT}/sites/default/local.drushrc.php')) {
+  require __DIR__ . '/../{PROJECT_ROOT}/sites/default/local.drushrc.php';
 }
 
 if (getenv('TUGBOAT_URL')) {

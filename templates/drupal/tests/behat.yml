@@ -16,4 +16,4 @@ default:
       blackbox: ~
       api_driver: 'drupal'
       drupal:
-        drupal_root: 'docroot'
+        drupal_root: '{PROJECT_ROOT}'

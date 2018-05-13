@@ -162,6 +162,7 @@ abstract class TestBase extends TestCase
             'name' => 'Project-X Test',
             'type' => 'drupal',
             'engine' => 'docker',
+            'root' => '/www',
             'remote' => [
                 'environments' => [
                     [
@@ -293,6 +294,21 @@ abstract class TestBase extends TestCase
     protected function getProjectFileUrl($filename)
     {
         return vfsStream::url("root/{$filename}");
+    }
+
+    /**
+     * Get project file contents.
+     *
+     * @param string $filename
+     *   The project filename.
+     *
+     * @return bool|string
+     */
+    protected function getProjectFileContents($filename)
+    {
+        return file_get_contents(
+            $this->getProjectFileUrl($filename)
+        );
     }
 
     /**

@@ -6,7 +6,7 @@
 <ini name="memory_limit" value="64M"/>
 
 <!-- Run code sniffer on Drupal modules directory. -->
-<file>./docroot</file>
+<file>.{PROJECT_ROOT}</file>
 
 <!-- Exclude tests/* and Drupal contrib modules from code sniffer. -->
 <exclude-pattern>*/tests/*</exclude-pattern>

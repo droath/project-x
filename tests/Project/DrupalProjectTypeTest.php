@@ -35,7 +35,7 @@ class DrupalProjectTypeTest extends TestTaskBase
     public function testOnEngineUp()
     {
         vfsStream::create([
-            'docroot' => [
+            'www' => [
                 'sites' => [
                     'default' => [
                         'files' => [
@@ -47,7 +47,7 @@ class DrupalProjectTypeTest extends TestTaskBase
             ],
         ], $this->projectDir);
 
-        $files_url = $this->getProjectFileUrl('docroot/sites/default/files');
+        $files_url = $this->getProjectFileUrl('www/sites/default/files');
         chmod($files_url, 0664);
         $this->assertFilePermission('0664', $files_url);
         $this->drupalProject->onEngineUp();
@@ -86,6 +86,13 @@ class DrupalProjectTypeTest extends TestTaskBase
     public function testSetupProject()
     {
         $this->drupalProject->setupProject();
+        preg_match_all(
+            "/{$this->drupalProject->getInstallRoot(true)}\//",
+            $this->getProjectFileContents('.gitignore'),
+            $matches,
+            PREG_SET_ORDER
+        );
+        $this->assertEquals(10, count($matches));
         $this->assertTrue($this->projectDir->hasChild('.gitignore'));
     }
 
@@ -96,7 +103,7 @@ class DrupalProjectTypeTest extends TestTaskBase
                 'configure1.yml' => '',
                 'configure2.yml' => ''
             ],
-            'docroot' => [
+            'www' => [
                 'index.php' => '',
                 '.htaccess' => '',
                 'robots.txt' => '',
@@ -132,7 +139,7 @@ class DrupalProjectTypeTest extends TestTaskBase
 
         $build_root = ProjectX::buildRoot();
         $this->drupalProject->packageDrupalBuild($build_root);
-        $install_root = DrupalProjectType::INSTALL_ROOT;
+        $install_root = DrupalProjectType::installRoot();
         $this->assertFileExists("{$build_root}/{$install_root}/index.php");
         $this->assertFileExists("{$build_root}/{$install_root}/.htaccess");
         $this->assertFileExists("{$build_root}/{$install_root}/robots.txt");
@@ -149,7 +156,16 @@ class DrupalProjectTypeTest extends TestTaskBase
 
     public function testSetupDrush()
     {
+        $project_root = $this->drupalProject
+            ->getInstallRoot(true);
         $this->drupalProject->setupDrush();
+        preg_match_all(
+            "/\/..\/{$project_root}\/sites\/default\/local.drushrc.php/",
+            $this->getProjectFileContents('drush/drushrc.php'),
+            $matches,
+            PREG_SET_ORDER
+        );
+        $this->assertEquals(2, count($matches));
         $this->assertProjectFileExists('drush.wrapper');
         $this->assertTrue($this->projectDir->hasChild('drush'));
         $this->assertArrayHasKey('drush/drush', $this->drupalProject->getComposer()->getRequireDev());
@@ -166,7 +182,7 @@ class DrupalProjectTypeTest extends TestTaskBase
         $this->assertProjectFileExists('drush/site-aliases/local.aliases.drushrc.php');
         $this->assertRegExp('/\$aliases\[\'project-x-test\'\]/', $contents);
         $this->assertRegExp('/\'uri\'\s?=>\s?\'local\.project-x-test\.com\',/', $contents);
-        $this->assertRegExp('/\'root\'\s?=>\s?\'vfs:\/\/root\/docroot\'/', $contents);
+        $this->assertRegExp('/\'root\'\s?=>\s?\'vfs:\/\/root\/www\'/', $contents);
     }
 
     public function testSetupDrushRemoteAliases()
@@ -190,7 +206,7 @@ class DrupalProjectTypeTest extends TestTaskBase
     public function testSetupDrupalFilesystem()
     {
         vfsStream::create([
-            'docroot' => [
+            'www' => [
                 'sites' => [
                     'default' => [],
                 ],
@@ -199,11 +215,11 @@ class DrupalProjectTypeTest extends TestTaskBase
 
         $this->drupalProject->setupDrupalFilesystem();
 
-        $this->assertProjectFilePermission('0775', 'docroot/sites');
-        $this->assertProjectFileExists('docroot/sites/default/files');
-        $this->assertProjectFileExists('docroot/profile/custom');
-        $this->assertProjectFileExists('docroot/modules/custom');
-        $this->assertProjectFileExists('docroot/modules/contrib');
+        $this->assertProjectFilePermission('0775', 'www/sites');
+        $this->assertProjectFileExists('www/sites/default/files');
+        $this->assertProjectFileExists('www/profile/custom');
+        $this->assertProjectFileExists('www/modules/custom');
+        $this->assertProjectFileExists('www/modules/contrib');
     }
 
     public function testSetupDrupalSettings()
@@ -211,7 +227,7 @@ class DrupalProjectTypeTest extends TestTaskBase
         $settings_content = file_get_contents(APP_ROOT . '/tests/fixtures/default.settings.php');
 
         vfsStream::create([
-            'docroot' => [
+            'www' => [
                 'sites' => [
                     'default' => [
                         'settings.php' => $settings_content,
@@ -222,11 +238,11 @@ class DrupalProjectTypeTest extends TestTaskBase
 
         $this->drupalProject->setupDrupalSettings();
 
-        $settings_url = $this->getProjectFileUrl('docroot/sites/default/settings.php');
+        $settings_url = $this->getProjectFileUrl('www/sites/default/settings.php');
         $settings_content = file_get_contents($settings_url);
 
         $this->assertProjectFileExists('salt.txt');
-        $this->assertProjectFileExists('docroot/sites/default/settings.php');
+        $this->assertProjectFileExists('www/sites/default/settings.php');
         $this->assertGreaterThan(10, filesize($this->getProjectFileUrl('salt.txt')));
         $this->assertRegExp('/include.+\/settings\.local\.php\"\;/', $settings_content);
         $this->assertRegExp('/\$settings\[\'hash_salt\'].+\/salt\.txt\'\)\;/', $settings_content);
@@ -237,9 +253,9 @@ class DrupalProjectTypeTest extends TestTaskBase
     {
         $this->drupalProject->setupDrupalLocalSettings();
 
-        $local_url = $this->getProjectFileUrl('docroot/sites/default/settings.local.php');
+        $local_url = $this->getProjectFileUrl('www/sites/default/settings.local.php');
         $local_content = file_get_contents($local_url);
-        $this->assertProjectFileExists('docroot/sites/default/settings.local.php');
+        $this->assertProjectFileExists('www/sites/default/settings.local.php');
         $this->assertRegExp('/\$databases\[.+\]/', $local_content);
         $this->assertRegExp('/\'database\'\s?=>\s?\'drupal\'\,/', $local_content);
         $this->assertRegExp('/\'username\'\s?=>\s?\'admin\'\,/', $local_content);
@@ -256,7 +272,7 @@ class DrupalProjectTypeTest extends TestTaskBase
             ->setHostname('127.0.0.1')
         );
 
-        $local_url = $this->getProjectFileUrl('docroot/sites/default/settings.local.php');
+        $local_url = $this->getProjectFileUrl('www/sites/default/settings.local.php');
         $local_content = file_get_contents($local_url);
 
         $this->assertRegExp('/\'host\'\s?=>\s?\'127.0.0.1\'\,/', $local_content);
@@ -356,7 +372,7 @@ class DrupalProjectTypeTest extends TestTaskBase
 
         vfsStream::create([
             'build' => [
-                'docroot' => [
+                'www' => [
                     'modules' => [
                         'contrib' => [
                             'google_tag' => [
@@ -380,7 +396,7 @@ class DrupalProjectTypeTest extends TestTaskBase
         ], $this->projectDir);
 
         $this->assertProjectFileExists('build');
-        $this->assertProjectFileExists('build/docroot/modules/contrib/google_tag/.git');
+        $this->assertProjectFileExists('build/www/modules/contrib/google_tag/.git');
 
         $base_path = $this->projectRoot . '/build';
         $this
@@ -388,7 +404,7 @@ class DrupalProjectTypeTest extends TestTaskBase
             ->removeGitSubmoduleInInstallPath($base_path);
 
         // Verify the .git directory was removed.
-        $this->assertFileNotExists($base_path . '/docroot/modules/contrib/google_tag/.git');
+        $this->assertFileNotExists($base_path . '/www/modules/contrib/google_tag/.git');
     }
 
     public function testRemoveGitSubmodules()
@@ -425,7 +441,7 @@ class DrupalProjectTypeTest extends TestTaskBase
 
         vfsStream::create([
             'build' => [
-                'docroot' => [
+                'www' => [
                     'modules' => [
                         'contrib' => []
                     ],
@@ -443,8 +459,8 @@ class DrupalProjectTypeTest extends TestTaskBase
             ->getValidComposerInstallPaths($base_path);
 
         $this->assertEquals([
-            $base_path . '/docroot/modules/contrib',
-            $base_path . '/docroot/themes/contrib',
+            $base_path . '/www/modules/contrib',
+            $base_path . '/www/themes/contrib',
         ], $installed_paths);
     }
 
@@ -479,7 +495,7 @@ class DrupalProjectTypeTest extends TestTaskBase
         // Rebuild the settings based on new changes in configuration.
         $this->drupalProject->rebuildSettings();
 
-        $settings_url = $this->getProjectFileUrl('docroot/sites/default/settings.local.php');
+        $settings_url = $this->getProjectFileUrl('www/sites/default/settings.local.php');
         $settings = file_get_contents($settings_url);
 
         $this->assertRegExp('/\'database\'\s?=>\s?\'drupal2\'\,/', $settings);
@@ -489,5 +505,17 @@ class DrupalProjectTypeTest extends TestTaskBase
         $this->assertRegExp('/\'host\'\s?=>\s?\'database\'\,/', $settings);
         $this->assertRegExp('/\'driver\'\s?=>\s?\'pgsql\'\,/', $settings);
         $this->assertRegExp('/\'namespace\'\s?=>\s?\'.+pgsql\'\,/', $settings);
+    }
+
+    public function testSetupBehat()
+    {
+        $this->drupalProject->setupBehat();
+        $composer = $this->drupalProject->getComposer();
+
+        $this->assertArrayHasKey('drupal/drupal-extension', $composer->getRequireDev());
+        $contents = $this->getProjectFileContents('tests/Behat/behat.yml');
+
+        $install_root = substr(DrupalProjectType::installRoot(), 1);
+        $this->assertRegExp("/drupal_root:\s?'{$install_root}'/", $contents);
     }
 }

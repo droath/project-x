@@ -196,7 +196,7 @@ class DrupalTasks extends EventTaskBase
         $instance = $this->getProjectInstance();
 
         if (ProjectX::engineType() && $instance->hasDockerSupport()) {
-            $install_path = DrupalProjectType::INSTALL_ROOT;
+            $install_path = DrupalProjectType::installRoot();
             $drupal_dir = "{$opts['remote-root-dir']}{$install_path}";
             $drush_binary = "{$opts['remote-root-dir']}/{$opts['remote-binary-path']}";
             $command = $this

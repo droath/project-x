@@ -47,7 +47,8 @@ class NginxServiceTest extends TestBase
             'default.conf' => [
                 'variables' => [
                     'HOSTNAME' => 'local.project-x-test.com',
-                    'PHP_SERVICE' => 'php'
+                    'PHP_SERVICE' => 'php',
+                    'PROJECT_ROOT' => '/www',
                 ],
                 'overwrite' => true,
             ]], $this->service->templateFiles());

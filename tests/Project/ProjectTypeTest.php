@@ -2,6 +2,8 @@
 
 namespace Droath\ProjectX\Tests\Project;
 
+use Droath\ProjectX\Project\ProjectType;
+use Droath\ProjectX\ProjectX;
 use Droath\ProjectX\Tests\TestTaskBase;
 use org\bovigo\vfs\vfsStream;
 
@@ -29,7 +31,7 @@ class ProjectTypeTest extends TestTaskBase
         $this->assertFalse($this->projectType->isBuilt());
 
         $directory = vfsStream::create([
-            'docroot' => [
+            'www' => [
                 'sites' => [
                     'default' => [
                         'files' => [
@@ -42,6 +44,17 @@ class ProjectTypeTest extends TestTaskBase
         ], $this->projectDir);
 
         $this->assertTrue($this->projectType->isBuilt());
+    }
+
+    public function testInstallRoot()
+    {
+        $this->assertEquals('/www', ProjectType::installRoot());
+
+        ProjectX::getProjectConfig()
+            ->setRoot('docroot')
+            ->save($this->getProjectXFilePath());
+
+        $this->assertEquals('/docroot', ProjectType::installRoot());
     }
 
     public function testHasDockerSupport()
@@ -57,7 +70,7 @@ class ProjectTypeTest extends TestTaskBase
         $this->assertFilePermission('0644', $this->projectRoot);
         $this->projectType->setupProjectFilesystem();
         $this->assertFilePermission('0775', $this->projectRoot);
-        $this->assertProjectFilePermission('0775', 'docroot');
+        $this->assertProjectFilePermission('0775', 'www');
     }
 
 }

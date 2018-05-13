@@ -37,6 +37,9 @@ class PhpProjectTypeTest extends TestTaskBase
     {
         $this->phpProject->setupProboCi();
         $this->assertProjectFileExists('.probo.yml');
+        $contents = $this->getProjectFileContents('.probo.yml');
+        preg_match_all('/\$SRC_DIR\/www/', $contents, $matches);
+        $this->assertEquals(3, count($matches[0]));
     }
 
     /**
@@ -77,6 +80,7 @@ class PhpProjectTypeTest extends TestTaskBase
         $this->phpProject->setupPhpCodeSniffer();
 
         $this->assertProjectFileExists('phpcs.xml.dist');
+        $this->assertRegExp('/\<file\>\.\/www\<\/file\>/', $this->getProjectFileContents('phpcs.xml.dist'));
         $this->assertTrue($this->phpProject->hasPhpCodeSniffer());
     }
 

@@ -70,6 +70,7 @@ class NginxService extends DockerServiceBase implements ServiceInterface
                     'HOSTNAME' => isset($host['name'])
                         ? $host['name']
                         : 'project-x.local',
+                    'PROJECT_ROOT' => ProjectX::getProjectType()->getInstallRoot(),
                 ],
                 'overwrite' => true,
             ],

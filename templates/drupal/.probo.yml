@@ -18,6 +18,6 @@ steps:
   - name: Setup Probo environment
     plugin: Script
     script:
-      - ln -s $SRC_DIR/docroot /var/www/html
-      - chmod -R 775 $SRC_DIR/docroot
-      - chown -R www-data:www-data $SRC_DIR/docroot
+      - ln -s $SRC_DIR{PROJECT_ROOT} /var/www/html
+      - chmod -R 775 $SRC_DIR{PROJECT_ROOT}
+      - chown -R www-data:www-data $SRC_DIR{PROJECT_ROOT}
