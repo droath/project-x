@@ -5,6 +5,7 @@ namespace Droath\ProjectX\Tests\Engine\DockerServices;
 use Droath\ProjectX\Engine\DockerService;
 use Droath\ProjectX\Engine\DockerServices\DockerServiceBase;
 use Droath\ProjectX\Engine\DockerServices\MysqlService;
+use Droath\ProjectX\ProjectX;
 use Droath\ProjectX\Tests\TestBase;
 
 class DockerServiceBaseTest extends TestBase
@@ -15,7 +16,7 @@ class DockerServiceBaseTest extends TestBase
         parent::setUp();
         $this->service = $this->getMockForAbstractClass(
             DockerServiceBase::class,
-            [],
+            [ProjectX::getEngineType()],
             '',
             true,
             true,
@@ -67,7 +68,7 @@ class DockerServiceBaseTest extends TestBase
         $this->service
             ->expects($this->any())
             ->method('service')
-            ->will($this->returnValue((new MysqlService())->service()));
+            ->will($this->returnValue((new MysqlService(ProjectX::getEngineType()))->service()));
 
         $service = $this->service->getService();
         $this->assertEquals(['3307:3307'], $service->getPorts());
@@ -77,7 +78,6 @@ class DockerServiceBaseTest extends TestBase
             'MYSQL_DATABASE=drupal',
             'MYSQL_ALLOW_EMPTY_PASSWORD=1'
         ], $service->getEnvironment());
-        $this->assertEquals(['web1'], $service->getLinks());
     }
 
     public function testGetEnvironmentValue()
@@ -90,7 +90,7 @@ class DockerServiceBaseTest extends TestBase
         $this->service
             ->expects($this->any())
             ->method('service')
-            ->will($this->returnValue((new MysqlService())->service()));
+            ->will($this->returnValue((new MysqlService(ProjectX::getEngineType()))->service()));
 
         $this->assertEquals('admin', $this->service->getEnvironmentValue('MYSQL_USER'));
         $this->assertEquals('1', $this->service->getEnvironmentValue('MYSQL_ALLOW_EMPTY_PASSWORD'));
@@ -101,7 +101,7 @@ class DockerServiceBaseTest extends TestBase
         $this->service
             ->expects($this->any())
             ->method('service')
-            ->will($this->returnValue((new MysqlService())->service()));
+            ->will($this->returnValue((new MysqlService(ProjectX::getEngineType()))->service()));
 
         $this->service
             ->expects($this->any())

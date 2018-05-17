@@ -3,6 +3,7 @@
 namespace Droath\ProjectX\Tests\Engine\DockerServices;
 
 use Droath\ProjectX\Engine\DockerServices\ApacheService;
+use Droath\ProjectX\ProjectX;
 use Droath\ProjectX\Tests\TestBase;
 
 class ApacheServiceTest extends TestBase
@@ -12,7 +13,7 @@ class ApacheServiceTest extends TestBase
 
     public function setUp() {
         parent::setUp();
-        $this->service = new ApacheService();
+        $this->service = new ApacheService(ProjectX::getEngineType());
         $this->classname = ApacheService::class;
     }
 

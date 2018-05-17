@@ -3,6 +3,7 @@
 namespace Droath\ProjectX\Engine\DockerServices;
 
 use Droath\ProjectX\Engine\DockerService;
+use Droath\ProjectX\Engine\EngineTypeInterface;
 use Droath\ProjectX\ProjectX;
 
 /**
@@ -32,6 +33,13 @@ abstract class DockerServiceBase
     protected $version;
 
     /**
+     * The engine type.
+     *
+     * @var EngineTypeInterface
+     */
+    protected $engine;
+
+    /**
      * The docker service.
      *
      * @var DockerService
@@ -48,12 +56,15 @@ abstract class DockerServiceBase
     /**
      * Docker service base.
      *
+     * @param EngineTypeInterface $engine
+     *   The current engine type.
      * @param string|null $name
      *   The service machine name.
      */
-    public function __construct($name = null)
+    public function __construct(EngineTypeInterface $engine, $name = null)
     {
         $this->name = $name;
+        $this->engine = $engine;
     }
 
     /**
@@ -259,40 +270,37 @@ abstract class DockerServiceBase
     }
 
     /**
-     * Get the service link types
+     * Get all defined docker service names.
      *
      * @return array
-     *   An array of link service types.
+     *   An array of docker service types.
      */
-    protected function getServiceLinkTypes()
+    protected function getServiceNames()
     {
-        $types = [];
-        $services = $this->getServices();
+        $names = [];
 
-        foreach ($this->getInfoProperty('links') as $name) {
-            if (!isset($services[$name])) {
+        foreach ($this->getServices() as $name => $info) {
+            if (!isset($info['type'])) {
                 continue;
             }
-            $service = $services[$name];
-            $types[$service['type']] = $name;
+            $names[$name] = $info['type'];
         }
 
-        return $types;
+        return $names;
     }
 
     /**
-     * Get docker service link name by type.
+     * Get docker service name by type.
      *
      * @param $type
      *   The service type.
      *
-     * @return string
-     *   The docker service name for given service type.
+     * @return false|int|string
+     *   The docker service container name.
      */
-    protected function getLinkServiceNameByType($type)
+    protected function getServiceNameByType($type)
     {
-        $types = $this->getServiceLinkTypes();
-        return isset($types[$type]) ? $types[$type] : null;
+        return array_search($type, $this->getServiceNames());
     }
 
     /**
@@ -355,26 +363,14 @@ abstract class DockerServiceBase
     }
 
     /**
-     * Get all service definitions.
+     * Get engine services definitions.
      *
      * @return array
-     *   An array of service definitions defined in project-x configuration.
+     *   An array of service definitions defined by the engine.
      */
     protected function getServices()
     {
-        $options = ProjectX::getProjectConfig()
-            ->getOptions();
-
-        if (!isset($options['docker'])) {
-            return [];
-        }
-        $docker = $options['docker'];
-
-        if (!isset($docker['services'])) {
-            return [];
-        }
-
-        return $docker['services'];
+        return $this->engine->getServices();
     }
 
     /**

@@ -77,7 +77,7 @@ class NginxService extends DockerServiceBase implements ServiceInterface
             ],
         ];
 
-        if ($php_service = $this->getLinkServiceNameByType('php')) {
+        if ($php_service = $this->getServiceNameByType('php')) {
             $files['default.conf']['variables']['PHP_SERVICE'] = $php_service;
         }
 

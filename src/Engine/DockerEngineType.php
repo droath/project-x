@@ -797,7 +797,7 @@ class DockerEngineType extends EngineType implements TaskSubTypeInterface
                 continue;
             }
             $type = $info['type'];
-            $instance = self::loadService($type, $name);
+            $instance = self::loadService($this, $type, $name);
 
             if (!$dev && $has_proxy) {
                 $instance->setInternal();
@@ -847,7 +847,7 @@ class DockerEngineType extends EngineType implements TaskSubTypeInterface
                 continue;
             }
             $type = $info['type'];
-            $instance = self::loadService($type);
+            $instance = self::loadService($this, $type, $name);
 
             if (isset($info['version'])) {
                 $instance->setVersion($info['version']);

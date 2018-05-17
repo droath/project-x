@@ -191,7 +191,7 @@ abstract class EngineType extends TaskSubType implements EngineTypeInterface
             $instances[$name] = [
                 'type' => $type,
                 'options' => $info,
-                'instance' => static::loadService($type, $name),
+                'instance' => static::loadService($this, $type, $name),
             ];
         }
 
@@ -235,6 +235,8 @@ abstract class EngineType extends TaskSubType implements EngineTypeInterface
     /**
      * Load engine service.
      *
+     * @param EngineTypeInterface $engine
+     *   The engine object.
      * @param string $type
      *   The service type.
      * @param string|null $name
@@ -242,8 +244,12 @@ abstract class EngineType extends TaskSubType implements EngineTypeInterface
      *
      * @return \Droath\ProjectX\Engine\ServiceInterface
      */
-    public static function loadService($type, $name = null)
-    {
+    public static function loadService(
+        EngineTypeInterface $engine,
+        $type,
+        $name = null
+    ) {
+    
         $classname = static::serviceClassname($type);
 
         if (!class_exists($classname)) {
@@ -252,7 +258,7 @@ abstract class EngineType extends TaskSubType implements EngineTypeInterface
             );
         }
 
-        return new $classname($name);
+        return new $classname($engine, $name);
     }
 
     /**

@@ -4,6 +4,7 @@ namespace Droath\ProjectX\Tests\Engine\DockerServices;
 
 use Droath\ProjectX\Engine\DockerService;
 use Droath\ProjectX\Engine\DockerServices\PhpService;
+use Droath\ProjectX\ProjectX;
 use Droath\ProjectX\Tests\TestBase;
 
 class PhpServiceTest extends TestBase
@@ -13,7 +14,7 @@ class PhpServiceTest extends TestBase
 
     public function setUp() {
         parent::setUp();
-        $this->service = new PhpService();
+        $this->service = new PhpService(ProjectX::getEngineType());
         $this->classname = PhpService::class;
     }
 

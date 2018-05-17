@@ -132,7 +132,7 @@ class DockerEngineTypeTest extends TestTaskBase
      */
     public function testLoadService($name)
     {
-        $service = DockerEngineType::loadService($name);
+        $service = DockerEngineType::loadService($this->dockerEngine, $name);
         $this->assertInstanceOf(ServiceInterface::class, $service);
     }
 

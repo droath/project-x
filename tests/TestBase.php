@@ -215,18 +215,10 @@ abstract class TestBase extends TestCase
                         'web' => [
                             'type' => 'apache',
                             'version' => '2.4',
-                            'links' => [
-                                'php',
-                                'database'
-                            ]
                         ],
                         'web2' => [
                             'type' => 'nginx',
-                            'version' => '1.11',
-                            'links' => [
-                                'php',
-                                'database'
-                            ]
+                            'version' => '1.11'
                         ],
                         'php' => [
                             'type' => 'php',
@@ -236,7 +228,6 @@ abstract class TestBase extends TestCase
                             'type' => 'mysql',
                             'version' => 'latest',
                             'ports' => ['3307:3307'],
-                            'links' => ['web1'],
                             'environment' => [
                                 'MYSQL_USER=admin',
                                 'MYSQL_PASSWORD=root',

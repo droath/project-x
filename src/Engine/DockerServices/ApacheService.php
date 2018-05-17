@@ -72,7 +72,7 @@ class ApacheService extends DockerServiceBase implements ServiceInterface
             'httpd-mpm.conf' => []
         ];
 
-        if ($php_service = $this->getLinkServiceNameByType('php')) {
+        if ($php_service = $this->getServiceNameByType('php')) {
             $files['httpd.conf']['overwrite'] = true;
             $files['httpd.conf']['variables']['PHP_SERVICE'] = $php_service;
         }

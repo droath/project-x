@@ -345,6 +345,11 @@ class DrupalProjectType extends PhpProjectType implements TaskSubTypeInterface, 
             ->setType('project')
             ->setPreferStable(true)
             ->setMinimumStability('dev')
+            ->setConfig([
+                'platform' => [
+                    'php' => $this->getPhpServiceName()
+                ]
+            ])
             ->addRepository('drupal', [
                 'type' => 'composer',
                 'url' =>  'https://packages.drupal.org/8'
