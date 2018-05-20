@@ -47,6 +47,13 @@ abstract class DockerServiceBase
     protected $service;
 
     /**
+     * Bind ports to host.
+     *
+     * @var bool
+     */
+    protected $bindPorts = false;
+
+    /**
      * The docker service internal flag.
      *
      * @var bool
@@ -114,6 +121,18 @@ abstract class DockerServiceBase
         return isset($this->version)
             ? $this->version
             : static::DEFAULT_VERSION;
+    }
+
+    /**
+     * Bind service ports to host.
+     *
+     * @return $this
+     */
+    public function bindPorts()
+    {
+        $this->bindPorts = true;
+
+        return $this;
     }
 
     /**
@@ -256,14 +275,17 @@ abstract class DockerServiceBase
     /**
      * Get Docker formatted service ports.
      *
+     * @param null $host
+     *
      * @return array
      *   An array of Docker service ports.
      */
-    protected function getPorts()
+    protected function getPorts($host = null)
     {
         $ports = $this->ports();
-        array_walk($ports, function (&$port) {
-            $port = "{$port}:{$port}";
+        array_walk($ports, function (&$port) use ($host) {
+            $host = isset($host) ? $host : $port;
+            $port = "{$host}:{$port}";
         });
 
         return $ports;
@@ -322,6 +344,12 @@ abstract class DockerServiceBase
                 ->setlabels([
                     'traefik.enable=false'
                 ]);
+
+            if ($this->bindPorts) {
+                $service->setPorts(
+                    $this->getPorts('0000')
+                );
+            }
         } else {
             $service->setPorts($this->getPorts());
         }

@@ -801,6 +801,9 @@ class DockerEngineType extends EngineType implements TaskSubTypeInterface
 
             if (!$dev && $has_proxy) {
                 $instance->setInternal();
+                if (isset($info['bind_ports']) && $info['bind_ports']) {
+                    $instance->bindPorts();
+                }
             }
 
             if (isset($info['version'])) {
