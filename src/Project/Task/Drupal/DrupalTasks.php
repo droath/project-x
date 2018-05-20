@@ -197,6 +197,7 @@ class DrupalTasks extends EventTaskBase
      * @option bool $silent Run drush command silently.
      * @option bool $localhost Run drush command on localhost.
      *
+     * @aliases drush
      * @return \Robo\ResultData
      * @throws \Exception
      */
