@@ -3,6 +3,7 @@
 namespace Droath\ProjectX\Project;
 
 use Droath\ProjectX\Config\ComposerConfig;
+use Droath\ProjectX\Engine\EngineType;
 use Droath\ProjectX\ProjectX;
 use Robo\Task\Composer\loadTasks as composerTasks;
 use Robo\Task\Filesystem\loadTasks as fileSystemTasks;
@@ -77,6 +78,28 @@ abstract class PhpProjectType extends ProjectType
         return array_merge([
             APP_ROOT . '/templates/php'
         ], parent::templateDirectories());
+    }
+
+    /**
+     * Get environment PHP version.
+     *
+     * @return string
+     *   The PHP version defined by the environment engine service.
+     */
+    public function getEnvPhpVersion()
+    {
+        /** @var EngineType $engine */
+        $engine = $this->getEngineInstance();
+        $instance = $engine->getServiceInstanceByType('php');
+
+        if (empty($instance)) {
+            throw new \RuntimeException(
+                'No php service has been found.'
+            );
+        }
+        $service = $instance[0];
+
+        return $service->getVersion();
     }
 
     /**

@@ -3,6 +3,9 @@
 namespace Droath\ProjectX\Tests\Engine;
 
 use Droath\ProjectX\Engine\DockerEngineType;
+use Droath\ProjectX\Engine\DockerService;
+use Droath\ProjectX\Engine\DockerServices\DockerServiceBase;
+use Droath\ProjectX\Engine\DockerServices\PhpService;
 use Droath\ProjectX\Engine\ServiceInterface;
 use Droath\ProjectX\ProjectX;
 use Droath\ProjectX\Tests\TestTaskBase;
@@ -134,6 +137,25 @@ class DockerEngineTypeTest extends TestTaskBase
     {
         $service = DockerEngineType::loadService($this->dockerEngine, $name);
         $this->assertInstanceOf(ServiceInterface::class, $service);
+    }
+
+    public function testServiceInstance()
+    {
+        $instances = $this->dockerEngine->getServiceInstances();
+        $this->assertInternalType('array', $instances);
+
+        foreach ($instances as $instance) {
+            $this->assertInstanceOf(DockerServiceBase::class, $instance['instance']);
+        }
+    }
+
+    public function testServiceInstanceByType()
+    {
+        $instance = $this
+            ->dockerEngine
+            ->getServiceInstanceByType('php');
+
+        $this->assertInstanceOf(PhpService::class, $instance[0]);
     }
 
     /**

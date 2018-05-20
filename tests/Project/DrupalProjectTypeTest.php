@@ -171,6 +171,13 @@ class DrupalProjectTypeTest extends TestTaskBase
         $this->assertArrayHasKey('drush/drush', $this->drupalProject->getComposer()->getRequireDev());
     }
 
+    public function testHasDrush()
+    {
+        $this->assertfalse($this->drupalProject->hasDrush());
+        $this->drupalProject->setupDrush();
+        $this->assertTrue($this->drupalProject->hasDrush());
+    }
+
     public function testSetupDrushLocalAlias()
     {
         $this->drupalProject->setupDrushLocalAlias();

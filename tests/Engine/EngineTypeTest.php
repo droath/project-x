@@ -45,6 +45,11 @@ class EngineTypeTest extends TestBase
         $this->assertEquals('web', $names[0]);
     }
 
+    public function testHasService()
+    {
+        $this->assertTrue($this->engineType->hasServices());
+    }
+
     public function testGetInstallPath()
     {
         $this->assertEquals('vfs://root', $this->engineType->getInstallPath());

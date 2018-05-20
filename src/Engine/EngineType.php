@@ -199,6 +199,29 @@ abstract class EngineType extends TaskSubType implements EngineTypeInterface
     }
 
     /**
+     * Get service instance by type.
+     *
+     * @param $type
+     *   The service instance type.
+     *
+     * @return array
+     */
+    public function getServiceInstanceByType($type)
+    {
+        $services = [];
+        $instances  = $this->getServiceInstances();
+
+        foreach ($this->getServiceNamesByType($type) as $name) {
+            if (!isset($instances[$name]['instance'])) {
+                continue;
+            }
+            $services[] = $instances[$name]['instance'];
+        }
+
+        return $services;
+    }
+
+    /**
      * Get service instance by interface.
      *
      * @param $interface
@@ -249,7 +272,6 @@ abstract class EngineType extends TaskSubType implements EngineTypeInterface
         $type,
         $name = null
     ) {
-    
         $classname = static::serviceClassname($type);
 
         if (!class_exists($classname)) {

@@ -1110,7 +1110,9 @@ class DockerEngineType extends EngineType implements TaskSubTypeInterface
             $docker_execute->options($options);
         }
 
-        return $docker_execute->exec($command)->run();
+        return $docker_execute
+            ->exec("sh -c \"{$command}\"")
+            ->run();
     }
 
     /**

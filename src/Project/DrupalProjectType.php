@@ -7,6 +7,7 @@ use Boedah\Robo\Task\Drush\loadTasks as drushTasks;
 use Droath\ConsoleForm\Field\BooleanField;
 use Droath\ConsoleForm\Field\TextField;
 use Droath\ConsoleForm\Form;
+use Droath\ProjectX\CommandBuilder;
 use Droath\ProjectX\Config\ComposerConfig;
 use Droath\ProjectX\Database;
 use Droath\ProjectX\DatabaseInterface;
@@ -16,7 +17,7 @@ use Droath\ProjectX\OptionFormAwareInterface;
 use Droath\ProjectX\ProjectX;
 use Droath\ProjectX\TaskSubTypeInterface;
 use Droath\ProjectX\Utility;
-use Robo\Contract\TaskInterface;
+use Robo\ResultData;
 use Symfony\Component\Finder\Finder;
 
 /**
@@ -340,6 +341,7 @@ class DrupalProjectType extends PhpProjectType implements TaskSubTypeInterface, 
     {
         $this->mergeProjectComposerTemplate();
         $install_root = substr(static::installRoot(), 1);
+        $version = $this->getProjectVersion();
 
         $this->composer
             ->setType('project')
@@ -347,12 +349,12 @@ class DrupalProjectType extends PhpProjectType implements TaskSubTypeInterface, 
             ->setMinimumStability('dev')
             ->setConfig([
                 'platform' => [
-                    'php' => $this->getPhpServiceName()
+                    'php' => "{$this->getEnvPhpVersion()}"
                 ]
             ])
             ->addRepository('drupal', [
                 'type' => 'composer',
-                'url' =>  'https://packages.drupal.org/8'
+                'url' =>  "https://packages.drupal.org/{$version}"
             ])
             ->addRequires([
                 'drupal/core' => static::DRUPAL_8_VERSION,
@@ -466,6 +468,17 @@ class DrupalProjectType extends PhpProjectType implements TaskSubTypeInterface, 
         $this->setupDrushAlias();
 
         return $this;
+    }
+
+    /**
+     * Has Drush in composer.json.
+     *
+     * @return bool
+     */
+    public function hasDrush()
+    {
+        return $this->hasComposerPackage('drush/drush')
+            || $this->hasComposerPackage('drush/drush', true);
     }
 
     /**
@@ -719,7 +732,7 @@ class DrupalProjectType extends PhpProjectType implements TaskSubTypeInterface, 
         if ($engine instanceof DockerEngineType && !$localhost) {
             $drush = $this->drushInstallCommonStack(
                 '/var/www/html/vendor/bin/drush',
-                '/var/www/html' . static::INSTALL_ROOT,
+                '/var/www/html' . static::installRoot(),
                 $database
             );
             $result = $engine->execRaw(
@@ -766,7 +779,7 @@ class DrupalProjectType extends PhpProjectType implements TaskSubTypeInterface, 
     {
         $version = $this->getProjectVersion();
 
-        if ($version === 8) {
+        if ($version >= 8) {
             $this->runDrushCommand('cex');
             $this->saveDrupalUuid();
         }
@@ -984,55 +997,48 @@ class DrupalProjectType extends PhpProjectType implements TaskSubTypeInterface, 
     }
 
     /**
-     * @param $command
-     * @param bool $quiet
-     * @param bool $localhost
+     * Run Drush command.
      *
-     * @return string
-     * @throws \Robo\Exception\TaskException
+     * @param string|CommandBuilder $command
+     *   The drush command to execute.
+     * @param bool $quiet
+     *   Silence command output.
+     * @param bool $localhost
+     *   Run command on localhost.
+     *
+     * @return ResultDatar
      */
     public function runDrushCommand($command, $quiet = false, $localhost = false)
     {
-        $stack = $this->taskDrushStack();
+        if ($command instanceof CommandBuilder) {
+            $drush = $command;
+        } else {
+            $drush = new DrushCommand();
+            foreach (explode('&&', $command) as $string) {
+                $drush->command($string);
+            }
+        }
         $engine = $this->getEngineInstance();
 
         if ($engine instanceof DockerEngineType && !$localhost) {
-            $task = $stack
-                ->executable('/var/www/html/vendor/bin/drush')
-                ->drupalRootDirectory('/var/www/html' . static::INSTALL_ROOT)
-                ->drush($command);
-
             $result = $engine->execRaw(
-                $task->getCommand(),
+                $drush->build(),
                 $this->getPhpServiceName(),
                 [],
                 $quiet
             );
         } else {
+            $command = $drush->useLocalhost()->build();
+            $execute = $this->taskExec($command);
+
             if ($quiet) {
-                $stack->printOutput(false);
+                $execute->printOutput(false);
             }
-            $result = $stack
-                ->drupalRootDirectory($this->getInstallPath())
-                ->drush($command)
-                ->run();
+            $result = $execute->run();
         }
         $this->validateTaskResult($result);
 
-        return $result->getMessage();
-    }
-
-    /**
-     * @param DrushStack $stack
-     * @param bool $quiet
-     * @param bool $localhost
-     *
-     * @return string
-     * @throws \Robo\Exception\TaskException
-     */
-    public function runDrushStackCommand(DrushStack $stack, $quiet = false, $localhost = false)
-    {
-        return $this->runDrushCommand($stack->getCommand(), $quiet, $localhost);
+        return $result;
     }
 
     /**
@@ -1214,13 +1220,15 @@ class DrupalProjectType extends PhpProjectType implements TaskSubTypeInterface, 
         $uuid = null;
         $version = $this->getProjectVersion();
 
-        if ($version === 8) {
-            $message = $this->runDrushCommand('cget system.site uuid', true);
+        if ($version >= 8) {
+            $result = $this->runDrushCommand('cget system.site uuid', true);
 
-            if (isset($message)) {
-                $uuid = trim(
-                    substr($message, strrpos($message, ':') + 1)
-                );
+            if ($result->getExitCode() === ResultData::EXITCODE_OK) {
+                $message = $result->getMessage();
+
+                if ($colon_pos = strrpos($message, ':')) {
+                    $uuid = trim(substr($message, $colon_pos + 1));
+                }
             }
         }
 

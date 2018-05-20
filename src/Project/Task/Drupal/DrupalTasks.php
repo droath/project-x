@@ -5,11 +5,13 @@ namespace Droath\ProjectX\Task\Drupal;
 use Boedah\Robo\Task\Drush\loadTasks as drushTasks;
 use Droath\ProjectX\Database;
 use Droath\ProjectX\Exception\TaskResultRuntimeException;
+use Droath\ProjectX\Project\DrushCommand;
 use Droath\ProjectX\ProjectX;
 use Droath\ProjectX\Project\DrupalProjectType;
 use Droath\ProjectX\Task\EventTaskBase;
 use Droath\ProjectX\TaskResultTrait;
 use Droath\RoboDockerCompose\Task\loadTasks as dockerComposeTasks;
+use Robo\ResultData;
 use Robo\Task\Composer\loadTasks as composerTasks;
 use Symfony\Component\Console\Question\ChoiceQuestion;
 use Symfony\Component\Console\Question\ConfirmationQuestion;
@@ -111,22 +113,30 @@ class DrupalTasks extends EventTaskBase
         if (!$opts['no-engine']) {
             $instance->projectEnvironmentUp();
         }
-        $instance->setupDrupalInstall($database, $opts['localhost']);
+        $localhost = $opts['localhost'];
+
+        $drush = new DrushCommand();
+        $instance->setupDrupalInstall($database, $localhost);
 
         $this->drupalDrushAlias();
-        $drush_stack = $this->getDrushStack();
-
-        if ($instance->getProjectVersion() === 8) {
-            $this->setDrupalUuid();
+        if ($instance->getProjectVersion() >= 8) {
+            $this->setDrupalUuid($localhost);
 
             if (!$opts['no-import']) {
                 $this->drupalImportConfig(
-                    $opts['reimport-attempts']
+                    $opts['reimport-attempts'],
+                    $localhost
                 );
             }
-            $drush_stack->drush('cr');
+            $drush->command('cr');
+        } else {
+            $drush->comamnd('cc all');
         }
-        $result = $drush_stack->run();
+        $result = $instance->runDrushCommand(
+            $drush,
+            false,
+            $localhost
+        );
         $this->validateTaskResult($result);
 
         if (!$opts['no-browser']) {
@@ -159,16 +169,17 @@ class DrupalTasks extends EventTaskBase
         $remote_alias = $this->determineDrushRemoteAlias();
 
         if (isset($local_alias) && isset($remote_alias)) {
-            $drupal = $this->getProjectInstance();
-            $version = $drupal->getProjectVersion();
-            $drush_stack = $this->getDrushStack();
+            $drush = new DrushCommand();
 
-            if ($version === 8) {
-                    $drush_stack
-                        ->drush("drush sql-sync '@$local_alias' '@$remote_alias'", true)
-                        ->drush('cr');
+            /** @var DrupalProjectType $instance */
+            $instance = $this->getProjectInstance();
+
+            if ($instance->getProjectVersion() >= 8) {
+                $drush
+                    ->command("sql-sync '@$local_alias' '@$remote_alias'", true)
+                    ->command('cr');
             }
-            $result = $drush_stack->run();
+            $result = $instance->runDrushCommand($drush);
 
             $this->validateTaskResult($result);
         }
@@ -178,49 +189,30 @@ class DrupalTasks extends EventTaskBase
     }
 
     /**
-     * Drupal drush command.
+     * Execute arbitrary drush command.
      *
-     * @param $drush_command
+     * @param null|string $drush_command
      *   The drush command to execute.
      * @param array $opts
-     * @option string $remote-root-dir The remote Drupal root directory.
-     * @option string $remote-binary-path The path to the Drush binary.
+     * @option bool $silent Run drush command silently.
+     * @option bool $localhost Run drush command on localhost.
      *
-     * @return $this
+     * @return \Robo\ResultData
      * @throws \Exception
-     * @throws \Psr\Container\ContainerExceptionInterface
-     * @throws \Psr\Container\NotFoundExceptionInterface
      */
     public function drupalDrush($drush_command = null, $opts = [
-        'remote-root-dir' => '/var/www/html',
-        'remote-binary-path' => 'vendor/bin/drush'
+        'silent' => false,
+        'localhost' => false,
     ])
     {
-        /** @var DrupalProjectType $project */
+        /** @var DrupalProjectType $instance */
         $instance = $this->getProjectInstance();
 
-        if (ProjectX::engineType() && $instance->hasDockerSupport()) {
-            $install_path = DrupalProjectType::installRoot();
-            $drupal_dir = "{$opts['remote-root-dir']}{$install_path}";
-            $drush_binary = "{$opts['remote-root-dir']}/{$opts['remote-binary-path']}";
-            $command = $this
-                ->taskDrushStack($drush_binary)
-                ->drupalRootDirectory($drupal_dir)
-                ->drush($drush_command);
-            $container = $instance->getPhpServiceName('php');
-
-            $result = $this->taskDockerComposeExecute()
-                ->setContainer($container)
-                ->exec($command)
-                ->run();
-        } else {
-            $result = $this->getDrushStack()
-                ->drush($drush_command)
-                ->run();
-        }
-        $this->validateTaskResult($result);
-
-        return $this;
+        return $instance->runDrushCommand(
+            $drush_command,
+            $opts['silent'],
+            $opts['localhost']
+        );
     }
 
     /**
@@ -229,11 +221,11 @@ class DrupalTasks extends EventTaskBase
     public function drupalLocalSync()
     {
         $this->executeCommandHook(__FUNCTION__, 'before');
-        $drupal = $this->getProjectInstance();
-        $version = $drupal->getProjectVersion();
+        /** @var DrupalProjectType $instance */
+        $instance = $this->getProjectInstance();
 
-        if ($version === 8) {
-            $drush_stack = $this->getDrushStack();
+        if ($instance->getProjectVersion() >= 8) {
+            $drush = new DrushCommand();
 
             $local_alias = $this->determineDrushLocalAlias();
             $remote_alias = $this->determineDrushRemoteAlias();
@@ -257,17 +249,18 @@ class DrupalTasks extends EventTaskBase
                     'watchdog'
                 ]);
 
-                $drush_stack->drush(
-                    "drush sql-sync --sanitize --skip-tables-key='$skip_tables' '@$remote_alias' '@$local_alias'",
+                $drush->command(
+                    "sql-sync --sanitize --skip-tables-key='$skip_tables' '@$remote_alias' '@$local_alias'",
                     true
                 );
             }
 
-            $result = $drush_stack
-                ->drush('cim')
-                ->drush('updb --entity-updates')
-                ->drush('cr')
-                ->run();
+            $drush
+                ->command('cim')
+                ->command('updb --entity-updates')
+                ->command('cr');
+
+            $result = $instance->runDrushCommand($drush);
 
             $this->validateTaskResult($result);
         }
@@ -308,6 +301,9 @@ class DrupalTasks extends EventTaskBase
     ])
     {
         $this->executeCommandHook(__FUNCTION__, 'before');
+        $localhost = $opts['localhost'];
+
+        /** @var DrupalProjectType $instance */
         $instance = $this->getProjectInstance();
         $version = $instance->getProjectVersion();
 
@@ -319,27 +315,25 @@ class DrupalTasks extends EventTaskBase
             $this->getProjectInstance()
                 ->setupDrupalInstall(
                     $this->buildDatabase($opts),
-                    $opts['localhost']
+                    $localhost
                 );
 
-            if ($version === 8) {
-                $this->setDrupalUuid();
+            if ($version >= 8) {
+                $this->setDrupalUuid($localhost);
             }
         }
-        $drush_stack = $this->getDrushStack();
+        $drush = new DrushCommand();
 
-        if ($version === 8) {
-            $this->getDrushStack()
-                ->drush('updb --entity-updates')
-                ->run();
-            $this->drupalImportConfig();
-            $drush_stack->drush('cr');
+        if ($version >= 8) {
+            $instance->runDrushCommand('updb --entity-updates');
+            $this->drupalImportConfig(1, $localhost);
+            $drush->command('cr');
         } else {
-            $drush_stack
-                ->drush('updb')
-                ->drush('cc all');
+            $drush
+                ->command('updb')
+                ->command('cc all');
         }
-        $result = $drush_stack->run();
+        $result = $instance->runDrushCommand($drush);
 
         $this->validateTaskResult($result);
         $this->executeCommandHook(__FUNCTION__, 'after');
@@ -350,14 +344,20 @@ class DrupalTasks extends EventTaskBase
     /**
      * Setup local project drush alias.
      *
+     * @param array $opts
      * @option bool $exclude-remote Don't render remote drush aliases.
+     *
+     * @return DrupalTasks
+     * @throws \Exception
      */
     public function drupalDrushAlias($opts = ['exclude-remote' => false])
     {
         $this->executeCommandHook(__FUNCTION__, 'before');
+        /** @var DrupalProjectType $instance */
+        $instance = $this->getProjectInstance();
         $project_root = ProjectX::projectRoot();
 
-        if (!file_exists("$project_root/drush")) {
+        if (!file_exists("$project_root/drush/site-aliases")) {
             $continue = $this->askConfirmQuestion(
                 "Drush hasn't been setup for this project.\n"
                 . "\nDo you want run the Drush setup?",
@@ -367,13 +367,9 @@ class DrupalTasks extends EventTaskBase
             if (!$continue) {
                 return $this;
             }
-
-            $this->getProjectInstance()
-                ->setupDrush();
+            $instance->setupDrush();
         }
-
-        $this->getProjectInstance()
-            ->setupDrushAlias($opts['exclude-remote']);
+        $instance->setupDrushAlias($opts['exclude-remote']);
         $this->executeCommandHook(__FUNCTION__, 'after');
 
         return $this;
@@ -383,6 +379,9 @@ class DrupalTasks extends EventTaskBase
      * Drupal import configurations.
      *
      * @param int $reimport_attempts
+     *   Set the amount of reimport attempts to invoke.
+     * @param bool $localhost
+     *   Determine if the drush command should be ran on the host.
      *
      * @return DrupalTasks
      * @throws \Exception
@@ -390,41 +389,47 @@ class DrupalTasks extends EventTaskBase
      * @throws \Psr\Container\NotFoundExceptionInterface
      * @throws \Robo\Exception\TaskException
      */
-    protected function drupalImportConfig($reimport_attempts = 1)
+    protected function drupalImportConfig($reimport_attempts = 1, $localhost = false)
     {
-        try {
-            $result = $this->getDrushStack()
-                ->drush('cr')
-                ->drush('cim')
-                ->run();
-            $this->validateTaskResult($result);
-        } catch (TaskResultRuntimeException $exception) {
-            if ($reimport_attempts < 1) {
-                throw $exception;
-            }
-            $errors = 0;
-            $result = null;
+        /** @var DrupalProjectType $instance */
+        $instance = $this->getProjectInstance();
 
-            // Attempt to resolve import issues by reimporting the
-            // configurations again. This workaround was added due to
-            // the following issue:
-            // @see https://www.drupal.org/project/drupal/issues/2923899
-            for ($i = 0; $i < $reimport_attempts; $i++) {
-                $result = $this->getDrushStack()
-                    ->drush('cim')
-                    ->run();
+        if ($instance->getProjectVersion() >= 8) {
+            try {
+                $drush = (new DrushCommand())
+                    ->command('cr')
+                    ->command('cim');
 
-                if ($result->getExitCode() == 0) {
-                    break;
+                $this->validateTaskResult(
+                    $instance->runDrushCommand($drush, false, $localhost)
+                );
+            } catch (TaskResultRuntimeException $exception) {
+                if ($reimport_attempts < 1) {
+                    throw $exception;
+                }
+                $errors = 0;
+                $result = null;
+
+                // Attempt to resolve import issues by reimporting the
+                // configurations again. This workaround was added due to
+                // the following issue:
+                // @see https://www.drupal.org/project/drupal/issues/2923899
+                for ($i = 0; $i < $reimport_attempts; $i++) {
+                    $result = $instance
+                        ->runDrushCommand('cim', false, $localhost);
+
+                    if ($result->getExitCode() === ResultData::EXITCODE_OK) {
+                        break;
+                    }
+
+                    ++$errors;
                 }
 
-                ++$errors;
-            }
-
-            if (!isset($result)) {
-                throw new \Exception('Missing result object.');
-            } else if ($errors == $reimport_attempts) {
-                throw new TaskResultRuntimeException($result);
+                if (!isset($result)) {
+                    throw new \Exception('Missing result object.');
+                } else if ($errors == $reimport_attempts) {
+                    throw new TaskResultRuntimeException($result);
+                }
             }
         }
 
@@ -451,39 +456,32 @@ class DrupalTasks extends EventTaskBase
     }
 
     /**
-     * Get the Drush stack instance.
-     *
-     * @return \Boedah\Robo\Task\Drush\DrushStack
-     *   The Drush stack object.
-     *
-     * @throws \Exception
-     * @throws \Psr\Container\ContainerExceptionInterface
-     * @throws \Psr\Container\NotFoundExceptionInterface
-     */
-    protected function getDrushStack()
-    {
-        $instance = $this->getProjectInstance();
-
-        return $this->taskDrushStack()
-            ->drupalRootDirectory($instance->getInstallPath());
-    }
-
-    /**
      * Set the Drupal UUID.
+     *
+     * @param bool $localhost
+     *   Determine if the drush command should be ran on the host.
+     *
+     * @return DrupalTasks
+     * @throws \Exception
      */
-    protected function setDrupalUuid()
+    protected function setDrupalUuid($localhost = false)
     {
+        /** @var DrupalProjectType $instance */
         $instance = $this->getProjectInstance();
-        $build_info = $instance->getProjectOptionByKey('build_info');
 
-        if ($build_info !== false
-            && isset($build_info['uuid'])
-            && !empty($build_info['uuid'])) {
-            $drush_stack = $this->getDrushStack();
-            $drush_stack
-                ->drush("cset system.site uuid {$build_info['uuid']}")
-                ->drush('ev \'\Drupal::entityManager()->getStorage("shortcut_set")->load("default")->delete();\'')
-                ->run();
+        if ($instance->getProjectVersion() >= 8) {
+            $build_info = $instance->getProjectOptionByKey('build_info');
+
+            if ($build_info !== false
+                && isset($build_info['uuid'])
+                && !empty($build_info['uuid'])) {
+                $drush = new DrushCommand();
+                $drush
+                    ->command("cset system.site uuid {$build_info['uuid']}")
+                    ->command('ev \'\Drupal::entityManager()->getStorage(\"shortcut_set\")->load(\"default\")->delete();\'');
+
+                $instance->runDrushCommand($drush, false, $localhost);
+            }
         }
 
         return $this;

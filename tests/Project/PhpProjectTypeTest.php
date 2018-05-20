@@ -27,6 +27,11 @@ class PhpProjectTypeTest extends TestTaskBase
             ->setContainer($this->container);
     }
 
+    public function testGetEnvPhpVersion()
+    {
+        $this->assertEquals('7.1', $this->phpProject->getEnvPhpVersion());
+    }
+
     public function testSetupTravisCi()
     {
         $this->phpProject->setupTravisCi();
