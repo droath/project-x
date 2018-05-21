@@ -54,19 +54,20 @@ trait DockerFrontendServiceTrait
     {
         if ($this->internal) {
             $links = [];
+            $name = $this->getName();
             $host = ProjectX::getProjectConfig()
                 ->getHost();
 
             if (isset($host['name'])) {
-                $links[] = "traefik.frontend.rule=Host:{$host['name']}";
+                $links[] = "traefik.{$name}.frontend.rule=Host:{$host['name']}";
             }
             $service->setNetworks([
                 'internal',
                 DockerEngineType::TRAEFIK_NETWORK
             ])->setLabels(array_merge([
-                "traefik.port={$this->ports()[0]}",
                 'traefik.enable=true',
-                "traefik.backend={$this->getName()}",
+                "traefik.{$name}.frontend.backend={$name}",
+                "traefik.{$name}.port={$this->ports()[0]}",
                 'traefik.docker.network=' . DockerEngineType::TRAEFIK_NETWORK,
             ], $links));
         } else {
