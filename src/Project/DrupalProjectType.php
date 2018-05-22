@@ -1006,7 +1006,7 @@ class DrupalProjectType extends PhpProjectType implements TaskSubTypeInterface, 
      * @param bool $localhost
      *   Run command on localhost.
      *
-     * @return ResultDatar
+     * @return ResultData
      */
     public function runDrushCommand($command, $quiet = false, $localhost = false)
     {

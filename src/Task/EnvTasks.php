@@ -185,17 +185,20 @@ class EnvTasks extends TaskBase
     /**
      * Execute an arbitrary command in the environment engine.
      *
-     * @param $execute The commend string to execute.
+     * @param array $execute_command The commend string to execute.
      * @param array $opts An array of the command options
      * @option string $service The service name on which to execute the
      * command inside the container.
      *
      * @return $this
      */
-    public function envExec($execute, $opts = ['service' => null])
+    public function envExec(array $execute_command, $opts = ['service' => null])
     {
         $this->executeCommandHook(__FUNCTION__, 'before');
-        $this->engineInstance()->exec($execute, $opts['service']);
+        $this->engineInstance()->exec(
+            implode(' ', $execute_command),
+            $opts['service']
+        );
         $this->executeCommandHook(__FUNCTION__, 'after');
 
         return $this;

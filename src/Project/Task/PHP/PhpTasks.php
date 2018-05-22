@@ -116,8 +116,9 @@ class PhpTasks extends EventTaskBase
     /**
      * Php composer command.
      *
-     * @param $composer_command
-     *   The composer command to execute.
+     * @aliases composer
+     *
+     * @param array $composer_command The composer command to execute.
      * @param array $opts
      * @option string $remote-binary-path The path to the Drush binary.
      * @option string $remote-working-dir The remote Drupal root directory.
@@ -127,7 +128,7 @@ class PhpTasks extends EventTaskBase
      * @throws \Psr\Container\ContainerExceptionInterface
      * @throws \Psr\Container\NotFoundExceptionInterface
      */
-    public function phpComposer($composer_command = null, $opts = [
+    public function phpComposer(array $composer_command, $opts = [
         'remote-binary-path' => 'composer',
         'remote-working-dir' => '/var/www/html',
     ])
@@ -136,7 +137,7 @@ class PhpTasks extends EventTaskBase
         $instance = $this->getProjectInstance();
 
         $binary = $opts['remote-binary-path'];
-        $command_str = escapeshellcmd($composer_command);
+        $command_str = escapeshellcmd(implode(' ', $composer_command));
         $working_dir = escapeshellarg($opts['remote-working-dir']);
 
         $command = $this->taskExec("{$binary} --working-dir={$working_dir} {$command_str}");

@@ -191,17 +191,17 @@ class DrupalTasks extends EventTaskBase
     /**
      * Execute arbitrary drush command.
      *
-     * @param null|string $drush_command
-     *   The drush command to execute.
+     * @aliases drush
+     *
+     * @param array $drush_command The drush command to execute.
      * @param array $opts
      * @option bool $silent Run drush command silently.
      * @option bool $localhost Run drush command on localhost.
      *
-     * @aliases drush
-     * @return \Robo\ResultData
+     * @return ResultData
      * @throws \Exception
      */
-    public function drupalDrush($drush_command = null, $opts = [
+    public function drupalDrush(array $drush_command, $opts = [
         'silent' => false,
         'localhost' => false,
     ])
@@ -210,7 +210,7 @@ class DrupalTasks extends EventTaskBase
         $instance = $this->getProjectInstance();
 
         return $instance->runDrushCommand(
-            $drush_command,
+            implode(' ', $drush_command),
             $opts['silent'],
             $opts['localhost']
         );
