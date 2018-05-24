@@ -2,7 +2,7 @@ FROM php:{DOCKER_PHP_VERSION}-fpm
 MAINTAINER Travis Tomka <underoathosx@gmail.com>
 
 # Install PHP extensions.
-RUN apt-get update && apt-get install -y libpng12-dev libjpeg-dev libwebp-dev libpq-dev libmcrypt-dev libmagickwand-dev mysql-client postgresql-client \
+RUN apt-get update && apt-get install -y libpng-dev libjpeg-dev libwebp-dev libpq-dev libmcrypt-dev libmagickwand-dev mysql-client postgresql-client \
   && rm -rf /var/lib/apt/lists/* \
   && pecl install redis \
   && pecl install xdebug{PHP_XDEBUG_VERSION} \
