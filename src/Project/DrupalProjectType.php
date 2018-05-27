@@ -773,7 +773,6 @@ class DrupalProjectType extends PhpProjectType implements TaskSubTypeInterface, 
      * Export Drupal configuration.
      *
      * @return self
-     * @throws \Robo\Exception\TaskException
      */
     public function exportDrupalConfig()
     {
@@ -785,26 +784,6 @@ class DrupalProjectType extends PhpProjectType implements TaskSubTypeInterface, 
         }
 
         return $this;
-    }
-
-    /**
-     * Get Project-X configuration project option by key.
-     *
-     * @param string $key
-     *   The unique key for the option.
-     *
-     * @return mixed|bool
-     *   The set value for the given project option key; otherwise FALSE.
-     */
-    public function getProjectOptionByKey($key)
-    {
-        $options = $this->getProjectOptions();
-
-        if (!isset($options[$key])) {
-            return false;
-        }
-
-        return $options[$key];
     }
 
     /**
@@ -1173,47 +1152,12 @@ class DrupalProjectType extends PhpProjectType implements TaskSubTypeInterface, 
         return false;
     }
 
-    /**
-     * Get Project-X configuration project options.
-     *
-     * @return array
-     *   An array of project options defined in the Project-X configuration.
-     */
-    protected function getProjectOptions()
-    {
-        $type_id = $this->getTypeId();
-        $options = ProjectX::getProjectConfig()
-            ->getOptions();
-
-        return isset($options[$type_id])
-            ? $options[$type_id]
-            : [];
-    }
-
-    /**
-     * Get Project-X configuration engine options.
-     *
-     * @return array
-     *   An array of engine options defined in the project-x configuration.
-     */
-    protected function getEngineOptions()
-    {
-        $config = ProjectX::getProjectConfig();
-
-        $engine = $config->getEngine();
-        $options = $config->getOptions();
-
-        return isset($options[$engine])
-            ? $options[$engine]
-            : [];
-    }
 
     /**
      * Get Drupal UUID.
      *
      * @return string
      *   The Drupal UUID.
-     * @throws \Robo\Exception\TaskException
      */
     protected function getDrupalUuid()
     {
@@ -1239,7 +1183,6 @@ class DrupalProjectType extends PhpProjectType implements TaskSubTypeInterface, 
      * Save Drupal UUID in Project-X configuration.
      *
      * @return self
-     * @throws \Robo\Exception\TaskException
      */
     protected function saveDrupalUuid()
     {

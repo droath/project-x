@@ -241,6 +241,26 @@ abstract class ProjectType extends TaskSubType implements ProjectTypeInterface
     }
 
     /**
+     * Get project option by key.
+     *
+     * @param string $key
+     *   The unique key for the option.
+     *
+     * @return mixed|bool
+     *   The set value for the given project option key; otherwise FALSE.
+     */
+    public function getProjectOptionByKey($key)
+    {
+        $options = $this->getProjectOptions();
+
+        if (!isset($options[$key])) {
+            return false;
+        }
+
+        return $options[$key];
+    }
+
+    /**
      * Get project engine service names by type.
      *
      * @param $type
@@ -378,6 +398,42 @@ abstract class ProjectType extends TaskSubType implements ProjectTypeInterface
             ->getHost();
 
         return isset($host['name']) ? $host['name'] : 'localhost';
+    }
+
+    /**
+     * Get project options.
+     *
+     * @return array
+     *   An array of project options defined in the Project-X configuration.
+     */
+    protected function getProjectOptions()
+    {
+        $config = ProjectX::getProjectConfig();
+
+        $type = $config->getType();
+        $options = $config->getOptions();
+
+        return isset($options[$type])
+            ? $options[$type]
+            : [];
+    }
+
+    /**
+     * Get environment engine options.
+     *
+     * @return array
+     *   An array of engine options defined in the project-x configuration.
+     */
+    protected function getEngineOptions()
+    {
+        $config = ProjectX::getProjectConfig();
+
+        $engine = $config->getEngine();
+        $options = $config->getOptions();
+
+        return isset($options[$engine])
+            ? $options[$engine]
+            : [];
     }
 
     /**

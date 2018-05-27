@@ -287,15 +287,7 @@ class DrupalProjectTypeTest extends TestTaskBase
         $this->assertRegExp('/\'driver\'\s?=>\s?\'pgsql\'\,/', $local_content);
         $this->assertRegExp('/\'namespace\'\s?=>\s?\'.+pgsql\'\,/', $local_content);
     }
-
-    public function testGetProjectOptionByKey()
-    {
-        $site = $this->drupalProject->getProjectOptionByKey('site');
-        $this->assertEquals('Drupal-X Site', $site['name']);
-        $this->assertEquals('standard', $site['profile']);
-        $this->assertFalse($this->drupalProject->getProjectOptionByKey('nothing'));
-    }
-
+    
     public function testGetDatabaseInfo()
     {
         $this->assertEquals(new \ArrayObject([

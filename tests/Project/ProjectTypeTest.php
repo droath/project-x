@@ -12,6 +12,9 @@ use org\bovigo\vfs\vfsStream;
  */
 class ProjectTypeTest extends TestTaskBase
 {
+
+    protected $projectType;
+
     /**
      * {@inheritdoc}
      */
@@ -19,7 +22,8 @@ class ProjectTypeTest extends TestTaskBase
     {
         parent::setUp();
 
-        $this->projectType = $this->getMockForAbstractClass('\Droath\ProjectX\Project\ProjectType');
+        $this->projectType = $this
+            ->getMockForAbstractClass('\Droath\ProjectX\Project\ProjectType');
 
         $this->projectType
             ->setBuilder($this->builder)
@@ -73,4 +77,11 @@ class ProjectTypeTest extends TestTaskBase
         $this->assertProjectFilePermission('0775', 'www');
     }
 
+    public function testGetProjectOptionByKey()
+    {
+        $site = $this->projectType->getProjectOptionByKey('site');
+        $this->assertEquals('Drupal-X Site', $site['name']);
+        $this->assertEquals('standard', $site['profile']);
+        $this->assertFalse($this->projectType->getProjectOptionByKey('nothing'));
+    }
 }
