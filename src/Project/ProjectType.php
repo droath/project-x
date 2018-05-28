@@ -4,6 +4,7 @@ namespace Droath\ProjectX\Project;
 
 use Droath\ProjectX\ProjectX;
 use Droath\ProjectX\TaskSubType;
+use Symfony\Component\Console\Question\ChoiceQuestion;
 
 /**
  * Define Project-X project type.
@@ -99,9 +100,34 @@ abstract class ProjectType extends TaskSubType implements ProjectTypeInterface
     /**
      * {@inheritdoc}
      */
-    public function build()
+    public function setup()
     {
-        $this->say('The project build process has begun. 🤘');
+        $this->say('The project setup process has begun. 🤘');
+        $this->io()->newLine();
+
+        $default = !$this->isBuilt() ? 'new' : 'existing';
+        $choice = $this->doAsk(new ChoiceQuestion("What's the state of the project? [{$default}]:", [
+            'new' => 'New',
+            'existing' => 'Existing',
+        ], $default));
+
+        $this->io()->newLine();
+
+        if ($choice === 'new') {
+            $this
+                ->installEnvEngine()
+                ->buildNewProject();
+        } else {
+            $engine = $this->getEngineInstance();
+
+            if (!$engine->isEngineInstalled()) {
+                $this->installEnvEngine();
+            }
+
+            $this->buildExistingProject();
+        }
+
+        return $this;
     }
 
     /**
@@ -109,8 +135,8 @@ abstract class ProjectType extends TaskSubType implements ProjectTypeInterface
      */
     public function install()
     {
-        $this->say('The project environment install process has begun. 🤘');
-        $this->projectEnvironmentInstall();
+        $this->say('The project install process has begun. 🤘');
+        $this->io()->newLine();
     }
 
     /**
@@ -167,14 +193,13 @@ abstract class ProjectType extends TaskSubType implements ProjectTypeInterface
     }
 
     /**
-     * Run the engine install command.
+     * Install environment engine.
      *
      * @return self
      */
-    public function projectEnvironmentInstall()
+    public function installEnvEngine()
     {
-        $this->taskSymfonyCommand($this->getAppCommand('env:install'))
-            ->run();
+        $this->getEngineInstance()->install();
 
         return $this;
     }
@@ -225,8 +250,7 @@ abstract class ProjectType extends TaskSubType implements ProjectTypeInterface
      */
     public function isBuilt()
     {
-        return is_dir($this->getInstallPath())
-            && (new \FilesystemIterator($this->getInstallPath()))->valid();
+        return $this->isDirEmpty($this->getInstallPath());
     }
 
     /**
@@ -363,6 +387,21 @@ abstract class ProjectType extends TaskSubType implements ProjectTypeInterface
     }
 
     /**
+     * Determine if directory is empty.
+     *
+     * @param $directory
+     *   The path to directory.
+     *
+     * @return bool
+     */
+    protected function isDirEmpty($directory)
+    {
+        return is_dir($directory)
+            && file_exists($directory)
+            && (new \FilesystemIterator($directory))->valid();
+    }
+
+    /**
      * Get application command.
      *
      * @param string $name
@@ -446,6 +485,26 @@ abstract class ProjectType extends TaskSubType implements ProjectTypeInterface
         $this->taskDeleteDir($this->getInstallPath())->run();
 
         return $this;
+    }
+
+    /**
+     * Project build new project.
+     */
+    protected function buildNewProject()
+    {
+        throw new \Exception(
+            "Project type doesn't currently support building new projects."
+        );
+    }
+
+    /**
+     * Project build existing project.
+     */
+    protected function buildExistingProject()
+    {
+        throw new \Exception(
+            "Project type doesn't currently support building existing projects."
+        );
     }
 
     /**

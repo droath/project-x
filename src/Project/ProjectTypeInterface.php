@@ -8,9 +8,9 @@ namespace Droath\ProjectX\Project;
 interface ProjectTypeInterface
 {
     /**
-     * Specify project build process.
+     * Specify project setup process.
      */
-    public function build();
+    public function setup();
 
     /**
      * Specify project install process.

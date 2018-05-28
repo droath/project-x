@@ -12,12 +12,14 @@ use Droath\ProjectX\Config\ComposerConfig;
 use Droath\ProjectX\Database;
 use Droath\ProjectX\DatabaseInterface;
 use Droath\ProjectX\Engine\DockerEngineType;
-use Droath\ProjectX\Engine\ServiceDbInterface;
+use Droath\ProjectX\Exception\TaskResultRuntimeException;
 use Droath\ProjectX\OptionFormAwareInterface;
+use Droath\ProjectX\Project\Command\DrushCommand;
 use Droath\ProjectX\ProjectX;
 use Droath\ProjectX\TaskSubTypeInterface;
 use Droath\ProjectX\Utility;
 use Robo\ResultData;
+use Symfony\Component\Console\Question\ChoiceQuestion;
 use Symfony\Component\Finder\Finder;
 
 /**
@@ -38,13 +40,6 @@ class DrupalProjectType extends PhpProjectType implements TaskSubTypeInterface, 
     const DEFAULT_PHP5 = 5.6;
     const DEFAULT_MYSQL = '5.6';
     const DEFAULT_APACHE = '2.4';
-
-    /**
-     * Database constants.
-     */
-    const DATABASE_HOST = 'localhost';
-    const DATABASE_PORT = 3306;
-    const DATABASE_PROTOCOL = 'mysql';
 
     /**
      * Project supported versions.
@@ -158,28 +153,75 @@ class DrupalProjectType extends PhpProjectType implements TaskSubTypeInterface, 
         ], parent::templateDirectories());
     }
 
+
+
     /**
-     * {@inheritdoc}.
+     * Export Drupal configuration.
+     *
+     * @return self
      */
-    public function build()
+    public function exportDrupalConfig()
     {
-        $status = $this->canBuild();
+        $version = $this->getProjectVersion();
 
-        if ($status === static::BUILD_ABORT) {
-            $this->say('Project build process has been aborted! ⛈️');
-
-            return;
+        if ($version >= 8) {
+            $this->runDrushCommand('cex');
+            $this->saveDrupalUuid();
         }
 
-        // Remove install directory if build is dirty.
-        if ($status === static::BUILD_DIRTY) {
-            $this->deleteInstallDirectory();
-        }
-        parent::build();
+        return $this;
+    }
 
-        $this
-            ->buildSteps()
-            ->postBuildSteps();
+    /**
+     * Drupal import configurations.
+     *
+     * @param int $reimport_attempts
+     *   Set the amount of reimport attempts to invoke.
+     * @param bool $localhost
+     *   Determine if the drush command should be ran on the host.
+     *
+     * @return $this
+     * @throws \Exception
+     * @throws \Psr\Container\ContainerExceptionInterface
+     * @throws \Psr\Container\NotFoundExceptionInterface
+     */
+    public function importDrupalConfig($reimport_attempts = 1, $localhost = false)
+    {
+        if ($this->getProjectVersion() >= 8) {
+            try {
+                $drush = (new DrushCommand())
+                    ->command('cr')
+                    ->command('cim');
+
+                $this->runDrushCommand($drush, false, $localhost);
+            } catch (TaskResultRuntimeException $exception) {
+                if ($reimport_attempts < 1) {
+                    throw $exception;
+                }
+                $errors = 0;
+                $result = null;
+
+                // Attempt to resolve import issues by reimporting the
+                // configurations again. This workaround was added due to
+                // the following issue:
+                // @see https://www.drupal.org/project/drupal/issues/2923899
+                for ($i = 0; $i < $reimport_attempts; $i++) {
+                    $result = $this->runDrushCommand('cim', false, $localhost);
+
+                    if ($result->getExitCode() === ResultData::EXITCODE_OK) {
+                        break;
+                    }
+
+                    ++$errors;
+                }
+
+                if (!isset($result)) {
+                    throw new \Exception('Missing result object.');
+                } else if ($errors == $reimport_attempts) {
+                    throw new TaskResultRuntimeException($result);
+                }
+            }
+        }
 
         return $this;
     }
@@ -446,9 +488,12 @@ class DrupalProjectType extends PhpProjectType implements TaskSubTypeInterface, 
      *   - Copy the template drush directory into the project root.
      *   - Add drush/drush to the composer.json.
      *
+     * @param bool $exclude_remote
+     *   Exclude the remote drush aliases from being generated.
+     *
      * @return self
      */
-    public function setupDrush()
+    public function setupDrush($exclude_remote = false)
     {
         $project_root = ProjectX::projectRoot();
 
@@ -462,10 +507,12 @@ class DrupalProjectType extends PhpProjectType implements TaskSubTypeInterface, 
             ->place('PROJECT_ROOT', $this->getInstallRoot(true))
             ->run();
 
-        $this->composer
-            ->addDevRequire('drush/drush', static::DRUSH_VERSION);
+        if (!$this->hasDrush()) {
+            $this->composer
+                ->addDevRequire('drush/drush', static::DRUSH_VERSION);
+        }
 
-        $this->setupDrushAlias();
+        $this->setupDrushAlias($exclude_remote);
 
         return $this;
     }
@@ -482,16 +529,46 @@ class DrupalProjectType extends PhpProjectType implements TaskSubTypeInterface, 
     }
 
     /**
+     * Determine if drupal has configurations.
+     *
+     * @return bool
+     */
+    public function hasDrupalConfig()
+    {
+        $project_root = ProjectX::projectRoot();
+
+        return $this->isDirEmpty("{$project_root}/config");
+    }
+
+    /**
      * Setup Drush aliases.
+     *
+     * @param bool $exclude_remote
+     *   Exclude the remote drush aliases from being generated.
      *
      * @return self
      */
     public function setupDrushAlias($exclude_remote = false)
     {
-        $this->setupDrushLocalAlias();
+        $project_root = ProjectX::projectRoot();
 
-        if (!$exclude_remote) {
-            $this->setupDrushRemoteAliases();
+        if (!file_exists("$project_root/drush/site-aliases")) {
+            $continue = $this->askConfirmQuestion(
+                "Drush aliases haven't been setup for this project.\n"
+                . "\nDo you want run the Drush setup?",
+                true
+            );
+
+            if (!$continue) {
+                return $this;
+            }
+            $this->setupDrush($exclude_remote);
+        } else {
+            $this->setupDrushLocalAlias();
+
+            if (!$exclude_remote) {
+                $this->setupDrushRemoteAliases();
+            }
         }
 
         return $this;
@@ -599,7 +676,7 @@ class DrupalProjectType extends PhpProjectType implements TaskSubTypeInterface, 
             ->mkdir("{$this->sitesPath}/default/files", 0775, true)
             ->run();
 
-        if ($this->getProjectVersion() === 8) {
+        if ($this->getProjectVersion() >= 8) {
             $install_path = $this->getInstallPath();
 
             $this->taskFilesystemStack()
@@ -633,28 +710,48 @@ class DrupalProjectType extends PhpProjectType implements TaskSubTypeInterface, 
         );
         $project_root = ProjectX::projectRoot();
 
-        $this->taskWriteToFile("{$project_root}/salt.txt")
-            ->line(Utility::randomHash())
-            ->run();
+        if ($this->getProjectVersion() >= 8) {
+            $this->taskWriteToFile("{$project_root}/salt.txt")
+                ->line(Utility::randomHash())
+                ->run();
 
-        $this->taskFilesystemStack()
-            ->mkdir("{$project_root}/config", 0775)
-            ->chmod("{$project_root}/salt.txt", 0775)
-            ->run();
+            $this->taskFilesystemStack()
+                ->mkdir("{$project_root}/config", 0775)
+                ->chmod("{$project_root}/salt.txt", 0775)
+                ->run();
 
+            $this->taskWriteToFile($this->settingFile)
+                ->append()
+                ->regexReplace(
+                    '/\#\sif.+\/settings\.local\.php.+\n#.+\n\#\s}/',
+                    $this->drupalSettingsLocalInclude()
+                )
+                ->replace(
+                    '$config_directories = array();',
+                    '$config_directories[CONFIG_SYNC_DIRECTORY] = dirname(DRUPAL_ROOT) . \'/config\';'
+                )
+                ->replace(
+                    '$settings[\'hash_salt\'] = \'\';',
+                    '$settings[\'hash_salt\'] = file_get_contents(dirname(DRUPAL_ROOT) . \'/salt.txt\');'
+                )
+                ->run();
+        }
+
+        return $this;
+    }
+
+    /**
+     * Setup Drupal settings local include.
+     *
+     * @return $this
+     */
+    protected function setupDrupalSettingsLocalInclude()
+    {
         $this->taskWriteToFile($this->settingFile)
             ->append()
-            ->regexReplace(
-                '/\#\sif.+\/settings\.local\.php.+\n#.+\n\#\s}/',
-                $this->uncommentedIfSettingsLocal()
-            )
-            ->replace(
-                '$config_directories = array();',
-                '$config_directories[CONFIG_SYNC_DIRECTORY] = dirname(DRUPAL_ROOT) . \'/config\';'
-            )
-            ->replace(
-                '$settings[\'hash_salt\'] = \'\';',
-                '$settings[\'hash_salt\'] = file_get_contents(dirname(DRUPAL_ROOT) . \'/salt.txt\');'
+            ->appendUnlessMatches(
+                '/if.+\/settings\.local\.php.+{\n.+\n\}/',
+                $this->drupalSettingsLocalInclude()
             )
             ->run();
 
@@ -668,25 +765,36 @@ class DrupalProjectType extends PhpProjectType implements TaskSubTypeInterface, 
      *   - Copy over example.settings.local.php.
      *   - Appends database connection details.
      *
-     * @param DatabaseInterface|null $database
-     *   The database object.
-     *
      * @return self
      * @throws \Psr\Container\ContainerExceptionInterface
      * @throws \Psr\Container\NotFoundExceptionInterface
+     * @throws \Exception
      */
-    public function setupDrupalLocalSettings(DatabaseInterface $database = null)
+    public function setupDrupalLocalSettings()
     {
+        $version = $this->getProjectVersion();
+
         $local_settings = $this
             ->templateManager()
-            ->loadTemplate('settings.local.txt');
+            ->loadTemplate("{$version}/settings.local.txt");
 
         $this->_remove($this->settingLocalFile);
-        $this->_copy("{$this->sitesPath}/example.settings.local.php", $this->settingLocalFile);
 
-        $database = is_null($database)
-            ? $this->getDatabaseInfo()
-            : $this->getDatabaseInfoWithOverrides($database);
+        if ($version >= 8) {
+            $setting_path = "{$this->sitesPath}/example.settings.local.php";
+            if (file_exists($setting_path)) {
+                $this->_copy($setting_path, $this->settingLocalFile);
+            } else {
+                $this->taskWriteToFile($this->settingLocalFile)
+                    ->text("<?php\r\n")
+                    ->run();
+            }
+        } else {
+            $this->taskWriteToFile($this->settingLocalFile)
+                ->text("<?php\r\n")
+                ->run();
+        }
+        $database = $this->getDatabaseInfo();
 
         $this->taskWriteToFile($this->settingLocalFile)
             ->append()
@@ -767,86 +875,6 @@ class DrupalProjectType extends PhpProjectType implements TaskSubTypeInterface, 
         $this->_chmod($install_path, 0775, 0000, true);
 
         return $this;
-    }
-
-    /**
-     * Export Drupal configuration.
-     *
-     * @return self
-     */
-    public function exportDrupalConfig()
-    {
-        $version = $this->getProjectVersion();
-
-        if ($version >= 8) {
-            $this->runDrushCommand('cex');
-            $this->saveDrupalUuid();
-        }
-
-        return $this;
-    }
-
-    /**
-     * Get database information based on services.
-     *
-     * @return DatabaseInterface
-     * @throws \Psr\Container\ContainerExceptionInterface
-     * @throws \Psr\Container\NotFoundExceptionInterface
-     */
-    public function getDatabaseInfo()
-    {
-        $instance = $this->getEngineInstance()
-            ->getServiceInstanceByInterface(ServiceDbInterface::class);
-
-        if ($instance !== false) {
-            $port = current($instance->getHostPorts());
-
-            return (new Database($this->databaseInfoMapping()))
-                ->setPort($port)
-                ->setUser($instance->username())
-                ->setPassword($instance->password())
-                ->setProtocol($instance->protocol())
-                ->setHostname($instance->getName())
-                ->setDatabase($instance->database());
-        }
-
-        return (new Database($this->databaseInfoMapping()))
-            ->setPort(static::DATABASE_PORT)
-            ->setProtocol(static::DATABASE_PROTOCOL)
-            ->setHostname(static::DATABASE_HOST);
-    }
-
-    /**
-     * Get database info with overrides.
-     *
-     * @param DatabaseInterface $database
-     *   A database object that contains properties to override.
-     *
-     * @return DatabaseInterface
-     * @throws \Psr\Container\ContainerExceptionInterface
-     * @throws \Psr\Container\NotFoundExceptionInterface
-     */
-    public function getDatabaseInfoWithOverrides(DatabaseInterface $database)
-    {
-        $default_database = $this->getDatabaseInfo();
-
-        // Set the override database value for given properties.
-        foreach (get_object_vars($database) as $property => $value) {
-            if (empty($value)) {
-                continue;
-            }
-            $method = 'set' . ucwords($property);
-
-            if (!method_exists($default_database, $method)) {
-                continue;
-            }
-            $default_database = call_user_func_array(
-                [$default_database, $method],
-                [$value]
-            );
-        }
-
-        return $default_database;
     }
 
     /**
@@ -1102,10 +1130,158 @@ class DrupalProjectType extends PhpProjectType implements TaskSubTypeInterface, 
     }
 
     /**
-     * Database info mapping keys.
+     * {@inheritdoc}.
+     */
+    protected function buildNewProject()
+    {
+        $status = $this->canBuild();
+
+        if ($status === static::BUILD_ABORT) {
+            $this->say('Project build process has been aborted! ⛈️');
+
+            return;
+        }
+
+        if ($status === static::BUILD_DIRTY) {
+            $this->deleteInstallDirectory();
+        }
+
+        $this
+            ->buildSteps()
+            ->postBuildSteps();
+
+        return $this;
+    }
+
+    /**
+     * Drupal build existing project.
      *
-     * @return array
-     *   An array of database key mapping.
+     * The following setup steps are conducted:
+     *   - Install composer packages.
+     *   - Setup Drupal filesystem.
+     *   - Setup Drupal 7/8 local settings.
+     *   - Setup Drupal drush aliases.
+     *   - Launch local version of project in browser.
+     *
+     * @param bool $engine
+     *   Determine if environment engine is needed.
+     * @param bool $launch_browser
+     *   Launch browser to the project local domain.
+     * @param null $method
+     *   Set the method on which to restore the project datastore.
+     * @param array $database_overrides
+     *   The database overrides, only used when restoring using configs.
+     * @param bool $localhost
+     *   Run the commands using localhost.
+     *
+     * @return $this|void
+     * @throws \Robo\Exception\TaskException
+     */
+    protected function buildExistingProject(
+        $engine = true,
+        $launch_browser = true,
+        $method = null,
+        $database_overrides = [],
+        $localhost = false
+    ) {
+    
+        $this
+            ->installComposer()
+            ->setupDrupalFilesystem()
+            ->setupDrupalSettingsLocalInclude()
+            ->setupDrupalLocalSettings()
+            ->setupDrushAlias();
+
+        if ($engine) {
+            $this->projectEnvironmentUp();
+        }
+        $this->setupDrupalDatastore($method, $database_overrides, $localhost);
+
+        if ($launch_browser) {
+            $this->projectLaunchBrowser();
+        }
+
+        return $this;
+    }
+
+    /**
+     * Clear/rebuild Drupal cache.
+     *
+     * @param bool $localhost
+     *
+     * @return ResultData
+     */
+    protected function clearDrupalCache($localhost = false)
+    {
+        $drush = new DrushCommand();
+
+        if ($this->getProjectVersion() >= 8) {
+            $drush->command('cr');
+        } else {
+            $drush->command('cc all');
+        }
+
+        return $this->runDrushCommand($drush, false, $localhost);
+    }
+
+    /**
+     * Setup Drupal persistent datastore.
+     *
+     * @param null $method
+     *   The method on which to restore data.
+     * @param array $database_overrides
+     *   The database overrides, only used when restoring using configs.
+     * @param bool $localhost
+     *   Run commands using the localhost.
+     *
+     * @return $this
+     * @throws \Robo\Exception\TaskException
+     */
+    protected function setupDrupalDatastore(
+        $method = null,
+        $database_overrides = [],
+        $localhost = false
+    ) {
+        /** @var EngineType $engine */
+        $engine = $this->getEngineInstance();
+
+        if ($engine instanceof DockerEngineType) {
+            if ($this->getProjectVersion() >= 8 && $this->hasDrupalConfig()) {
+                $options = ['site-config', 'database-import'];
+
+                if (!isset($method) || !in_array($method, $options)) {
+                    $method = $this->doAsk(new ChoiceQuestion(
+                        'Setup the project using? ',
+                        $options
+                    ));
+                }
+
+                if ($method === 'site-config') {
+                    $database = Database::createFromArray($database_overrides);
+                    $this
+                        ->setupDrupalInstall($database, $localhost)
+                        ->setDrupalUuid($localhost)
+                        ->importDrupalConfig(1, $localhost);
+                } else {
+                    $this->importDatabaseToService(null, null, $localhost);
+                }
+            } else {
+                $this->importDatabaseToService(null, null, $localhost);
+            }
+            $this->clearDrupalCache($localhost);
+        } else {
+            $classname = get_class($engine);
+
+            throw new \RuntimeException(
+                sprintf("The engine type %s isn't supported", $classname::getLabel())
+            );
+        }
+
+        return $this;
+    }
+
+    /**
+     * {@inheritdoc}
      */
     protected function databaseInfoMapping()
     {
@@ -1136,8 +1312,7 @@ class DrupalProjectType extends PhpProjectType implements TaskSubTypeInterface, 
             $match_status = preg_match_all("/\'(database|username|password|host|port|driver)\'\s=>\s\'(.+)\'\,?/", $settings, $matches);
 
             if ($match_status !== false) {
-                $database = $this
-                    ->getDatabaseInfo($this->databaseInfoMapping());
+                $database = $this->getDatabaseInfo();
                 $database_file = array_combine($matches[1], $matches[2]);
 
                 foreach ($database->asArray() as $property => $value) {
@@ -1151,7 +1326,6 @@ class DrupalProjectType extends PhpProjectType implements TaskSubTypeInterface, 
 
         return false;
     }
-
 
     /**
      * Get Drupal UUID.
@@ -1180,9 +1354,38 @@ class DrupalProjectType extends PhpProjectType implements TaskSubTypeInterface, 
     }
 
     /**
-     * Save Drupal UUID in Project-X configuration.
+     * Set Drupal UUID.
      *
-     * @return self
+     * @param bool $localhost
+     *   Determine if the drush command should be ran on the host.
+     *
+     * @return $this
+     * @throws \Exception
+     */
+    protected function setDrupalUuid($localhost = false)
+    {
+        if ($this->getProjectVersion() >= 8) {
+            $build_info = $this->getProjectOptionByKey('build_info');
+
+            if ($build_info !== false
+                && isset($build_info['uuid'])
+                && !empty($build_info['uuid'])) {
+                $drush = new DrushCommand();
+                $drush
+                    ->command("cset system.site uuid {$build_info['uuid']}")
+                    ->command('ev \'\Drupal::entityManager()->getStorage(\"shortcut_set\")->load(\"default\")->delete();\'');
+
+                $this->runDrushCommand($drush, false, $localhost);
+            }
+        }
+
+        return $this;
+    }
+
+    /**
+     * Save Drupal UUID to configuration.
+     *
+     * @return $this
      */
     protected function saveDrupalUuid()
     {
@@ -1344,15 +1547,20 @@ class DrupalProjectType extends PhpProjectType implements TaskSubTypeInterface, 
     }
 
     /**
-     * The uncommented if statement for settings local.
+     * Set Drupal settings local include.
      *
      * @return string
-     *   The php statement code output.
+     *   The php include statement.
      */
-    protected function uncommentedIfSettingsLocal()
+    protected function drupalSettingsLocalInclude()
     {
-        $string = 'if (file_exists("{$app_root}/{$site_path}/settings.local.php"))' . " {\n  ";
-        $string .= 'include "{$app_root}/{$site_path}/settings.local.php";' . "\n}";
+        if ($this->getProjectVersion() >= 8) {
+            $string = 'if (file_exists("{$app_root}/{$site_path}/settings.local.php"))' . " {\n  ";
+            $string .= 'include "{$app_root}/{$site_path}/settings.local.php";' . "\n}";
+        } else {
+            $string = 'if (file_exists(dirname(__FILE__) . "/settings.local.php"))' . " {\n  ";
+            $string .= 'include dirname(__FILE__) . "/settings.local.php";' . "\n}";
+        }
 
         return $string;
     }

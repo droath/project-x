@@ -2,11 +2,21 @@
 
 namespace Droath\ProjectX\Project;
 
+use Droath\ProjectX\CommandBuilder;
 use Droath\ProjectX\Config\ComposerConfig;
+use Droath\ProjectX\Database;
+use Droath\ProjectX\DatabaseInterface;
+use Droath\ProjectX\Engine\DockerEngineType;
 use Droath\ProjectX\Engine\EngineType;
+use Droath\ProjectX\Engine\ServiceDbInterface;
+use Droath\ProjectX\Project\Command\MysqlCommand;
+use Droath\ProjectX\Project\Command\PgsqlCommand;
 use Droath\ProjectX\ProjectX;
+use Robo\ResultData;
 use Robo\Task\Composer\loadTasks as composerTasks;
 use Robo\Task\Filesystem\loadTasks as fileSystemTasks;
+use Symfony\Component\Console\Question\ChoiceQuestion;
+use Symfony\Component\Console\Question\Question;
 
 /**
  * Define PHP project type.
@@ -16,6 +26,9 @@ abstract class PhpProjectType extends ProjectType
     use composerTasks;
     use fileSystemTasks;
 
+    /**
+     * Package versions.
+     */
     const PHPCS_VERSION = '2.*';
     const BEHAT_VERSION = '^3.1';
     const PHPUNIT_VERSION = '>=4.8.28 <5';
@@ -78,6 +91,117 @@ abstract class PhpProjectType extends ProjectType
         return array_merge([
             APP_ROOT . '/templates/php'
         ], parent::templateDirectories());
+    }
+
+    /**
+     * Import database dump into a service.
+     *
+     * @param null $service
+     *   The database service name to use.
+     * @param null $import_path
+     *   The path to the database file.
+     * @param bool $localhost
+     *   Flag to determine if the command should be ran from localhost.
+     *
+     * @return $this
+     * @throws \Exception
+     */
+    public function importDatabaseToService($service = null, $import_path = null, $localhost = false)
+    {
+        /** @var EngineType $engine */
+        $engine = $this->getEngineInstance();
+        /** @var ServiceDbInterface $instance */
+        $instance = $this->resolveDatabaseServiceInstance($service);
+
+        if ($engine instanceof DockerEngineType) {
+            $import = $this->resolveDatabaseImportCommand($instance);
+            $import_path = $this->resolveDatabaseImportPath($import_path);
+
+            if (!$localhost) {
+                $service_name = $instance->getName();
+                $status = $engine
+                    ->copyFileToService($import_path, '/tmp', $service_name);
+
+                if ($status->getExitCode() === ResultData::EXITCODE_OK) {
+                    $filename = basename($import_path);
+                    $command = $import->command("< /tmp/{$filename}");
+
+                    $engine->execRaw(
+                        $command->build(),
+                        $service_name
+                    );
+                }
+            } else {
+                $command = $import->command("< {$import_path}");
+                $this->_exec($command->build());
+            }
+        } else {
+            throw new \Exception(
+                "Environment engine doesn't support database import."
+            );
+        }
+
+        return $this;
+    }
+
+    /**
+     * Get database information based on services.
+     *
+     * @param ServiceDbInterface|null $instance
+     *
+     * @return DatabaseInterface
+     * @throws \RuntimeException
+     */
+    public function getDatabaseInfo(ServiceDbInterface $instance = null)
+    {
+        if (!isset($instance)) {
+            /** @var EngineType $engine */
+            $engine = $this->getEngineInstance();
+            $instance = $engine->getServiceInstanceByInterface(
+                ServiceDbInterface::class
+            );
+
+            if ($instance === false) {
+                throw new \RuntimeException(
+                    'Unable to find a service for the database instance.'
+                );
+            }
+        }
+
+        return $this->getServiceInstanceDatabase($instance);
+    }
+
+    /**
+     * Get database info with overrides.
+     *
+     * @param DatabaseInterface $database
+     *   A database object that contains properties to override.
+     *
+     * @return DatabaseInterface
+     * @throws \Psr\Container\ContainerExceptionInterface
+     * @throws \Psr\Container\NotFoundExceptionInterface
+     */
+    public function getDatabaseInfoWithOverrides(DatabaseInterface $database)
+    {
+        $default_database = $this->getDatabaseInfo();
+
+        // Set the override database value for given properties.
+        foreach (get_object_vars($database) as $property => $value) {
+            if (empty($value)) {
+                continue;
+            }
+            $method = 'set' . ucwords($property);
+
+            if (!method_exists($default_database, $method)) {
+                continue;
+            }
+            $default_database = call_user_func_array(
+                [$default_database, $method],
+                [$value]
+            );
+        }
+
+        return $default_database;
     }
 
     /**
@@ -320,6 +444,19 @@ abstract class PhpProjectType extends ProjectType
     }
 
     /**
+     * Install composer packages.
+     *
+     * @return $this
+     */
+    public function installComposer()
+    {
+        $this->taskComposerInstall()
+            ->run();
+
+        return $this;
+    }
+
+    /**
      * {@inheritdoc}
      */
     public function onDeployBuild($build_root)
@@ -415,6 +552,136 @@ abstract class PhpProjectType extends ProjectType
         }
 
         return $this;
+    }
+
+    /**
+     * Database info mapping keys.
+     *
+     * @return array
+     *   An array of database key mapping.
+     */
+    protected function databaseInfoMapping()
+    {
+        return [];
+    }
+
+    /**
+     * Resolve database import path.
+     *
+     * @param string|null $import_path
+     *   The path to use for the database import.
+     *
+     * @return string
+     *   The database import path.
+     * @throws \Exception
+     */
+    protected function resolveDatabaseImportPath($import_path = null)
+    {
+        if (!isset($import_path)) {
+            $import_path = $this->doAsk(
+                new Question(
+                    'Input the path to the database file: '
+                )
+            );
+
+            if (!file_exists($import_path)) {
+                throw new \Exception(
+                    'The path to the database file does not exist.'
+                );
+            }
+        }
+
+        return trim($import_path);
+    }
+
+    /**
+     * Resolve database service instance.
+     *
+     * @param null $service
+     *   The database service name.
+     *
+     * @return mixed
+     */
+    protected function resolveDatabaseServiceInstance($service = null)
+    {
+        /** @var EngineType $engine */
+        $engine = $this->getEngineInstance();
+        $services = $engine->getServiceInstanceByGroup('database');
+
+        if (!isset($service) || !isset($services[$service])) {
+            if (count($services) > 1) {
+                $options = array_keys($services);
+                $service = $this->doAsk(
+                    new ChoiceQuestion(
+                        'Select the database service to use for import: ',
+                        $options
+                    )
+                );
+            } else {
+                $options = array_keys($services);
+                $service = reset($options);
+            }
+        }
+
+        if (!isset($services[$service])) {
+            throw new \RuntimeException(
+                'Unable to resolve database service.'
+            );
+        }
+
+        return $services[$service];
+    }
+
+    /**
+     * Resolve database import command.
+     *
+     * @param ServiceDbInterface $instance
+     *   The database service instance.
+     *
+     * @return CommandBuilder
+     *   The database command based on the provide service.
+     * @throws \Exception
+     */
+    protected function resolveDatabaseImportCommand(ServiceDbInterface $instance)
+    {
+        $database = $this->getDatabaseInfo($instance);
+
+        switch ($database->getProtocol()) {
+            case 'mysql':
+                return (new MysqlCommand())
+                    ->host($database->getHostname())
+                    ->username($database->getUser())
+                    ->password($database->getPassword())
+                    ->database($database->getDatabase());
+            case 'pgsql':
+                return (new PgsqlCommand())
+                    ->host($database->getHostname())
+                    ->username($database->getUser())
+                    ->password($database->getPassword())
+                    ->database($database->getDatabase());
+        }
+    }
+
+    /**
+     * Get a service instance database object.
+     *
+     * @param ServiceDbInterface $instance
+     *   The service database instance.
+     *
+     * @return Database
+     *   The database object.
+     */
+    protected function getServiceInstanceDatabase(ServiceDbInterface $instance)
+    {
+        $port = current($instance->getHostPorts());
+
+        return (new Database($this->databaseInfoMapping()))
+            ->setPort($port)
+            ->setUser($instance->username())
+            ->setPassword($instance->password())
+            ->setProtocol($instance->protocol())
+            ->setHostname($instance->getName())
+            ->setDatabase($instance->database());
     }
 
     /**

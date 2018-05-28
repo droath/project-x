@@ -1,0 +1,58 @@
+
+/**
+ * Local database settings.
+ */
+$databases = array(
+  'default' => array(
+    'default' => array(
+      'database' => '{DB_NAME}',
+      'username' => '{DB_USER}',
+      'password' => '{DB_PASS}',
+      'host' => '{DB_HOST}',
+      'port' => '{DB_PORT}',
+      'driver' => '{DB_PROTOCOL}',
+      'prefix' => '',
+    ),
+  ),
+);
+
+/*
+ * Set the aggregation settings.
+ */
+$conf['preprocess_js'] = FALSE;
+$conf['preprocess_css'] = FALSE;
+
+/*
+ * Set the compression settings.
+ */
+$conf['page_compression'] = FALSE;
+$conf['js_gzip_compression'] = FALSE;
+$conf['css_gzip_compression'] = FALSE;
+
+/*
+ * Set the caching settings.
+ */
+$conf['cache'] = FALSE;
+$conf['block_cache'] = FALSE;
+$conf['cache_lifetime'] = 0;
+$conf['page_cache_maximum_age'] = 0;
+
+/*
+ * Set the error settings.
+ */
+$conf['error_level'] = ERROR_REPORTING_DISPLAY_ALL;
+
+/*
+ * Local Drupal command-line application.
+ *
+ * If executing local Drupal CLI commands on the host machine, you'll need to
+ * change the database host so the connection resolves. It's also possible to
+ * configure Drupal CLI tools to use SSH to connect to the Docker container
+ * to execute their command(s) within the environment.
+ */
+if (php_sapi_name() === 'cli'
+  && isset($_SERVER['USER'])
+  && $_SERVER['USER'] !== 'www-data') {
+
+  $databases['default']['default']['host'] = '127.0.0.1';
+}
