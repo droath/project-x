@@ -3,6 +3,7 @@
 namespace Droath\ProjectX\Tests\Engine;
 
 use Droath\ProjectX\Engine\EngineType;
+use Droath\ProjectX\Engine\ServiceInterface;
 use Droath\ProjectX\Tests\TestBase;
 
 /**
@@ -43,6 +44,15 @@ class EngineTypeTest extends TestBase
     {
         $names = $this->engineType->getServiceNamesByType('apache');
         $this->assertEquals('web', $names[0]);
+    }
+
+    public function testServices()
+    {
+        EngineType::setServices([
+            'mock' => $this->createMock(ServiceInterface::class),
+        ]);
+        $this->assertCount(1, EngineType::services());
+        $this->assertInternalType('array', EngineType::services());
     }
 
     public function testHasService()

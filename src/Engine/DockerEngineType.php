@@ -81,10 +81,29 @@ class DockerEngineType extends EngineType implements TaskSubTypeInterface
     }
 
     /**
+     * Docker engine type constructor.
+     */
+    public function __construct()
+    {
+        static::setServices([
+            'php' => PhpService::class,
+            'redis' => RedisService::class,
+            'mysql' => MysqlService::class,
+            'nginx' => NginxService::class,
+            'apache' => ApacheService::class,
+            'mariadb' => MariadbService::class,
+            'postgres' => PostgresService::class
+        ]);
+    }
+
+    /**
      * {@inheritdoc}
      */
     public function up()
     {
+        if ($this->isEngineRunning()) {
+            return $this;
+        }
         parent::up();
 
         $continue = $this->showRequiredPortsTable(
@@ -140,9 +159,11 @@ class DockerEngineType extends EngineType implements TaskSubTypeInterface
     {
         parent::down($include_network);
 
-        // Shutdown docker compose.
-        $this->taskDockerComposeDown()
-            ->run();
+        if ($this->isEngineRunning()) {
+            // Shutdown docker compose.
+            $this->taskDockerComposeDown()
+                ->run();
+        }
 
         // Shutdown docker sync if config is found.
         if ($this->hasDockerSync()) {
@@ -446,6 +467,35 @@ class DockerEngineType extends EngineType implements TaskSubTypeInterface
     }
 
     /**
+     * Determine if the environment engine is running.
+     *
+     * @return bool
+     */
+    public function isEngineRunning()
+    {
+        foreach (array_keys($this->getServices()) as $name) {
+            $container = $this->getServiceContainerId($name);
+            if (!$this->isContainerRunning($container)) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function isEngineInstalled()
+    {
+        $install_root = static::INSTALL_ROOT;
+        $project_root = ProjectX::projectRoot();
+
+        return file_exists("{$project_root}/{$install_root}")
+            && file_exists("{$project_root}/docker-compose.yml");
+    }
+
+    /**
      * Determine if docker sync running.
      *
      * @return bool
@@ -517,6 +567,30 @@ class DockerEngineType extends EngineType implements TaskSubTypeInterface
     }
 
     /**
+     * Copy file to docker service.
+     *
+     * @param $from
+     *   The file from path.
+     * @param $destination
+     *   The file destination path.
+     * @param $service
+     *   The docker service name.
+     *
+     * @return ResultData
+     */
+    public function copyFileToService($from, $destination, $service)
+    {
+        if (!file_exists($from)) {
+            throw new EngineRuntimeException(
+                'The file path does not exist.'
+            );
+        }
+        $container = $this->getServiceContainerId($service);
+
+        return $this->_exec("docker cp {$from} {$container}:{$destination}");
+    }
+
+    /**
      * Get the docker ports to verify.
      *
      * @return array
@@ -563,22 +637,6 @@ class DockerEngineType extends EngineType implements TaskSubTypeInterface
             ->run();
 
         return $this;
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    protected static function services()
-    {
-        return [
-            'php' => PhpService::class,
-            'redis' => RedisService::class,
-            'mysql' => MysqlService::class,
-            'nginx' => NginxService::class,
-            'apache' => ApacheService::class,
-            'mariadb' => MariadbService::class,
-            'postgres' => PostgresService::class
-        ];
     }
 
     /**
@@ -1135,11 +1193,9 @@ class DockerEngineType extends EngineType implements TaskSubTypeInterface
         /** @var Ps $task */
         $task = $this->taskDockerComposePs();
 
-        $result = $task
-            ->printOutput(false)
-            ->setService($container)
-            ->quiet()
-            ->run();
+        $result = $this->runSilentCommand(
+            $task->setService($container)->quiet()
+        );
 
         if ($result->getExitCode() !== ResultData::EXITCODE_OK) {
             return false;

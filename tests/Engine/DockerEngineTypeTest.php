@@ -114,6 +114,16 @@ class DockerEngineTypeTest extends TestTaskBase
         $this->assertTrue($this->dockerEngine->hasDockerSync());
     }
 
+    public function testIsEngineInstalled()
+    {
+        $this->assertFalse($this->dockerEngine->isEngineInstalled());
+        vfsStream::create([
+            'docker' => [],
+            'docker-compose.yml' => ''
+        ]);
+        $this->assertTrue($this->dockerEngine->isEngineInstalled());
+    }
+
     public function testTemplateDirectories()
     {
         $this->assertEquals([
@@ -156,6 +166,15 @@ class DockerEngineTypeTest extends TestTaskBase
             ->getServiceInstanceByType('php');
 
         $this->assertInstanceOf(PhpService::class, $instance[0]);
+    }
+
+    public function testServiceInstanceByGroup()
+    {
+        $groups = $this->dockerEngine
+            ->getServiceInstanceByGroup('database');
+
+        $this->assertArrayHasKey('database', $groups);
+        $this->assertArrayHasKey('database2', $groups);
     }
 
     /**

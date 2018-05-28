@@ -16,6 +16,13 @@ abstract class EngineType extends TaskSubType implements EngineTypeInterface
     const INSTALL_ROOT = null;
 
     /**
+     * Environment engine services.
+     *
+     * @var array
+     */
+    protected static $services = [];
+
+    /**
      * {@inheritdoc}
      */
     public function up()
@@ -172,6 +179,16 @@ abstract class EngineType extends TaskSubType implements EngineTypeInterface
     }
 
     /**
+     * Determine if the environment engine has been installed.
+     *
+     * @return bool
+     */
+    public function isEngineInstalled()
+    {
+        return true;
+    }
+
+    /**
      * Get defined service instances.
      *
      * @return array
@@ -199,7 +216,40 @@ abstract class EngineType extends TaskSubType implements EngineTypeInterface
     }
 
     /**
-     * Get service instance by type.
+     * Get service instance by group.
+     *
+     * @param $group
+     *   The service group name.
+     *
+     * @return array
+     */
+    public function getServiceInstanceByGroup($group)
+    {
+        $services = [];
+        $services_map = static::services();
+
+        foreach ($this->getServiceInstances() as $name => $info) {
+            if (!isset($info['type']) || !isset($info['instance'])) {
+                continue;
+            }
+            $type = $info['type'];
+
+            if (!isset($services_map[$type])) {
+                continue;
+            }
+            $classname = $services_map[$type];
+
+            if ($group !== $classname::group()) {
+                continue;
+            }
+            $services[$name] = $info['instance'];
+        }
+
+        return $services;
+    }
+
+    /**
+     * Get multiple service instance by type.
      *
      * @param $type
      *   The service instance type.
@@ -222,7 +272,7 @@ abstract class EngineType extends TaskSubType implements EngineTypeInterface
     }
 
     /**
-     * Get service instance by interface.
+     * Get single service instance by interface.
      *
      * @param $interface
      *
@@ -284,6 +334,27 @@ abstract class EngineType extends TaskSubType implements EngineTypeInterface
     }
 
     /**
+     * Set engine type services.
+     *
+     * @param array $services
+     */
+    public static function setServices(array $services)
+    {
+        self::$services = $services;
+    }
+
+    /**
+     * Define engine services class references.
+     *
+     * @return array
+     *   An array of services referencing classname.
+     */
+    public static function services()
+    {
+        return static::$services;
+    }
+
+    /**
      * Get engine service classname.
      *
      * @param $name
@@ -303,17 +374,6 @@ abstract class EngineType extends TaskSubType implements EngineTypeInterface
         }
 
         return $services[$name];
-    }
-
-    /**
-     * Define engine services class references.
-     *
-     * @return array
-     *   An array of services referencing classname.
-     */
-    protected static function services()
-    {
-        return [];
     }
 
     /**
