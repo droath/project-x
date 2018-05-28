@@ -3,9 +3,7 @@
 namespace Droath\ProjectX\Engine;
 
 /**
- * Interface DockerServiceInterface
- *
- * @package Droath\ProjectX\Engine
+ * Interface for environment engine service.
  */
 interface ServiceInterface
 {
@@ -15,6 +13,13 @@ interface ServiceInterface
      * @return string
      */
     public static function name();
+
+    /**
+     * Docker service group.
+     *
+     * @return string
+     */
+    public static function group();
 
     /**
      * Docker service blueprint.
