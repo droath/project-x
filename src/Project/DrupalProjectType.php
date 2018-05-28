@@ -1148,7 +1148,8 @@ class DrupalProjectType extends PhpProjectType implements TaskSubTypeInterface, 
 
         $this
             ->buildSteps()
-            ->postBuildSteps();
+            ->postBuildSteps()
+            ->install();
 
         return $this;
     }
