@@ -29,6 +29,13 @@ abstract class CommandBuilder
     protected $commands = [];
 
     /**
+     * Command environment variable.
+     *
+     * @var string
+     */
+    protected $envVariable = [];
+
+    /**
      * Set command executable.
      *
      * @param $executable
@@ -76,14 +83,46 @@ abstract class CommandBuilder
      *   The command option key.
      * @param null|string $value
      *   The command option value.
+     * @param null $delimiter
+     *   The command option delimiter.
      *
      * @return $this
      */
-    public function setOption($option, $value = null)
+    public function setOption($option, $value = null, $delimiter = null)
     {
+        $delimiter = isset($delimiter) ? $delimiter : " ";
+
         $this->options[] = strpos($option, '-') !== false
-            ? "{$option} {$value}"
-            : "--{$option} {$value}";
+            ? "{$option}{$delimiter}{$value}"
+            : "--{$option}{$delimiter}{$value}";
+
+        return $this;
+    }
+
+    /**
+     * Get environment variable.
+     *
+     * @return string
+     */
+    public function getEnvVariable()
+    {
+        $variables = array_map('trim', $this->envVariable);
+        return implode(' ;', $variables);
+    }
+
+    /**
+     * Set environment variable.
+     *
+     * @param $key
+     *   The environment variable key.
+     * @param $value
+     *   The environment variable value.
+     *
+     * @return $this
+     */
+    public function setEnvVariable($key, $value)
+    {
+        $this->envVariable[] = "{$key}={$value}";
 
         return $this;
     }
@@ -98,7 +137,7 @@ abstract class CommandBuilder
         $commands = [];
 
         foreach ($this->commands as $command) {
-            $commands[] = "{$this->executable} {$this->getOptions()} {$command}";
+            $commands[] = trim("{$this->getEnvVariable()} {$this->executable} {$this->getOptions()} {$command}");
         }
         $this->commands = [];
 

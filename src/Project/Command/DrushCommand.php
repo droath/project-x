@@ -1,9 +1,10 @@
 <?php
 
-namespace Droath\ProjectX\Project;
+namespace Droath\ProjectX\Project\Command;
 
 use Droath\ProjectX\CommandBuilder;
 use Droath\ProjectX\Engine\DockerEngineType;
+use Droath\ProjectX\Project\PhpProjectType;
 use Droath\ProjectX\ProjectX;
 
 class DrushCommand extends CommandBuilder

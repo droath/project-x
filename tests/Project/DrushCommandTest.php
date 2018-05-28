@@ -2,7 +2,7 @@
 
 namespace Droath\ProjectX\Tests\Project;
 
-use Droath\ProjectX\Project\DrushCommand;
+use Droath\ProjectX\Project\Command\DrushCommand;
 use Droath\ProjectX\Tests\TestBase;
 
 class DrushCommandTest extends TestBase
