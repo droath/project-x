@@ -2,6 +2,7 @@
 
 namespace Droath\ProjectX\Tests\Project;
 
+use Droath\ProjectX\Database;
 use Droath\ProjectX\Project\PhpProjectType;
 use Droath\ProjectX\ProjectX;
 use Droath\ProjectX\Tests\TestTaskBase;
@@ -15,6 +16,8 @@ use Symfony\Component\Console\Input\StringInput;
  */
 class PhpProjectTypeTest extends TestTaskBase
 {
+    protected $phpProject;
+
     /**
      * {@inheritdoc}
      */
@@ -99,6 +102,33 @@ class PhpProjectTypeTest extends TestTaskBase
     {
         $name = $this->phpProject->getPhpServiceName();
         $this->assertEquals('php', $name);
+    }
+
+    public function testGetDatabaseInfo()
+    {
+        $this->assertEquals(new \ArrayIterator([
+            'hostname' => 'database',
+            'port' => '3307',
+            'user' => 'admin',
+            'password' => 'root',
+            'database' => 'drupal',
+            'protocol' => 'mysql',
+        ]), $this->phpProject->getDatabaseInfo()->asArray());
+    }
+
+    public function testGetDatabaseInfoWithOverrides() {
+        $this->assertEquals(new \ArrayIterator([
+            'hostname' => '127.0.0.1',
+            'port' => '5253',
+            'user' => 'admin',
+            'password' => 'root',
+            'database' => 'drupal',
+            'protocol' => 'pgsql',
+        ]), $this->phpProject->getDatabaseInfoWithOverrides((new Database())
+            ->setPort(5253)
+            ->setProtocol('pgsql')
+            ->setHostname('127.0.0.1')
+        )->asArray());
     }
 
     public function testPackagePhpBuild()

@@ -287,10 +287,10 @@ class DrupalProjectTypeTest extends TestTaskBase
         $this->assertRegExp('/\'driver\'\s?=>\s?\'pgsql\'\,/', $local_content);
         $this->assertRegExp('/\'namespace\'\s?=>\s?\'.+pgsql\'\,/', $local_content);
     }
-    
+
     public function testGetDatabaseInfo()
     {
-        $this->assertEquals(new \ArrayObject([
+        $this->assertEquals(new \ArrayIterator([
             'host' => 'database',
             'port' => '3307',
             'username' => 'admin',
@@ -301,7 +301,7 @@ class DrupalProjectTypeTest extends TestTaskBase
     }
 
     public function testGetDatabaseInfoWithOverrides() {
-        $this->assertEquals(new \ArrayObject([
+        $this->assertEquals(new \ArrayIterator([
             'host' => '127.0.0.1',
             'port' => '5253',
             'username' => 'admin',

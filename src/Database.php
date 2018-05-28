@@ -4,6 +4,9 @@ namespace Droath\ProjectX;
 
 use ReflectionProperty;
 
+/**
+ * Define a simple database object.
+ */
 class Database implements DatabaseInterface
 {
     public $user;
@@ -17,6 +20,21 @@ class Database implements DatabaseInterface
     public function __construct($mappings = [])
     {
         $this->mappings = $mappings;
+    }
+
+    public static function createFromArray(array $array, $mappings = [])
+    {
+        $instance = new static($mappings);
+
+        foreach ($array as $property => $value) {
+            $method = 'set' . ucwords($property);
+            if (!method_exists($instance, $method)) {
+                continue;
+            }
+            call_user_func_array([$instance, $method], [$value]);
+        }
+
+        return $instance;
     }
 
     /**
@@ -154,7 +172,8 @@ class Database implements DatabaseInterface
     /**
      * The array representation of database object.
      *
-     * @return \ArrayObject
+     * @return \ArrayIterator
+     * @throws \ReflectionException
      */
     public function asArray()
     {
@@ -177,6 +196,6 @@ class Database implements DatabaseInterface
             $array[$property] = $value;
         }
 
-        return new \ArrayObject($array);
+        return new \ArrayIterator($array);
     }
 }
