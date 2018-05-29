@@ -2,6 +2,7 @@
 
 namespace Droath\ProjectX\Project\Tasks\PHP;
 
+use Droath\ProjectX\Engine\DockerEngineType;
 use Droath\ProjectX\ProjectX;
 use Droath\ProjectX\Project\PhpProjectType;
 use Droath\ProjectX\Task\EventTaskBase;
@@ -136,13 +137,14 @@ class PhpTasks extends EventTaskBase
         /** @var DrupalProjectType $project */
         $instance = $this->getProjectInstance();
 
+        $engine = ProjectX::getEngineType();
         $binary = $opts['remote-binary-path'];
         $command_str = escapeshellcmd(implode(' ', $composer_command));
         $working_dir = escapeshellarg($opts['remote-working-dir']);
 
         $command = $this->taskExec("{$binary} --working-dir={$working_dir} {$command_str}");
 
-        if (ProjectX::engineType() && $instance->hasDockerSupport()) {
+        if ($engine instanceof DockerEngineType) {
             $container = $instance->getPhpServiceName('php');
             $result = $this->taskDockerComposeExecute()
                 ->setContainer($container)
@@ -154,6 +156,33 @@ class PhpTasks extends EventTaskBase
         $this->validateTaskResult($result);
 
         return $this;
+    }
+
+    /**
+     * Import PHP project database.
+     *
+     * @param array $opts
+     * @option string $service The database service name.
+     * @option string $file_path The path to the database exported file.
+     * @option bool $localhost Run the database import command from localhost.
+     *
+     * @throws \Exception
+     */
+    public function phpImportDatabase($opts = [
+        'service' => null,
+        'file_path' => null,
+        'localhost' => false,
+    ])
+    {
+        $this->executeCommandHook(__FUNCTION__, 'before');
+        /** @var PhpProjectType $instance */
+        $instance = $this->getProjectInstance();
+        $instance->importDatabaseToService(
+            $opts['service'],
+            $opts['file_path'],
+            $opts['localhost']
+        );
+        $this->executeCommandHook(__FUNCTION__, 'after');
     }
 
     /**
