@@ -4,7 +4,6 @@ namespace Droath\ProjectX\Project;
 
 use Droath\ProjectX\ProjectX;
 use Droath\ProjectX\TaskSubType;
-use Symfony\Component\Console\Question\ChoiceQuestion;
 
 /**
  * Define Project-X project type.
@@ -100,43 +99,31 @@ abstract class ProjectType extends TaskSubType implements ProjectTypeInterface
     /**
      * {@inheritdoc}
      */
-    public function setup()
+    public function setupNewProject()
     {
-        $this->say('The project setup process has begun. 🤘');
+        $this->say('Setup process for a fresh exciting new project has begun. 🤘');
         $this->io()->newLine();
 
-        $default = !$this->isBuilt() ? 'new' : 'existing';
-        $choice = $this->doAsk(new ChoiceQuestion("What's the state of the project? [{$default}]:", [
-            'new' => 'New',
-            'existing' => 'Existing',
-        ], $default));
-
-        $this->io()->newLine();
-
-        if ($choice === 'new') {
-            $this
-                ->installEnvEngine()
-                ->buildNewProject();
-        } else {
-            $engine = $this->getEngineInstance();
-
-            if (!$engine->isEngineInstalled()) {
-                $this->installEnvEngine();
-            }
-
-            $this->buildExistingProject();
-        }
-
-        return $this;
+        $this->installEnvEngine();
     }
 
     /**
      * {@inheritdoc}
      */
-    public function install()
-    {
-        $this->say('The project install process has begun. 🤘');
+    public function setupExistingProject(
+        $no_engine = false,
+        $restore_method = null,
+        $no_browser = false,
+        $localhost = false
+    ) {
+        $this->say('Setup process for an old rusty project has begun. 🤮');
         $this->io()->newLine();
+
+        $engine = $this->getEngineInstance();
+
+        if (!$engine->isEngineInstalled()) {
+            $this->installEnvEngine();
+        }
     }
 
     /**
@@ -485,26 +472,6 @@ abstract class ProjectType extends TaskSubType implements ProjectTypeInterface
         $this->taskDeleteDir($this->getInstallPath())->run();
 
         return $this;
-    }
-
-    /**
-     * Project build new project.
-     */
-    protected function buildNewProject()
-    {
-        throw new \Exception(
-            "Project type doesn't currently support building new projects."
-        );
-    }
-
-    /**
-     * Project build existing project.
-     */
-    protected function buildExistingProject()
-    {
-        throw new \Exception(
-            "Project type doesn't currently support building existing projects."
-        );
     }
 
     /**

@@ -153,7 +153,116 @@ class DrupalProjectType extends PhpProjectType implements TaskSubTypeInterface, 
         ], parent::templateDirectories());
     }
 
+    /**
+     * Drupal build existing project.
+     *
+     * The following setup steps are conducted:
+     *   - Setup project composer packages.
+     *   - Setup project filesystem.
+     *   - Setup Drupal drush aliases.
+     *   - Save and update composer.
+     *   - Setup the project with standard dir/files.
+     *   - Setup Drupal filesystem.
+     *   - Setup Drupal 7/8 settings and local settings.
+     *   - Launch local development engine.
+     *   - Install Drupal and export configurations.
+     *   - Open browser to local project host.
+     *
+     * @return $this|mixed|void
+     * @throws \Exception
+     */
+    public function setupNewProject()
+    {
+        parent::setupNewProject();
 
+        $status = $this->canBuild();
+
+        if ($status === static::BUILD_ABORT) {
+            $this->say('Project build process has been aborted! ⛈️');
+
+            return;
+        }
+
+        if ($status === static::BUILD_DIRTY) {
+            $this->deleteInstallDirectory();
+        }
+
+        $this
+            ->setupProjectComposer()
+            ->setupProjectFilesystem()
+            ->setupDrush()
+            ->saveComposer()
+            ->updateComposer();
+
+        if (!$this->canInstall()) {
+            $this->say(
+                "Unable to install since the project hasn't been built yet. ⛈️"
+            );
+
+            return;
+        }
+
+        $this
+            ->setupProject()
+            ->setupDrupalFilesystem()
+            ->setupDrupalSettings()
+            ->setupDrupalLocalSettings()
+            ->projectEnvironmentUp()
+            ->setupDrupalInstall()
+            ->exportDrupalConfig()
+            ->projectLaunchBrowser();
+
+        return $this;
+    }
+
+    /**
+     * Drupal build existing project.
+     *
+     * The following setup steps are conducted:
+     *   - Install composer packages.
+     *   - Setup Drupal filesystem.
+     *   - Setup Drupal 7/8 local settings.
+     *   - Setup Drupal drush aliases.
+     *   - Launch local version of project in browser.
+     *
+     * @param bool $no_engine
+     *   Determine if environment engine is needed.
+     * @param bool $no_browser
+     *   Launch browser to the project local domain.
+     * @param null $restore_method
+     *   Set the method on which to restore the project datastore.
+     * @param bool $localhost
+     *   Run the commands using localhost.
+     *
+     * @return $this|void
+     * @throws \Robo\Exception\TaskException
+     */
+    public function setupExistingProject(
+        $no_engine = false,
+        $restore_method = null,
+        $no_browser = false,
+        $localhost = false
+    ) {
+        parent::setupExistingProject($no_engine, $restore_method, $no_browser, $localhost);
+
+        $this
+            ->installComposer()
+            ->setupDrupalFilesystem()
+            ->setupDrupalSettingsLocalInclude()
+            ->setupDrupalLocalSettings()
+            ->setupDrushAlias();
+
+        if (!$no_engine) {
+            $this->projectEnvironmentUp();
+        }
+        $this->setupDrupalDatastore($restore_method, $localhost);
+
+        if (!$no_browser) {
+            $this->projectLaunchBrowser();
+        }
+
+        return $this;
+    }
 
     /**
      * Export Drupal configuration.
@@ -267,33 +376,6 @@ class DrupalProjectType extends PhpProjectType implements TaskSubTypeInterface, 
 
         return (new Form())
             ->addFields($fields);
-    }
-
-    /**
-     * {@inheritdoc}.
-     */
-    public function install()
-    {
-        if (!$this->canInstall()) {
-            $this->say(
-                "Unable to install since the project hasn't been built yet. ⛈️"
-            );
-
-            return;
-        }
-        parent::install();
-
-        $this
-            ->setupProject()
-            ->setupDrupalFilesystem()
-            ->setupDrupalSettings()
-            ->setupDrupalLocalSettings()
-            ->projectEnvironmentUp()
-            ->setupDrupalInstall()
-            ->exportDrupalConfig()
-            ->projectLaunchBrowser();
-
-        return $this;
     }
 
     /**
@@ -741,24 +823,6 @@ class DrupalProjectType extends PhpProjectType implements TaskSubTypeInterface, 
     }
 
     /**
-     * Setup Drupal settings local include.
-     *
-     * @return $this
-     */
-    protected function setupDrupalSettingsLocalInclude()
-    {
-        $this->taskWriteToFile($this->settingFile)
-            ->append()
-            ->appendUnlessMatches(
-                '/if.+\/settings\.local\.php.+{\n.+\n\}/',
-                $this->drupalSettingsLocalInclude()
-            )
-            ->run();
-
-        return $this;
-    }
-
-    /**
      * Setup Drupal local settings file.
      *
      * The setup process consist of the following:
@@ -1126,78 +1190,6 @@ class DrupalProjectType extends PhpProjectType implements TaskSubTypeInterface, 
     }
 
     /**
-     * {@inheritdoc}.
-     */
-    protected function buildNewProject()
-    {
-        $status = $this->canBuild();
-
-        if ($status === static::BUILD_ABORT) {
-            $this->say('Project build process has been aborted! ⛈️');
-
-            return;
-        }
-
-        if ($status === static::BUILD_DIRTY) {
-            $this->deleteInstallDirectory();
-        }
-
-        $this
-            ->buildSteps()
-            ->postBuildSteps()
-            ->install();
-
-        return $this;
-    }
-
-    /**
-     * Drupal build existing project.
-     *
-     * The following setup steps are conducted:
-     *   - Install composer packages.
-     *   - Setup Drupal filesystem.
-     *   - Setup Drupal 7/8 local settings.
-     *   - Setup Drupal drush aliases.
-     *   - Launch local version of project in browser.
-     *
-     * @param bool $engine
-     *   Determine if environment engine is needed.
-     * @param bool $launch_browser
-     *   Launch browser to the project local domain.
-     * @param null $restore_method
-     *   Set the method on which to restore the project datastore.
-     * @param bool $localhost
-     *   Run the commands using localhost.
-     *
-     * @return $this|void
-     * @throws \Robo\Exception\TaskException
-     */
-    protected function buildExistingProject(
-        $engine = true,
-        $restore_method = null,
-        $launch_browser = true,
-        $localhost = false
-    ) {
-        $this
-            ->installComposer()
-            ->setupDrupalFilesystem()
-            ->setupDrupalSettingsLocalInclude()
-            ->setupDrupalLocalSettings()
-            ->setupDrushAlias();
-
-        if ($engine) {
-            $this->projectEnvironmentUp();
-        }
-        $this->setupDrupalDatastore($restore_method, $localhost);
-
-        if ($launch_browser) {
-            $this->projectLaunchBrowser();
-        }
-
-        return $this;
-    }
-
-    /**
      * Clear/rebuild Drupal cache.
      *
      * @param bool $localhost
@@ -1441,35 +1433,6 @@ class DrupalProjectType extends PhpProjectType implements TaskSubTypeInterface, 
     }
 
     /**
-     * Build steps to invoke during the build process.
-     *
-     * @return self
-     */
-    protected function buildSteps()
-    {
-        $this
-            ->setupProjectComposer()
-            ->setupProjectFilesystem()
-            ->setupDrush();
-
-        return $this;
-    }
-
-    /**
-     * Post build steps that are invoked after the build steps.
-     *
-     * @return self
-     */
-    protected function postBuildSteps()
-    {
-        $this
-            ->saveComposer()
-            ->updateComposer();
-
-        return $this;
-    }
-
-    /**
      * Get default Drupal install options.
      */
     protected function defaultInstallOptions()
@@ -1534,6 +1497,24 @@ class DrupalProjectType extends PhpProjectType implements TaskSubTypeInterface, 
         $content .= "\n];";
 
         return $content;
+    }
+
+    /**
+     * Setup Drupal settings local include.
+     *
+     * @return $this
+     */
+    protected function setupDrupalSettingsLocalInclude()
+    {
+        $this->taskWriteToFile($this->settingFile)
+            ->append()
+            ->appendUnlessMatches(
+                '/if.+\/settings\.local\.php.+{\n.+\n\}/',
+                $this->drupalSettingsLocalInclude()
+            )
+            ->run();
+
+        return $this;
     }
 
     /**

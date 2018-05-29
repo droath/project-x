@@ -68,6 +68,9 @@ class DrupalTasks extends EventTaskBase
     /**
      * Setup local environment for already built projects.
      *
+     * @hidden
+     * @deprecated
+     *
      * @param array $opts
      *
      * @option string $db-name Set the database name.
@@ -76,18 +79,15 @@ class DrupalTasks extends EventTaskBase
      * @option string $db-host Set the database host.
      * @option string $db-port Set the database port.
      * @option string $db-protocol Set the database protocol.
-     * @option bool $no-docker Don't use docker for local setup.
      * @option bool $no-engine Don't start local development engine.
-     * @option bool $no-import Don't import Drupal configurations.
      * @option bool $no-browser Don't launch a browser window after setup is complete.
-     * @option int $reimport-attempts The amount of times to retry config-import.
+     * @option string $restore-method Set the database restore method: site-config, or database-import.
      * @option bool $localhost Install database using localhost.
      *
      * @return self
      * @throws \Exception
      * @throws \Psr\Container\ContainerExceptionInterface
      * @throws \Psr\Container\NotFoundExceptionInterface
-     * @throws \Robo\Exception\TaskException
      */
     public function drupalLocalSetup($opts = [
         'db-name' => null,
@@ -96,55 +96,23 @@ class DrupalTasks extends EventTaskBase
         'db-host' => null,
         'db-port' => null,
         'db-protocol' => null,
-        'no-docker' => false,
         'no-engine' => false,
-        'no-import' => false,
         'no-browser' => false,
-        'reimport-attempts' => 1,
+        'restore-method' => null,
         'localhost' => false,
     ])
     {
         $this->executeCommandHook(__FUNCTION__, 'before');
         $database = $this->buildDatabase($opts);
-
-        /** @var DrupalProjectType $instance */
-        $instance = $this
+        $this
             ->getProjectInstance()
             ->setDatabaseOverride($database)
-            ->setupDrupalFilesystem()
-            ->setupDrupalLocalSettings();
-
-        if (!$opts['no-engine']) {
-            $instance->projectEnvironmentUp();
-        }
-        $localhost = $opts['localhost'];
-
-        $drush = new DrushCommand();
-        $instance->setupDrupalInstall($localhost);
-
-        $this->drupalDrushAlias();
-        if ($instance->getProjectVersion() >= 8) {
-            $this->setDrupalUuid($localhost);
-
-            if (!$opts['no-import']) {
-                $instance->importDrupalConfig(
-                    $opts['reimport-attempts'],
-                    $localhost
-                );
-            }
-            $drush->command('cr');
-        } else {
-            $drush->comamnd('cc all');
-        }
-        $instance->runDrushCommand(
-            $drush,
-            false,
-            $localhost
-        );
-
-        if (!$opts['no-browser']) {
-            $instance->projectLaunchBrowser();
-        }
+            ->setupExistingProject(
+                $opts['no-engine'],
+                $opts['restore-method'],
+                $opts['no-browser'],
+                $opts['localhost']
+            );
         $this->executeCommandHook(__FUNCTION__, 'after');
 
         return $this;

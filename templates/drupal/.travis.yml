@@ -41,7 +41,7 @@ before_script:
 script:
 
   # Run project-x to setup a local Drupal site.
-  - vendor/bin/project-x drupal:local-setup --no-interaction --no-engine --no-browser
+  - vendor/bin/project-x project:existing --no-interaction --no-engine --no-browser
 
   # Run project level code sniffer.
   - if [ -e "vendor/bin/phpcs" ]; then "vendor/bin/phpcs" -n; fi

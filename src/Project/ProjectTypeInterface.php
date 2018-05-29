@@ -8,12 +8,16 @@ namespace Droath\ProjectX\Project;
 interface ProjectTypeInterface
 {
     /**
-     * Specify project setup process.
+     * Setup a fresh new project.
+     *
+     * @return mixed
      */
-    public function setup();
+    public function setupNewProject();
 
     /**
-     * Specify project install process.
+     * Setup a rushy old project.
+     *
+     * @return mixed
      */
-    public function install();
+    public function setupExistingProject();
 }

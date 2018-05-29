@@ -112,7 +112,7 @@ class ProjectXConfig extends YamlConfigBase
     {
         $this->version = $version;
 
-        return $version;
+        return $this;
     }
 
     public function getVersion()

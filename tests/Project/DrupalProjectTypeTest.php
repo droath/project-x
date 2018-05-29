@@ -270,6 +270,27 @@ class DrupalProjectTypeTest extends TestTaskBase
         $this->assertRegExp('/\'host\'\s?=>\s?\'database\'\,/', $local_content);
         $this->assertRegExp('/\'port\'\s?=>\s?\'3307\'\,/', $local_content);
         $this->assertRegExp('/\'namespace\'\s?=>\s?\'.+mysql\'\,/', $local_content);
+
+        // Switch to Drupal 7 version.
+        $config = ProjectX::getProjectConfig();
+        $config->setVersion(7)
+            ->save($this->getProjectXFilePath());
+
+        $this->drupalProject->setupDrupalLocalSettings();
+
+        $local_url = $this->getProjectFileUrl('www/sites/default/settings.local.php');
+        $local_content = file_get_contents($local_url);
+        $this->assertRegExp('/\$databases\[.+\]/', $local_content);
+        $this->assertRegExp('/\'database\'\s?=>\s?\'drupal\'\,/', $local_content);
+        $this->assertRegExp('/\'username\'\s?=>\s?\'admin\'\,/', $local_content);
+        $this->assertRegExp('/\'password\'\s?=>\s?\'root\'\,/', $local_content);
+        $this->assertRegExp('/\'host\'\s?=>\s?\'database\'\,/', $local_content);
+        $this->assertRegExp('/\'port\'\s?=>\s?\'3307\'\,/', $local_content);
+        $this->assertRegExp('/\'driver\'\s?=>\s?\'mysql\'\,/', $local_content);
+        $this->assertRegExp('/\$conf\[\'preprocess_js\'\]\s?=\s?FALSE\;/', $local_content);
+        $this->assertRegExp('/\$conf\[\'page_compression\'\]\s?=\s?FALSE\;/', $local_content);
+        $this->assertRegExp('/\$conf\[\'cache\'\]\s?=\s?FALSE\;/', $local_content);
+        $this->assertRegExp('/\$conf\[\'error_level\'\]\s?=\s?ERROR_REPORTING_DISPLAY_ALL\;/', $local_content);
     }
 
     public function testSetupDrupalLocalSettingDatabaseOverride() {

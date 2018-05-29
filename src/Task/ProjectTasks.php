@@ -2,44 +2,69 @@
 
 namespace Droath\ProjectX\Task;
 
+use Droath\ProjectX\Database;
+
 /**
  * Define Project-X project task commands.
  */
 class ProjectTasks extends TaskBase
 {
     /**
-     * Run all project setup processes (build, install, etc).
+     * Setup a fresh new project.
      */
-    public function projectSetup()
+    public function projectNew()
     {
         $this->executeCommandHook(__FUNCTION__, 'before');
-        $this
-            ->projectBuild()
-            ->projectInstall();
+        $this->projectInstance()->setupNewProject();
         $this->executeCommandHook(__FUNCTION__, 'after');
     }
 
     /**
-     * Run project build process.
+     * Setup a rusty old project.
+     *
+     * @param array $opts
+     *
+     * @option string $db-name Set the database name.
+     * @option string $db-user Set the database user.
+     * @option string $db-pass Set the database password.
+     * @option string $db-host Set the database host.
+     * @option string $db-port Set the database port.
+     * @option string $db-protocol Set the database protocol.
+     * @option bool $no-engine Don't start local development engine.
+     * @option bool $no-browser Don't launch a browser window after setup is complete.
+     * @option string $restore-method Set the database restore method: site-config, or database-import.
+     * @option bool $localhost Install database using localhost.
      */
-    public function projectBuild()
+    public function projectExisting($opts = [
+        'db-name' => null,
+        'db-user' => null,
+        'db-pass' => null,
+        'db-host' => null,
+        'db-port' => null,
+        'db-protocol' => null,
+        'no-engine' => false,
+        'no-browser' => false,
+        'restore-method' => null,
+        'localhost' => false,
+    ])
     {
         $this->executeCommandHook(__FUNCTION__, 'before');
-        $this->projectInstance()->build();
+        $database = Database::createFromArray([
+            'port' => $opts['db-port'],
+            'user' => $opts['db-user'],
+            'password' => $opts['db-pass'],
+            'database' => $opts['db-name'],
+            'hostname' => $opts['db-host'],
+            'protocol' => $opts['db-protocol']
+        ]);
+        $this->projectInstance()
+            ->setDatabaseOverride($database)
+            ->setupExistingProject(
+                $opts['no-engine'],
+                $opts['restore-method'],
+                $opts['no-browser'],
+                $opts['localhost']
+            );
         $this->executeCommandHook(__FUNCTION__, 'after');
-
-        return $this;
-    }
-
-    /**
-     * Run project install process.
-     */
-    public function projectInstall()
-    {
-        $this->executeCommandHook(__FUNCTION__, 'before');
-        $this->projectInstance()->install();
-        $this->executeCommandHook(__FUNCTION__, 'after');
-
-        return $this;
     }
 }
