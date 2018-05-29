@@ -273,11 +273,12 @@ class DrupalProjectTypeTest extends TestTaskBase
     }
 
     public function testSetupDrupalLocalSettingDatabaseOverride() {
-        $this->drupalProject->setupDrupalLocalSettings((new Database())
-            ->setProtocol('pgsql')
-            ->setPort(5253)
-            ->setHostname('127.0.0.1')
-        );
+        $this->drupalProject
+            ->setDatabaseOverride((new Database())
+                ->setProtocol('pgsql')
+                ->setPort(5253)
+                ->setHostname('127.0.0.1'))
+            ->setupDrupalLocalSettings();
 
         $local_url = $this->getProjectFileUrl('www/sites/default/settings.local.php');
         $local_content = file_get_contents($local_url);
@@ -301,6 +302,11 @@ class DrupalProjectTypeTest extends TestTaskBase
     }
 
     public function testGetDatabaseInfoWithOverrides() {
+        $this->drupalProject->setDatabaseOverride((new Database())
+            ->setPort(5253)
+            ->setProtocol('pgsql')
+            ->setHostname('127.0.0.1'));
+
         $this->assertEquals(new \ArrayIterator([
             'host' => '127.0.0.1',
             'port' => '5253',
@@ -308,11 +314,7 @@ class DrupalProjectTypeTest extends TestTaskBase
             'password' => 'root',
             'database' => 'drupal',
             'driver' => 'pgsql',
-        ]), $this->drupalProject->getDatabaseInfoWithOverrides((new Database())
-            ->setPort(5253)
-            ->setProtocol('pgsql')
-            ->setHostname('127.0.0.1')
-        )->asArray());
+        ]), $this->drupalProject->getDatabaseInfo()->asArray());
     }
 
     public function testRemoveGitSubmoduleInVendor() {

@@ -117,6 +117,11 @@ class PhpProjectTypeTest extends TestTaskBase
     }
 
     public function testGetDatabaseInfoWithOverrides() {
+        $this->phpProject->setDatabaseOverride((new Database())
+            ->setPort(5253)
+            ->setProtocol('pgsql')
+            ->setHostname('127.0.0.1'));
+
         $this->assertEquals(new \ArrayIterator([
             'hostname' => '127.0.0.1',
             'port' => '5253',
@@ -124,11 +129,7 @@ class PhpProjectTypeTest extends TestTaskBase
             'password' => 'root',
             'database' => 'drupal',
             'protocol' => 'pgsql',
-        ]), $this->phpProject->getDatabaseInfoWithOverrides((new Database())
-            ->setPort(5253)
-            ->setProtocol('pgsql')
-            ->setHostname('127.0.0.1')
-        )->asArray());
+        ]), $this->phpProject->getDatabaseInfo()->asArray());
     }
 
     public function testPackagePhpBuild()

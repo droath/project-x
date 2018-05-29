@@ -818,21 +818,17 @@ class DrupalProjectType extends PhpProjectType implements TaskSubTypeInterface, 
      *   - Install Drupal using the drush executable.
      *   - Update install path permissions recursively.
      *
-     * @param DatabaseInterface|null $database
-     *   The database object.
      * @param bool $localhost
      *   A flag to determine if Drupal should be installed using localhost.
      *
      * @return self
      * @throws \Robo\Exception\TaskException
      */
-    public function setupDrupalInstall(DatabaseInterface $database = null, $localhost = false)
+    public function setupDrupalInstall($localhost = false)
     {
         $this->say('Waiting on Drupal database to become available...');
 
-        $database = is_null($database)
-            ? $this->getDatabaseInfo()
-            : $this->getDatabaseInfoWithOverrides($database);
+        $database = $this->getDatabaseInfo();
 
         $engine = $this->getEngineInstance();
         $install_path = $this->getInstallPath();
@@ -1168,10 +1164,8 @@ class DrupalProjectType extends PhpProjectType implements TaskSubTypeInterface, 
      *   Determine if environment engine is needed.
      * @param bool $launch_browser
      *   Launch browser to the project local domain.
-     * @param null $method
+     * @param null $restore_method
      *   Set the method on which to restore the project datastore.
-     * @param array $database_overrides
-     *   The database overrides, only used when restoring using configs.
      * @param bool $localhost
      *   Run the commands using localhost.
      *
@@ -1180,12 +1174,10 @@ class DrupalProjectType extends PhpProjectType implements TaskSubTypeInterface, 
      */
     protected function buildExistingProject(
         $engine = true,
+        $restore_method = null,
         $launch_browser = true,
-        $method = null,
-        $database_overrides = [],
         $localhost = false
     ) {
-    
         $this
             ->installComposer()
             ->setupDrupalFilesystem()
@@ -1196,7 +1188,7 @@ class DrupalProjectType extends PhpProjectType implements TaskSubTypeInterface, 
         if ($engine) {
             $this->projectEnvironmentUp();
         }
-        $this->setupDrupalDatastore($method, $database_overrides, $localhost);
+        $this->setupDrupalDatastore($restore_method, $localhost);
 
         if ($launch_browser) {
             $this->projectLaunchBrowser();
@@ -1228,10 +1220,8 @@ class DrupalProjectType extends PhpProjectType implements TaskSubTypeInterface, 
     /**
      * Setup Drupal persistent datastore.
      *
-     * @param null $method
+     * @param null $restore_method
      *   The method on which to restore data.
-     * @param array $database_overrides
-     *   The database overrides, only used when restoring using configs.
      * @param bool $localhost
      *   Run commands using the localhost.
      *
@@ -1239,8 +1229,7 @@ class DrupalProjectType extends PhpProjectType implements TaskSubTypeInterface, 
      * @throws \Robo\Exception\TaskException
      */
     protected function setupDrupalDatastore(
-        $method = null,
-        $database_overrides = [],
+        $restore_method = null,
         $localhost = false
     ) {
         /** @var EngineType $engine */
@@ -1250,17 +1239,17 @@ class DrupalProjectType extends PhpProjectType implements TaskSubTypeInterface, 
             if ($this->getProjectVersion() >= 8 && $this->hasDrupalConfig()) {
                 $options = ['site-config', 'database-import'];
 
-                if (!isset($method) || !in_array($method, $options)) {
-                    $method = $this->doAsk(new ChoiceQuestion(
+                if (!isset($restore_method)
+                    || !in_array($restore_method, $options)) {
+                    $restore_method = $this->doAsk(new ChoiceQuestion(
                         'Setup the project using? ',
                         $options
                     ));
                 }
 
-                if ($method === 'site-config') {
-                    $database = Database::createFromArray($database_overrides);
+                if ($restore_method === 'site-config') {
                     $this
-                        ->setupDrupalInstall($database, $localhost)
+                        ->setupDrupalInstall($localhost)
                         ->setDrupalUuid($localhost)
                         ->importDrupalConfig(1, $localhost);
                 } else {

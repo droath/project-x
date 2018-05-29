@@ -41,6 +41,13 @@ abstract class PhpProjectType extends ProjectType
     protected $composer;
 
     /**
+     * Database override.
+     *
+     * @var DatabaseInterface
+     */
+    protected $databaseOverride;
+
+    /**
      * Constructor for PHP project type.
      */
     public function __construct()
@@ -145,14 +152,30 @@ abstract class PhpProjectType extends ProjectType
     }
 
     /**
+     * Set the database override object.
+     *
+     * @param DatabaseInterface $database
+     *
+     * @return $this
+     */
+    public function setDatabaseOverride(DatabaseInterface $database)
+    {
+        $this->databaseOverride = $database;
+
+        return $this;
+    }
+
+    /**
      * Get database information based on services.
      *
      * @param ServiceDbInterface|null $instance
+     *   Instance of the environment engine DB service.
+     * @param bool $allow_override
+     *   Set if to false to not include overrides.
      *
      * @return DatabaseInterface
-     * @throws \RuntimeException
      */
-    public function getDatabaseInfo(ServiceDbInterface $instance = null)
+    public function getDatabaseInfo(ServiceDbInterface $instance = null, $allow_override = true)
     {
         if (!isset($instance)) {
             /** @var EngineType $engine */
@@ -167,41 +190,29 @@ abstract class PhpProjectType extends ProjectType
                 );
             }
         }
+        $database =  $this->getServiceInstanceDatabase($instance);
 
-        return $this->getServiceInstanceDatabase($instance);
-    }
+        if (!$allow_override || !isset($this->databaseOverride)) {
+            return $database;
+        }
 
-    /**
-     * Get database info with overrides.
-     *
-     * @param DatabaseInterface $database
-     *   A database object that contains properties to override.
-     *
-     * @return DatabaseInterface
-     * @throws \Psr\Container\ContainerExceptionInterface
-     * @throws \Psr\Container\NotFoundExceptionInterface
-     */
-    public function getDatabaseInfoWithOverrides(DatabaseInterface $database)
-    {
-        $default_database = $this->getDatabaseInfo();
-
-        // Set the override database value for given properties.
-        foreach (get_object_vars($database) as $property => $value) {
+        // Process database overrides on the current db object.
+        foreach (get_object_vars($this->databaseOverride) as $property => $value) {
             if (empty($value)) {
                 continue;
             }
             $method = 'set' . ucwords($property);
 
-            if (!method_exists($default_database, $method)) {
+            if (!method_exists($database, $method)) {
                 continue;
             }
-            $default_database = call_user_func_array(
-                [$default_database, $method],
+            $database = call_user_func_array(
+                [$database, $method],
                 [$value]
             );
         }
 
-        return $default_database;
+        return $database;
     }
 
     /**

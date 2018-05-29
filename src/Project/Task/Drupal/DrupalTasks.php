@@ -54,8 +54,12 @@ class DrupalTasks extends EventTaskBase
     ])
     {
         $this->executeCommandHook(__FUNCTION__, 'before');
+        $database = $this->buildDatabase($opts);
+
         $this->getProjectInstance()
-            ->setupDrupalInstall($this->buildDatabase($opts), $opts['localhost']);
+            ->setDatabaseOverride($database)
+            ->setupDrupalInstall($opts['localhost']);
+
         $this->executeCommandHook(__FUNCTION__, 'after');
 
         return $this;
@@ -106,8 +110,9 @@ class DrupalTasks extends EventTaskBase
         /** @var DrupalProjectType $instance */
         $instance = $this
             ->getProjectInstance()
+            ->setDatabaseOverride($database)
             ->setupDrupalFilesystem()
-            ->setupDrupalLocalSettings($database);
+            ->setupDrupalLocalSettings();
 
         if (!$opts['no-engine']) {
             $instance->projectEnvironmentUp();
@@ -115,7 +120,7 @@ class DrupalTasks extends EventTaskBase
         $localhost = $opts['localhost'];
 
         $drush = new DrushCommand();
-        $instance->setupDrupalInstall($database, $localhost);
+        $instance->setupDrupalInstall($localhost);
 
         $this->drupalDrushAlias();
         if ($instance->getProjectVersion() >= 8) {
@@ -305,10 +310,11 @@ class DrupalTasks extends EventTaskBase
         $this->taskComposerInstall()->run();
 
         if ($opts['hard']) {
+            $database = $this->buildDatabase($opts);
             // Reinstall the Drupal database, which drops the existing data.
             $this->getProjectInstance()
+                ->setDatabaseOverride($database)
                 ->setupDrupalInstall(
-                    $this->buildDatabase($opts),
                     $localhost
                 );
 
