@@ -30,7 +30,8 @@ class EnvTasks extends TaskBase
         'native' => false,
         'no-hostname' => false,
         'no-browser' => false
-    ]) {
+    ])
+    {
         $this->executeCommandHook(__FUNCTION__, 'before');
         /** @var EngineType $engine */
         $engine = $this->engineInstance();

@@ -134,7 +134,6 @@ class DockerEngineType extends EngineType implements TaskSubTypeInterface
 
         // Startup docker sync if found in project.
         if ($this->hasDockerSync() && !$this->isDockerSyncRunning()) {
-
             if ($this->useDockerSync) {
                 // Set the docker-sync name in the .env file.
                 $this->setDockerSyncNameInEnv();
