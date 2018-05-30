@@ -65,6 +65,13 @@ class DockerEngineType extends EngineType implements TaskSubTypeInterface
     const TRAEFIK_CONTAINER_NAME = 'project-x-traefik';
 
     /**
+     * Docker sync status.
+     *
+     * @var bool
+     */
+    protected $useDockerSync = true;
+
+    /**
      * {@inheritdoc}.
      */
     public static function getLabel()
@@ -127,13 +134,16 @@ class DockerEngineType extends EngineType implements TaskSubTypeInterface
 
         // Startup docker sync if found in project.
         if ($this->hasDockerSync() && !$this->isDockerSyncRunning()) {
-            // Set the docker-sync name in the .env file.
-            $this->setDockerSyncNameInEnv();
 
-            // Start and determine if docker-sync task result are valid.
-            $this->validateTaskResult(
-                $this->taskDockerSyncStart()->run()
-            );
+            if ($this->useDockerSync) {
+                // Set the docker-sync name in the .env file.
+                $this->setDockerSyncNameInEnv();
+
+                // Start and determine if docker-sync task result are valid.
+                $this->validateTaskResult(
+                    $this->taskDockerSyncStart()->run()
+                );
+            }
         }
 
         // Set host IP address in the .env file.
@@ -166,7 +176,7 @@ class DockerEngineType extends EngineType implements TaskSubTypeInterface
         }
 
         // Shutdown docker sync if config is found.
-        if ($this->hasDockerSync()) {
+        if ($this->hasDockerSync() && $this->isDockerSyncRunning()) {
             $this->runDockerSyncDownCollection();
         }
 
@@ -451,6 +461,18 @@ class DockerEngineType extends EngineType implements TaskSubTypeInterface
     {
         return $this->hasDockerContainer(self::TRAEFIK_CONTAINER_NAME)
             && $this->isContainerRunning(self::TRAEFIK_CONTAINER_NAME);
+    }
+
+    /**
+     * Disable docker sync on runtime.
+     *
+     * @return $this
+     */
+    public function disableDockerSync()
+    {
+        $this->useDockerSync = false;
+
+        return $this;
     }
 
     /**
@@ -1094,7 +1116,7 @@ class DockerEngineType extends EngineType implements TaskSubTypeInterface
      */
     protected function useDockerSync()
     {
-        return $this->askConfirmQuestion('Use Docker Sync?', true);
+        return $this->askConfirmQuestion('Setup Docker Sync?', true);
     }
 
     /**
@@ -1112,7 +1134,8 @@ class DockerEngineType extends EngineType implements TaskSubTypeInterface
 
         // Add docker compose dev configurations.
         $path = "{$root}/docker-compose-dev.yml";
-        if ($this->hasDockerSync() && file_exists($path)) {
+        if ($this->hasDockerSync()
+            && $this->useDockerSync && file_exists($path)) {
             $files[] = $path;
         }
 

@@ -4,6 +4,8 @@ namespace Droath\ProjectX\Task;
 
 use Droath\HostsFileManager\HostsFile;
 use Droath\HostsFileManager\HostsFileWriter;
+use Droath\ProjectX\Engine\DockerEngineType;
+use Droath\ProjectX\Engine\EngineType;
 use Droath\ProjectX\ProjectX;
 
 /**
@@ -15,6 +17,7 @@ class EnvTasks extends TaskBase
      * Startup environment engine.
      *
      * @param array $opts An array of command options.
+     * @option $native Run the environment engine in native mode.
      * @option $no-hostname Don't add hostname to the system hosts file
      *   regardless if it's defined in the project-x config.
      * @option $no-browser Don't open the browser window on startup regardless
@@ -23,10 +26,21 @@ class EnvTasks extends TaskBase
      * @return EnvTasks
      * @throws \Exception
      */
-    public function envUp($opts = ['no-hostname' => false, 'no-browser' => false])
-    {
+    public function envUp($opts = [
+        'native' => false,
+        'no-hostname' => false,
+        'no-browser' => false
+    ]) {
         $this->executeCommandHook(__FUNCTION__, 'before');
-        $status = $this->engineInstance()->up();
+        /** @var EngineType $engine */
+        $engine = $this->engineInstance();
+
+        if ($engine instanceof DockerEngineType) {
+            if ($opts['native']) {
+                $engine->disableDockerSync();
+            }
+        }
+        $status = $engine->up();
 
         if ($status !== false) {
             // Allow projects to react to the engine startup.
