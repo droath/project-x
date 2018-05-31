@@ -743,6 +743,64 @@ class DrupalProjectType extends PhpProjectType implements TaskSubTypeInterface, 
     }
 
     /**
+     * Create a Drupal account.
+     *
+     * @param string $user
+     *   The account username.
+     * @param string $pass
+     *   The account password.
+     * @param string $role
+     *   The account role.
+     * @param string $email
+     *   The account email.
+     *
+     * @return $this
+     */
+    public function createDrupalAccount(
+        $user = 'admin',
+        $pass = 'admin',
+        $role = 'administrator',
+        $email = 'admin@example.com'
+    ) {
+        $drush = (new DrushCommand())
+            ->command("ucrt {$user} --mail='{$email}' --password='{$pass}'")
+            ->command("urol '{$role}' --name='{$user}'");
+
+        $this->runDrushCommand($drush);
+
+        return $this;
+    }
+
+    /**
+     * Create a Drupal login link.
+     *
+     * @param null $user
+     *   The drupal login user.
+     * @param null $path
+     *   The path to redirect to after login.
+     *
+     * @return $this
+     */
+    public function createDrupalLoginLink($user = null, $path = null)
+    {
+        $arg = [];
+        if (isset($user)) {
+            $arg[] = $user;
+        }
+        if (isset($path)) {
+            $arg[] = $path;
+        }
+        $args = implode(' ', $arg);
+
+        $drush = (new DrushCommand())
+            ->command("uli {$args}");
+
+        $this->runDrushCommand($drush);
+
+        return $this;
+    }
+
+    /**
      * Setup Drupal filesystem.
      *
      * The setup process consist of the following:

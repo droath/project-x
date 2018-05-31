@@ -119,6 +119,57 @@ class DrupalTasks extends EventTaskBase
     }
 
     /**
+     * Takeover a Drupal users account.
+     *
+     * @param array $opts
+     * @option string $user The account username (default to user 1).
+     * @option string $path The path to redirect to.
+     *
+     * @throws \Exception
+     */
+    public function drupalLetmein($opts = [
+        'user' => null,
+        'path' => null
+    ])
+    {
+        $this->executeCommandHook(__FUNCTION__, 'before');
+        /** @var DrupalProjectType $instance */
+        $instance = $this->getProjectInstance();
+        $instance->createDrupalLoginLink($opts['user'], $opts['path']);
+        $this->executeCommandHook(__FUNCTION__, 'after');
+    }
+
+    /**
+     * Create a Drupal account.
+     *
+     * @param array $opts
+     * @option string $user The account user.
+     * @option string $pass The account password.
+     * @option string $role The account role.
+     * @option string $mail The account email address.
+     *
+     * @throws \Exception
+     */
+    public function drupalCreateAccount($opts = [
+        'user' => 'admin',
+        'pass' => 'admin',
+        'role' => 'administrator',
+        'mail' => 'admin@example.com'
+    ])
+    {
+        $this->executeCommandHook(__FUNCTION__, 'before');
+        /** @var DrupalProjectType $project */
+        $instance = $this->getProjectInstance();
+        $instance->createDrupalAccount(
+            $opts['user'],
+            $opts['pass'],
+            $opts['role'],
+            $opts['mail']
+        );
+        $this->executeCommandHook(__FUNCTION__, 'after');
+    }
+
+    /**
      * Push local environment database to remote origin (use with caution).
      */
     public function drupalRemotePush()
