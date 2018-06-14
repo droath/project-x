@@ -163,23 +163,29 @@ class PhpTasks extends EventTaskBase
      *
      * @param array $opts
      * @option string $service The database service name.
-     * @option string $file_path The path to the database exported file.
+     * @option string $import_path The path to the database exported file.
      * @option bool $localhost Run the database import command from localhost.
      *
      * @throws \Exception
      */
     public function phpImportDatabase($opts = [
         'service' => null,
-        'file_path' => null,
+        'import_path' => null,
         'localhost' => false,
     ])
     {
         $this->executeCommandHook(__FUNCTION__, 'before');
         /** @var PhpProjectType $instance */
         $instance = $this->getProjectInstance();
+
+        $service = isset($opts['service'])
+            ? $opts['service']
+            : $instance->getPhpServiceName();
+
         $instance->importDatabaseToService(
-            $opts['service'],
-            $opts['file_path'],
+            $service,
+            $opts['import_path'],
+            true,
             $opts['localhost']
         );
         $this->executeCommandHook(__FUNCTION__, 'after');

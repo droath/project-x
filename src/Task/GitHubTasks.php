@@ -36,9 +36,10 @@ class GitHubTasks extends GitHubTaskBase
         $user = $this->ask('GitHub username:');
         $pass = $this->askHidden('GitHub token (hidden):');
 
-        $status = $this
-            ->gitHubUserAuth()
-            ->saveAuthInfo($user, $pass);
+        $status = $this->gitHubUserAuth()
+            ->setUser($user)
+            ->setToken($pass)
+            ->save();
 
         if (!$status) {
             $this->io()->success(

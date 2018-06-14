@@ -331,20 +331,20 @@ class DrupalTasks extends EventTaskBase
         if ($opts['hard']) {
             $database = $this->buildDatabase($opts);
             // Reinstall the Drupal database, which drops the existing data.
-            $this->getProjectInstance()
+            $instance
                 ->setDatabaseOverride($database)
                 ->setupDrupalInstall(
                     $localhost
                 );
 
             if ($version >= 8) {
-                $this->setDrupalUuid($localhost);
+                $instance->setDrupalUuid($localhost);
             }
         }
-        $drush = new DrushCommand();
+        $drush = new DrushCommand(null, $localhost);
 
         if ($version >= 8) {
-            $instance->runDrushCommand('updb --entity-updates');
+            $instance->runDrushCommand('updb --entity-updates', false, $localhost);
             $instance->importDrupalConfig(1, $localhost);
             $drush->command('cr');
         } else {
@@ -352,7 +352,7 @@ class DrupalTasks extends EventTaskBase
                 ->command('updb')
                 ->command('cc all');
         }
-        $instance->runDrushCommand($drush);
+        $instance->runDrushCommand($drush, false, $localhost);
 
         $this->executeCommandHook(__FUNCTION__, 'after');
 

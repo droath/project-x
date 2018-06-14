@@ -168,13 +168,13 @@ class DrupalProjectTypeTest extends TestTaskBase
         $this->assertEquals(2, count($matches));
         $this->assertProjectFileExists('drush.wrapper');
         $this->assertTrue($this->projectDir->hasChild('drush'));
-        $this->assertArrayHasKey('drush/drush', $this->drupalProject->getComposer()->getRequireDev());
     }
 
     public function testHasDrush()
     {
         $this->assertfalse($this->drupalProject->hasDrush());
-        $this->drupalProject->setupDrush();
+        $composer = $this->drupalProject->getComposer();
+        $composer->addDevRequire('drush/drush', '^8.1');
         $this->assertTrue($this->drupalProject->hasDrush());
     }
 

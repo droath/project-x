@@ -1,6 +1,6 @@
 <?php
 
-namespace Droath\ProjectX;
+namespace Droath\ProjectX\Store;
 
 use Droath\ProjectX\Filesystem\YamlFilesystem;
 use Symfony\Component\Yaml\Yaml;
@@ -28,6 +28,13 @@ abstract class DefaultYamlFileStore
     protected $filepath;
 
     /**
+     * File contents.
+     *
+     * @var array
+     */
+    protected $contents = [];
+
+    /**
      * File parsed data cache.
      *
      * @var array
@@ -35,7 +42,7 @@ abstract class DefaultYamlFileStore
     protected $fileDataCache = [];
 
     /**
-     * Constructor for file store.
+     * Constructor for YAML file store.
      *
      * @param string $filepath
      *   The file path to the directory where the file is stored.
@@ -50,11 +57,11 @@ abstract class DefaultYamlFileStore
     }
 
     /**
-     * Has file store.
+     * Has YAML store data.
      *
      * @return bool
      */
-    public function hasFile()
+    public function hasStoreData()
     {
         $filename = static::FILE_NAME;
 
@@ -62,17 +69,17 @@ abstract class DefaultYamlFileStore
     }
 
     /**
-     * Get file contents.
+     * Get YAML store contents.
      *
      * @return array
      *   An array of the YAML file contents.
      */
-    public function getFileData()
+    public function getStoreData()
     {
         if (!isset($this->fileDataCache) || empty($this->fileDataCache)) {
             $data = [];
 
-            if ($this->hasFile()) {
+            if ($this->hasStoreData()) {
                 $filename = static::FILE_NAME;
                 $contents = file_get_contents("{$this->filepath}/{$filename}");
 
@@ -88,9 +95,9 @@ abstract class DefaultYamlFileStore
     }
 
     /**
-     * Clear the data store cached data.
+     * Clear the data store cache.
      */
-    public function clearFileDataCache()
+    public function clearCache()
     {
         if (isset($this->fileDataCache) && !empty($this->fileDataCache)) {
             $this->fileDataCache = null;
@@ -100,37 +107,40 @@ abstract class DefaultYamlFileStore
     }
 
     /**
-     * Save file to the store location.
+     * Merge current and existing contents.
      *
-     * @param array $values
+     * @return self
+     */
+    public function merge()
+    {
+        $this->contents = array_replace_recursive(
+            $this->getStoreData(),
+            $this->contents
+        );
+
+        return $this;
+    }
+
+    /**
+     * Save the YAML store.
      *
      * @return int|bool
      *   The number of bytes that were written to the file, or FALSE.
      */
-    public function saveFile(array $values)
+    public function save()
     {
+        $contents = array_filter($this->contents);
+
+        if (empty($contents)) {
+            return;
+        }
+
         if (!file_exists($this->filepath)) {
             mkdir($this->filepath);
         }
 
-        return (new YamlFilesystem($values, $this->filepath))
+        return (new YamlFilesystem($contents, $this->filepath))
             ->save(static::FILE_NAME);
-    }
-
-    /**
-     * Merge file to the store location.
-     *
-     * @param array $values
-     *
-     * @return bool|int
-     *   The number of bytes that were written to the file, or FALSE.
-     */
-    public function mergeFile(array $values)
-    {
-        return $this->saveFile(array_replace_recursive(
-            $this->getFileData(),
-            $values
-        ));
     }
 
     /**

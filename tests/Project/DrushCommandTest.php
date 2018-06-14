@@ -16,23 +16,13 @@ class DrushCommandTest extends TestBase
         $this->drushCommand = new DrushCommand();
     }
 
-    public function testOptions()
-    {
-        $command = $this->drushCommand
-            ->setOption('-tail')
-            ->setOption('--dir', '/var/www')
-            ->setOption('option', 'value');
-
-        $this->assertEquals('-tail --dir /var/www --option value', $command->getOptions());
-    }
-
     public function testEnableInteraction()
     {
         $command = $this->drushCommand
             ->command('cc all')
             ->enableInteraction()
             ->build();
-        $this->assertEquals('drush -r vfs://root/www cc all', $command);
+        $this->assertEquals('drush -r /var/www/html/www cc all', $command);
     }
 
     public function testBuildSingle()
@@ -40,7 +30,7 @@ class DrushCommandTest extends TestBase
         $command = $this->drushCommand
             ->command('cc all')
             ->build();
-        $this->assertEquals('drush -r vfs://root/www --yes cc all', $command);
+        $this->assertEquals('drush -r /var/www/html/www --yes cc all', $command);
     }
 
     public function testBuildMultiple()
@@ -50,6 +40,6 @@ class DrushCommandTest extends TestBase
             ->command('updb')
             ->build();
 
-        $this->assertEquals('drush -r vfs://root/www --yes cex && drush -r vfs://root/www --yes updb', $command);
+        $this->assertEquals('drush -r /var/www/html/www --yes cex && drush -r /var/www/html/www --yes updb', $command);
     }
 }

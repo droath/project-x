@@ -2,13 +2,14 @@
 
 namespace Droath\ProjectX\Project\Command;
 
-use Droath\ProjectX\CommandBuilder;
+use Droath\ProjectX\ComposerCommandBuilder;
 use Droath\ProjectX\Engine\DockerEngineType;
-use Droath\ProjectX\Project\PhpProjectType;
-use Droath\ProjectX\ProjectX;
+use Droath\ProjectX\Project\DrupalProjectType;
 
-class DrushCommand extends CommandBuilder
+class DrushCommand extends ComposerCommandBuilder
 {
+    const DEFAULT_EXECUTABLE = 'drush';
+
     /**
      * Drush drupal docroot.
      *
@@ -17,18 +18,25 @@ class DrushCommand extends CommandBuilder
     protected $docroot;
 
     /**
-     * Run command on localhost.
-     *
-     * @var bool
-     */
-    protected $localhost = false;
-
-    /**
      * Run command without interaction.
      *
      * @var bool
      */
     protected $interaction = false;
+
+    /**
+     * {@inheritdoc}
+     */
+    public function __construct($executable = null, $localhost = false, $docroot = null)
+    {
+        parent::__construct($executable, $localhost);
+
+        if (!isset($docroot)) {
+            $docroot = $this->findDrupalDocroot();
+        }
+
+        $this->setDocroot($docroot);
+    }
 
     /**
      * Drush set docroot.
@@ -58,25 +66,11 @@ class DrushCommand extends CommandBuilder
     }
 
     /**
-     * Use localhost for command.
-     *
-     * @return $this
-     */
-    public function useLocalhost()
-    {
-        $this->localhost = true;
-
-        return $this;
-    }
-
-    /**
      * {@inheritdoc}
      */
     public function build()
     {
-        $this
-            ->initBuild()
-            ->setOption('-r', $this->docroot);
+        $this->setOption('-r', $this->docroot);
 
         if (!$this->interaction) {
             $this->setOption('yes');
@@ -86,65 +80,22 @@ class DrushCommand extends CommandBuilder
     }
 
     /**
-     * Initialize build process.
+     * Find Drupal docroot.
      *
-     * @return $this
-     * @throws \Exception
+     * @return string
      */
-    protected function initBuild()
+    protected function findDrupalDocroot()
     {
-        if (!isset($this->executable) && !isset($this->docroot)) {
-            /** @var EngineType $engine */
-            $engine = $this->engineInstance();
-            /** @var DrupalProjectType $project */
-            $project = $this->projectInstance();
+        /** @var EngineType $engine */
+        $engine = $this->engineInstance();
 
-            if (!$project instanceof PhpProjectType) {
-                throw new \Exception(
-                    "Command discovery only works for PHP based projects."
-                );
-            }
-            $binary = 'drush';
-            $docroot = $project->getInstallPath();
+        /** @var DrupalProjectType $project */
+        $project = $this->projectInstance();
 
-            if ($project->hasDrush()) {
-                $drush_binary = '/vendor/bin/drush';
-                $install_root = $project->getInstallRoot(true);
-
-                if ($engine instanceof DockerEngineType && !$this->localhost) {
-                    $base_root = "/var/www/html";
-                    $binary = "{$base_root}{$drush_binary}";
-                    $docroot = "{$base_root}/{$install_root}";
-                } else {
-                    $binary = ProjectX::projectRoot() . $drush_binary;
-                }
-            }
-
-            $this
-                ->setDocroot($docroot)
-                ->setExecutable($binary);
+        if ($engine instanceof DockerEngineType && !$this->localhost) {
+            return "/var/www/html/{$project->getInstallRoot(true)}";
         }
 
-        return $this;
-    }
-
-    /**
-     * Get project instance.
-     *
-     * @return ProjectTypeInterface
-     */
-    protected function projectInstance()
-    {
-        return ProjectX::getProjectType();
-    }
-
-    /**
-     * Get engine instance.
-     *
-     * @return \Droath\ProjectX\Engine\EngineTypeInterface
-     */
-    protected function engineInstance()
-    {
-        return ProjectX::getEngineType();
+        return $project->getInstallPath();
     }
 }

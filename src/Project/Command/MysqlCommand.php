@@ -9,7 +9,7 @@ use Droath\ProjectX\CommandBuilder;
  */
 class MysqlCommand extends CommandBuilder
 {
-    protected $executable = 'mysql';
+    const DEFAULT_EXECUTABLE = 'mysql';
 
     /**
      * Database host.

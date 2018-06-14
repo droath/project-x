@@ -3,7 +3,6 @@
 namespace Droath\ProjectX\Tests\Project;
 
 use Droath\ProjectX\Tests\TestBase;
-use org\bovigo\vfs\vfsStream;
 
 class ProjectTypeResolverTest extends TestBase
 {
@@ -62,49 +61,5 @@ class ProjectTypeResolverTest extends TestBase
 
         $this->assertEquals($classname, 'TestProjectType');
         $this->assertArrayHasKey('Droath\ProjectX\Project\ProjectTypeInterface', class_implements($classname));
-    }
-
-    protected function addComposerPluginStructure()
-    {
-        $contents = json_encode([
-            [
-                'name' => 'psr/log',
-                'type' => 'library',
-                'autoload' => [
-                    'psr-4' => [
-                        'PSR\\Log\\' => './src'
-                    ],
-                ],
-            ],
-            [
-                'name' => 'droath/acquia-drupal',
-                'type' => 'project-x',
-                'autoload' => [
-                    'psr-4' => [
-                        'Droath\\AcquiaDrupal\\' => './src'
-                    ],
-                ],
-            ],
-        ]);
-        $test_project_path = APP_ROOT . '/tests/fixtures/TestProjectType.php';
-
-        vfsStream::create([
-            'vendor' => [
-                'composer' => [
-                    'installed.json' => $contents
-                ],
-                'droath' => [
-                    'acquia-drupal' => [
-                        'src' => [
-                            'Project' => [
-                                'TestProjectType.php' => file_get_contents($test_project_path)
-                            ]
-                        ]
-                    ]
-                ]
-            ]
-        ], $this->projectDir);
-
-        require_once $test_project_path;
     }
 }

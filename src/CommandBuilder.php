@@ -5,8 +5,13 @@ namespace Droath\ProjectX;
 /**
  * Define command builder base class.
  */
-abstract class CommandBuilder
+class CommandBuilder implements CommandInterface
 {
+    /**
+     * Command default executable.
+     */
+    const DEFAULT_EXECUTABLE = null;
+
     /**
      * Command options.
      *
@@ -36,27 +41,31 @@ abstract class CommandBuilder
     protected $envVariable = [];
 
     /**
-     * Set command executable.
+     * Run command on localhost.
      *
-     * @param $executable
-     *   The command executable binary.
-     *
-     * @return $this
+     * @var bool
      */
-    public function setExecutable($executable)
-    {
-        $this->executable = $executable;
+    protected $localhost = false;
 
-        return $this;
+    /**
+     * Command constructor.
+     *
+     * @param null $executable
+     * @param bool $localhost
+     */
+    public function __construct($executable = null, $localhost = false)
+    {
+        $this->localhost = $localhost;
+
+        if (!isset($executable)) {
+            $executable = $this->findExecutable();
+        }
+
+        $this->setExecutable($executable);
     }
 
     /**
-     * Add an executable command.
-     *
-     * @param $command
-     *   The command for the given executable.
-     *
-     * @return $this
+     * {@inheritdoc}
      */
     public function command($command)
     {
@@ -66,27 +75,17 @@ abstract class CommandBuilder
     }
 
     /**
-     * Get command options.
-     *
-     * @return string
+     * {@inheritdoc}
      */
-    public function getOptions()
+    public function setExecutable($executable)
     {
-        $options = array_map('trim', $this->options);
-        return implode(' ', array_unique($options));
+        $this->executable = $executable;
+
+        return $this;
     }
 
     /**
-     * Set command option.
-     *
-     * @param $option
-     *   The command option key.
-     * @param null|string $value
-     *   The command option value.
-     * @param null $delimiter
-     *   The command option delimiter.
-     *
-     * @return $this
+     * {@inheritdoc}
      */
     public function setOption($option, $value = null, $delimiter = null)
     {
@@ -100,25 +99,7 @@ abstract class CommandBuilder
     }
 
     /**
-     * Get environment variable.
-     *
-     * @return string
-     */
-    public function getEnvVariable()
-    {
-        $variables = array_map('trim', $this->envVariable);
-        return implode(' ;', $variables);
-    }
-
-    /**
-     * Set environment variable.
-     *
-     * @param $key
-     *   The environment variable key.
-     * @param $value
-     *   The environment variable value.
-     *
-     * @return $this
+     * {@inheritdoc}
      */
     public function setEnvVariable($key, $value)
     {
@@ -128,19 +109,71 @@ abstract class CommandBuilder
     }
 
     /**
-     * Build the command structure.
-     *
-     * @return string
+     * {@inheritdoc}
      */
     public function build()
     {
         $commands = [];
 
-        foreach ($this->commands as $command) {
-            $commands[] = trim("{$this->getEnvVariable()} {$this->executable} {$this->getOptions()} {$command}");
+        if (empty($this->commands)) {
+            $commands[] = $this->formattedCommand(null);
+        } else {
+            foreach ($this->commands as $command) {
+                $commands[] = $this->formattedCommand($command);
+            }
         }
         $this->commands = [];
 
         return implode(' && ', $commands);
+    }
+
+    /**
+     * Get command options.
+     *
+     * @return string
+     */
+    protected function getOptions()
+    {
+        $options = array_map('trim', $this->options);
+        return implode(' ', array_unique($options));
+    }
+
+    /**
+     * Get environment variable.
+     *
+     * @return string
+     */
+    protected function getEnvVariable()
+    {
+        $variables = array_map('trim', $this->envVariable);
+        return implode(' ;', $variables);
+    }
+
+    /**
+     * Formatted command.
+     *
+     * @param $command
+     * @return string
+     */
+    protected function formattedCommand($command)
+    {
+        $structure = [
+            $this->getEnvVariable(),
+            $this->executable,
+            $this->getOptions(),
+            $command
+        ];
+
+        return implode(' ', array_filter($structure));
+    }
+
+    /**
+     * Find the executable binary.
+     *
+     * @return mixed
+     */
+    protected function findExecutable()
+    {
+        return static::DEFAULT_EXECUTABLE;
     }
 }

@@ -303,9 +303,9 @@ class DockerEngineType extends EngineType implements TaskSubTypeInterface
     /**
      * {@inheritdoc}
      */
-    public function exec($command, $service = null)
+    public function exec($command, $service = null, array $options = [], $quiet = false)
     {
-        $result = $this->execRaw($command, $service);
+        $result = $this->execRaw($command, $service, $options, $quiet);
 
         if ($result->getExitCode() !== ResultData::EXITCODE_OK) {
             return false;
@@ -612,6 +612,36 @@ class DockerEngineType extends EngineType implements TaskSubTypeInterface
     }
 
     /**
+     * Get the file mime type.
+     *
+     * @param $filename
+     *   The path to the file.
+     * @param $service
+     *   The service to run the command inside.
+     *
+     * @return bool|string|void
+     * @throws \Exception
+     */
+    public function getFileMimeType($filename, $service)
+    {
+        $binary = '/usr/bin/file';
+        $mime_type = $this->exec(
+            "if [ -e {$binary} ]; then {$binary} -b --mime-type {$filename}; fi",
+            $service,
+            [],
+            true
+        );
+
+        if (empty($mime_type)) {
+            throw new \Exception(
+                sprintf('No mime type was captured for %s.', $filename)
+            );
+        }
+
+        return $mime_type;
+    }
+
+    /**
      * Get the docker ports to verify.
      *
      * @return array
@@ -693,8 +723,7 @@ class DockerEngineType extends EngineType implements TaskSubTypeInterface
 
         if ($container_id === false) {
             throw new EngineRuntimeException(
-                sprintf('Unable to obtain the container identifier for the
-                     %s service.', $service)
+                sprintf('Unable to obtain the container identifier for the %s service.', $service)
             );
         }
 

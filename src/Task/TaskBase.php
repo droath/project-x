@@ -2,32 +2,16 @@
 
 namespace Droath\ProjectX\Task;
 
+use Droath\ProjectX\EngineTrait;
+use Droath\ProjectX\PlatformTrait;
+use Droath\ProjectX\ProjectTrait;
+
 /**
  * Define Project-X task base.
  */
 abstract class TaskBase extends EventTaskBase
 {
-    /**
-     * Engine type instance.
-     *
-     * @return \Droath\ProjectX\Engine\EngineTypeInterface
-     */
-    protected function engineInstance()
-    {
-        return $this->container
-            ->get('projectXEngine')
-            ->setBuilder($this->getBuilder());
-    }
-
-    /**
-     * Project type instance.
-     *
-     * @return \Droath\ProjectX\Project\ProjectTypeInterface
-     */
-    protected function projectInstance()
-    {
-        return $this->container
-            ->get('projectXProject')
-            ->setBuilder($this->getBuilder());
-    }
+    use EngineTrait;
+    use ProjectTrait;
+    use PlatformTrait;
 }

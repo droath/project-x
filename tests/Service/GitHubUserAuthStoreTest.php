@@ -24,14 +24,14 @@ class GitHubUserAuthStoreTest extends TestBase
 
     public function testHasAuthInfo()
     {
-        $this->assertFalse($this->githubUserAuth->hasAuthInfo());
+        $this->assertFalse($this->githubUserAuth->hasStoreData());
         $this->addGithubUserAuthFile();
-        $this->assertTRUE($this->githubUserAuth->hasAuthInfo());
+        $this->assertTRUE($this->githubUserAuth->hasStoreData());
     }
 
     public function testGetAuthInfoNoContent()
     {
-        $info = $this->githubUserAuth->getAuthInfo();
+        $info = $this->githubUserAuth->getStoreData();
         $this->assertEmpty($info);
         $this->assertInternalType('array', $info);
 
@@ -41,7 +41,7 @@ class GitHubUserAuthStoreTest extends TestBase
     {
         $this->addGithubUserAuthFile();
 
-        $info = $this->githubUserAuth->getAuthInfo();
+        $info = $this->githubUserAuth->getStoreData();
         $this->assertEquals('test-user', $info['user']);
         $this->assertEquals('3253523452352', $info['token']);
     }
@@ -52,7 +52,9 @@ class GitHubUserAuthStoreTest extends TestBase
         $token = '3253523452352';
 
         $auth = $this->githubUserAuth
-            ->saveAuthInfo($user, $token);
+            ->setUser($user)
+            ->setToken($token)
+            ->save();
 
         $fileurl = "{$this->filepath}/{$this->filename}";
         $this->assertFileExists($fileurl);

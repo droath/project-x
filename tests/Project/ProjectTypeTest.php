@@ -61,13 +61,6 @@ class ProjectTypeTest extends TestTaskBase
         $this->assertEquals('/docroot', ProjectType::installRoot());
     }
 
-    public function testHasDockerSupport()
-    {
-        $this->assertFalse($this->projectType->hasDockerSupport());
-        $this->projectType->supportsDocker();
-        $this->assertTrue($this->projectType->hasDockerSupport());
-    }
-
     public function testSetupProjectFilesystem()
     {
         chmod($this->projectRoot, 0644);
@@ -83,5 +76,32 @@ class ProjectTypeTest extends TestTaskBase
         $this->assertEquals('Drupal-X Site', $site['name']);
         $this->assertEquals('standard', $site['profile']);
         $this->assertFalse($this->projectType->getProjectOptionByKey('nothing'));
+    }
+
+    public function testGetInstallPath()
+    {
+        $this->assertEquals('vfs://root/www', $this->projectType->getInstallPath());
+    }
+
+    public function testGetProjectVersion()
+    {
+        $this->addProjectXConfigToRoot();
+        $this->assertEquals('8', $this->projectType->getProjectVersion());
+    }
+
+    public function testGetInstallRoot()
+    {
+        $this->assertEquals('/www', $this->projectType->getInstallRoot());
+        $this->assertEquals('www', $this->projectType->getInstallRoot(true));
+    }
+
+    public function testOnDeployBuild()
+    {
+        $directory = vfsStream::create([
+            'build' => [],
+        ], $this->projectDir);
+
+        $this->projectType->onDeployBuild('vfs://root/build');
+        $this->assertTrue($directory->getChild('build')->hasChild('www'));
     }
 }

@@ -2,14 +2,20 @@
 
 namespace Droath\ProjectX\Project;
 
+use Droath\ProjectX\EngineTrait;
+use Droath\ProjectX\Event\DeployEventInterface;
+use Droath\ProjectX\PlatformTrait;
 use Droath\ProjectX\ProjectX;
 use Droath\ProjectX\TaskSubType;
 
 /**
  * Define Project-X project type.
  */
-abstract class ProjectType extends TaskSubType implements ProjectTypeInterface
+abstract class ProjectType extends TaskSubType implements ProjectTypeInterface, DeployEventInterface
 {
+    use EngineTrait;
+    use PlatformTrait;
+
     /**
      * Project default install root.
      */
@@ -39,13 +45,6 @@ abstract class ProjectType extends TaskSubType implements ProjectTypeInterface
      * Project support versions.
      */
     const SUPPORTED_VERSIONS = [];
-
-    /**
-     * Project type supports docker.
-     *
-     * @var bool
-     */
-    protected $supportsDocker = false;
 
     /**
      * Project current install root.
@@ -85,18 +84,6 @@ abstract class ProjectType extends TaskSubType implements ProjectTypeInterface
     }
 
     /**
-     * Project supports docker.
-     *
-     * @return self
-     */
-    public function supportsDocker()
-    {
-        $this->supportsDocker = true;
-
-        return $this;
-    }
-
-    /**
      * {@inheritdoc}
      */
     public function setupNewProject()
@@ -127,22 +114,6 @@ abstract class ProjectType extends TaskSubType implements ProjectTypeInterface
     }
 
     /**
-     * React on the engine startup.
-     */
-    public function onEngineUp()
-    {
-        // Nothing to do at the parent level.
-    }
-
-    /**
-     * React on the engine shutdown.
-     */
-    public function onEngineDown()
-    {
-        // Nothing to do at the parent level.
-    }
-
-    /**
      * React on the deploy build.
      *
      * @param $build_root
@@ -155,14 +126,6 @@ abstract class ProjectType extends TaskSubType implements ProjectTypeInterface
         if (!file_exists($install_root)) {
             $this->_mkdir($install_root);
         }
-    }
-
-    /**
-     * Has docker support.
-     */
-    public function hasDockerSupport()
-    {
-        return $this->supportsDocker;
     }
 
     /**
@@ -272,21 +235,6 @@ abstract class ProjectType extends TaskSubType implements ProjectTypeInterface
     }
 
     /**
-     * Get project engine service names by type.
-     *
-     * @param $type
-     *   The service type on what to search for.
-     *
-     * @return mixed
-     * @throws \Psr\Container\ContainerExceptionInterface
-     * @throws \Psr\Container\NotFoundExceptionInterface
-     */
-    public function getEngineServiceNamesByType($type)
-    {
-        return $this->getEngineInstance()->getServiceNamesByType($type);
-    }
-
-    /**
      * Get project install path.
      *
      * @return string
@@ -348,29 +296,6 @@ abstract class ProjectType extends TaskSubType implements ProjectTypeInterface
         }
 
         return !$rebuild ? static::BUILD_FRESH : static::BUILD_DIRTY;
-    }
-
-    /**
-     * Check if host has database connection.
-     *
-     * @param string $host
-     *   The database hostname.
-     * @param int $port
-     *   The database port.
-     * @param int $seconds
-     *   The amount of seconds to continually check.
-     *
-     * @return bool
-     *   Return true if the database is connectible; otherwise false.
-     */
-    protected function hasDatabaseConnection($host, $port = 3306, $seconds = 30)
-    {
-        $hostChecker = $this->getHostChecker();
-        $hostChecker
-            ->setHost($host)
-            ->setPort($port);
-
-        return $hostChecker->isPortOpenRepeater($seconds);
     }
 
     /**
@@ -445,24 +370,6 @@ abstract class ProjectType extends TaskSubType implements ProjectTypeInterface
     }
 
     /**
-     * Get environment engine options.
-     *
-     * @return array
-     *   An array of engine options defined in the project-x configuration.
-     */
-    protected function getEngineOptions()
-    {
-        $config = ProjectX::getProjectConfig();
-
-        $engine = $config->getEngine();
-        $options = $config->getOptions();
-
-        return isset($options[$engine])
-            ? $options[$engine]
-            : [];
-    }
-
-    /**
      * Delete project install directory.
      *
      * @return self
@@ -472,18 +379,5 @@ abstract class ProjectType extends TaskSubType implements ProjectTypeInterface
         $this->taskDeleteDir($this->getInstallPath())->run();
 
         return $this;
-    }
-
-    /**
-     * Get engine instance object.
-     *
-     * @return \Droath\ProjectX\Engine\EngineTypeInterface
-     * @throws \Psr\Container\ContainerExceptionInterface
-     * @throws \Psr\Container\NotFoundExceptionInterface
-     */
-    protected function getEngineInstance()
-    {
-        return ProjectX::getEngineType()
-            ->setBuilder($this->getBuilder());
     }
 }

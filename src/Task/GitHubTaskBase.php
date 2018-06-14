@@ -21,7 +21,7 @@ abstract class GitHubTaskBase extends Tasks
     {
         $info = $this
             ->gitHubUserAuth()
-            ->getAuthInfo();
+            ->getStoreData();
 
         $user = isset($info['user'])
             ? $info['user']
@@ -48,7 +48,7 @@ abstract class GitHubTaskBase extends Tasks
     {
         $info = $this
             ->gitHubUserAuth()
-            ->getAuthInfo();
+            ->getStoreData();
 
         $token = isset($info['token'])
             ? $info['token']

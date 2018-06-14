@@ -43,6 +43,13 @@ class ProjectXConfig extends YamlConfigBase
     protected $engine;
 
     /**
+     * Project platform.
+     *
+     * @var string
+     */
+    protected $platform = null;
+
+    /**
      * Project remote.
      *
      * @var array
@@ -130,6 +137,18 @@ class ProjectXConfig extends YamlConfigBase
     public function getEngine()
     {
         return $this->engine;
+    }
+
+    public function setPlatform($platform)
+    {
+        $this->platform = $platform;
+
+        return $this;
+    }
+
+    public function getPlatform()
+    {
+        return $this->platform;
     }
 
     public function setRoot($root)

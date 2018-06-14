@@ -6,6 +6,7 @@ use Droath\HostsFileManager\HostsFile;
 use Droath\HostsFileManager\HostsFileWriter;
 use Droath\ProjectX\Engine\DockerEngineType;
 use Droath\ProjectX\Engine\EngineType;
+use Droath\ProjectX\Event\EngineEventInterface;
 use Droath\ProjectX\ProjectX;
 
 /**
@@ -44,8 +45,7 @@ class EnvTasks extends TaskBase
         $status = $engine->up();
 
         if ($status !== false) {
-            // Allow projects to react to the engine startup.
-            $this->projectInstance()->onEngineUp();
+            $this->invokeEngineEvent('onEngineUp');
 
             // Add hostname to the system hosts file.
             if (!$opts['no-hostname']) {
@@ -86,7 +86,7 @@ class EnvTasks extends TaskBase
         $this->engineInstance()->down($opts['include-network']);
 
         // Allow projects to react to the engine shutdown.
-        $this->projectInstance()->onEngineDown();
+        $this->invokeEngineEvent('onEngineDown');
 
         // Remove hostname from the system hosts file.
         $this->removeHostName();
@@ -272,5 +272,24 @@ class EnvTasks extends TaskBase
         }
 
         return $this;
+    }
+
+    /**
+     * Invoke the engine event.
+     *
+     * @param $method
+     *   The engine event method.
+     */
+    protected function invokeEngineEvent($method)
+    {
+        $project = $this->getProjectInstance();
+        if ($project instanceof EngineEventInterface) {
+            call_user_func_array([$project, $method], []);
+        }
+
+        $platform = $this->getPlatformInstance();
+        if ($platform instanceof EngineEventInterface) {
+            call_user_func_array([$platform, $method], []);
+        }
     }
 }

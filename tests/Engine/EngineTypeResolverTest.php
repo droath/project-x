@@ -3,7 +3,6 @@
 namespace Droath\ProjectX\Tests\Project;
 
 use Droath\ProjectX\Tests\TestBase;
-use org\bovigo\vfs\vfsStream;
 
 class EngineTypeResolverTest extends TestBase
 {
@@ -62,49 +61,5 @@ class EngineTypeResolverTest extends TestBase
 
         $this->assertEquals($classname, 'TestEngineType');
         $this->assertArrayHasKey('Droath\ProjectX\Engine\EngineTypeInterface', class_implements($classname));
-    }
-
-    protected function addComposerPluginStructure()
-    {
-        $contents = json_encode([
-            [
-                'name' => 'psr/log',
-                'type' => 'library',
-                'autoload' => [
-                    'psr-4' => [
-                        'PSR\\Log\\' => './src'
-                    ],
-                ],
-            ],
-            [
-                'name' => 'droath/acquia-drupal',
-                'type' => 'project-x',
-                'autoload' => [
-                    'psr-4' => [
-                        'Droath\\AcquiaDrupal\\' => './src'
-                    ],
-                ],
-            ],
-        ]);
-        $test_engine_path = APP_ROOT . '/tests/fixtures/TestEngineType.php';
-
-        vfsStream::create([
-            'vendor' => [
-                'composer' => [
-                    'installed.json' => $contents
-                ],
-                'droath' => [
-                    'acquia-drupal' => [
-                        'src' => [
-                            'Engine' => [
-                                'TestEngineType.php' => file_get_contents($test_engine_path)
-                            ]
-                        ]
-                    ]
-                ]
-            ]
-        ], $this->projectDir);
-
-        require_once $test_engine_path;
     }
 }

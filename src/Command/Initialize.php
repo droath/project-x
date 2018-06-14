@@ -6,8 +6,9 @@ use Droath\ConsoleForm\Field\BooleanField;
 use Droath\ConsoleForm\Field\TextField;
 use Droath\ConsoleForm\Form;
 use Droath\ProjectX\Config\ProjectXConfig;
-use Droath\ProjectX\Engine\DockerEngineType;
+use Droath\ProjectX\DeployAwareInterface;
 use Droath\ProjectX\OptionFormAwareInterface;
+use Droath\ProjectX\Platform\NullPlatformType;
 use Droath\ProjectX\ProjectX;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
@@ -17,6 +18,13 @@ use Symfony\Component\Console\Style\SymfonyStyle;
 
 class Initialize extends Command
 {
+    /**
+     * Project-x option configurations.
+     *
+     * @var array
+     */
+    protected $options = [];
+
     /**
      * {@inheritdoc}
      */
@@ -73,35 +81,75 @@ class Initialize extends Command
                 }
             });
         }
+        $this
+            ->setPlatformOptions($input, $output)
+            ->setProjectOptions($input, $output)
+            ->setDeployOptions($input, $output)
+            ->setEngineServiceOptions();
 
-        $this->initProjectOptionForm($input, $output, $filepath);
+        if (!empty($this->options)) {
+            $saved = ProjectX::getProjectConfig()
+                ->setOptions($this->options)
+                ->save($filepath);
+
+            if ($saved) {
+                $output->writeln(
+                    sprintf('🚀  <info>Success, the configuration options have been saved.</info>')
+                );
+            }
+        }
     }
 
     /**
-     * Initialize the project option form.
+     * Set project platform options.
      *
-     * @param \Symfony\Component\Console\Input\InputInterface $input
-     *   The console input.
-     * @param \Symfony\Component\Console\Output\OutputInterface $output
-     *   The console output.
-     * @param string $filepath
-     *   The project-x file path.
+     * @param InputInterface $input
+     * @param OutputInterface $output
      *
-     * @return self
-     * @throws \Psr\Container\ContainerExceptionInterface
-     * @throws \Psr\Container\NotFoundExceptionInterface
+     * @return Initialize
      */
-    protected function initProjectOptionForm($input, $output, $filepath)
+    protected function setPlatformOptions(InputInterface $input, OutputInterface $output)
     {
-        $options = [];
+        $platform = ProjectX::getPlatformType();
 
-        $io = new SymfonyStyle($input, $output);
+        if (!$platform instanceof NullPlatformType
+            && $platform instanceof OptionFormAwareInterface) {
+            $classname = get_class($platform);
+            $command_io = new SymfonyStyle($input, $output);
+            $command_io->newLine(2);
+            $command_io->title(sprintf('%s Platform Options', $classname::getLabel()));
+
+            $form = $platform->optionForm();
+            $form
+                ->setInput($input)
+                ->setOutput($output)
+                ->setHelperSet($this->getHelperSet())
+                ->process();
+
+            $this->options[$classname::getTypeId()] = $form->getResults();
+        }
+
+        return $this;
+    }
+
+    /**
+     * Set project options.
+     *
+     * @param InputInterface $input
+     * @param OutputInterface $output
+     *
+     * @return $this
+     */
+    protected function setProjectOptions(InputInterface $input, OutputInterface $output)
+    {
         $project = ProjectX::getProjectType();
 
-        // Add project specific options to the configuration file.
         if ($project instanceof OptionFormAwareInterface) {
             $classname = get_class($project);
-            $io->title(sprintf('%s Project Options', $classname::getLabel()));
+
+            $command_io = new SymfonyStyle($input, $output);
+            $command_io->newLine(2);
+            $command_io->title(sprintf('%s Project Options', $classname::getLabel()));
 
             $form = $project->optionForm();
             $form
@@ -110,52 +158,67 @@ class Initialize extends Command
                 ->setHelperSet($this->getHelperSet())
                 ->process();
 
-            $options[$classname::getTypeId()] = $form->getResults();
-        }
-        $io->newLine(2);
-        $io->title('Deploy Build Options');
-
-        $deploy_form = (new Form())
-            ->setInput($input)
-            ->setOutput($output)
-            ->setHelperSet($this->getHelperSet())
-            ->addFields([
-                (new BooleanField('deploy', 'Setup build deploy?'))
-                    ->setDefault(false)
-                    ->setSubform(function ($subform, $value) {
-                        if (true === $value) {
-                            $subform->addFields([
-                                (new TextField('github_repo', 'GitHub Repo')),
-                            ]);
-                        }
-                    })
-            ]);
-        $deploy_results = $deploy_form->process()->getResults();
-
-        if (!empty($deploy_results)) {
-            $options = array_merge($options, $deploy_results);
-        }
-        $engine = ProjectX::getEngineType();
-
-        // Add engine specific options to the configuration file.
-        if ($engine instanceof DockerEngineType) {
-            $classname = get_class($engine);
-            $options[$classname::getTypeId()] = [
-                'services' => $project->defaultServices()
-            ];
+            $this->options[$classname::getTypeId()] = $form->getResults();
         }
 
-        if (!empty($options)) {
-            $saved = ProjectX::getProjectConfig()
-                ->setOptions($options)
-                ->save($filepath);
+        return $this;
+    }
 
-            if ($saved) {
-                $output->writeln(
-                    sprintf('🚀  <info>Success, the options have been saved.</info>')
-                );
+    /**
+     * Set project deployment options.
+     *
+     * @param InputInterface $input
+     * @param OutputInterface $output
+     *
+     * @return $this
+     */
+    protected function setDeployOptions(InputInterface $input, OutputInterface $output)
+    {
+        $project = ProjectX::getProjectType();
+
+        if ($project instanceof DeployAwareInterface) {
+            $command_io = new SymfonyStyle($input, $output);
+            $command_io->title('Deploy Build Options');
+
+            $form = (new Form())
+                ->setInput($input)
+                ->setOutput($output)
+                ->setHelperSet($this->getHelperSet())
+                ->addFields([
+                    (new BooleanField('deploy', 'Setup build deploy?'))
+                        ->setDefault(false)
+                        ->setSubform(function ($subform, $value) {
+                            if (true === $value) {
+                                $subform->addFields([
+                                    (new TextField('github_repo', 'GitHub Repo')),
+                                ]);
+                            }
+                        })
+                ])
+                ->process();
+
+            $results = $form->getResults();
+
+            if (isset($results['deploy']) && !empty($results['deploy'])) {
+                $this->options['deploy'] = $results['deploy'];
             }
         }
+
+        return $this;
+    }
+
+    /**
+     * Set the project engine services options.
+     */
+    protected function setEngineServiceOptions()
+    {
+        $engine = ProjectX::getEngineType();
+        $project = ProjectX::getProjectType();
+
+        $classname = get_class($engine);
+        $this->options[$classname::getTypeId()] = [
+            'services' => $project->defaultServices()
+        ];
 
         return $this;
     }

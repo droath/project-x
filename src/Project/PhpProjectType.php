@@ -3,16 +3,18 @@
 namespace Droath\ProjectX\Project;
 
 use Droath\ProjectX\CommandBuilder;
+use Droath\ProjectX\ComposerPackageInterface;
 use Droath\ProjectX\Config\ComposerConfig;
 use Droath\ProjectX\Database;
 use Droath\ProjectX\DatabaseInterface;
+use Droath\ProjectX\DeployAwareInterface;
 use Droath\ProjectX\Engine\DockerEngineType;
 use Droath\ProjectX\Engine\EngineType;
 use Droath\ProjectX\Engine\ServiceDbInterface;
+use Droath\ProjectX\Engine\ServiceInterface;
 use Droath\ProjectX\Project\Command\MysqlCommand;
 use Droath\ProjectX\Project\Command\PgsqlCommand;
 use Droath\ProjectX\ProjectX;
-use Robo\ResultData;
 use Robo\Task\Composer\loadTasks as composerTasks;
 use Robo\Task\Filesystem\loadTasks as fileSystemTasks;
 use Symfony\Component\Console\Question\ChoiceQuestion;
@@ -21,7 +23,7 @@ use Symfony\Component\Console\Question\Question;
 /**
  * Define PHP project type.
  */
-abstract class PhpProjectType extends ProjectType
+abstract class PhpProjectType extends ProjectType implements DeployAwareInterface
 {
     use composerTasks;
     use fileSystemTasks;
@@ -107,46 +109,27 @@ abstract class PhpProjectType extends ProjectType
      *   The database service name to use.
      * @param null $import_path
      *   The path to the database file.
+     * @param bool $copy_to_service
+     *   Copy imported file to service.
      * @param bool $localhost
      *   Flag to determine if the command should be ran from localhost.
      *
      * @return $this
      * @throws \Exception
      */
-    public function importDatabaseToService($service = null, $import_path = null, $localhost = false)
+    public function importDatabaseToService($service = null, $import_path = null, $copy_to_service = false, $localhost = false)
     {
-        /** @var EngineType $engine */
-        $engine = $this->getEngineInstance();
-        /** @var ServiceDbInterface $instance */
-        $instance = $this->resolveDatabaseServiceInstance($service);
+        $destination = $this->resolveDatabaseImportDestination(
+            $import_path,
+            $service,
+            $copy_to_service,
+            $localhost
+        );
 
-        if ($engine instanceof DockerEngineType) {
-            $import = $this->resolveDatabaseImportCommand($instance);
-            $import_path = $this->resolveDatabaseImportPath($import_path);
+        /** @var CommandBuilder $command */
+        $command = $this->resolveDatabaseImportCommand()->command("< {$destination}");
 
-            if (!$localhost) {
-                $service_name = $instance->getName();
-                $status = $engine
-                    ->copyFileToService($import_path, '/tmp', $service_name);
-
-                if ($status->getExitCode() === ResultData::EXITCODE_OK) {
-                    $filename = basename($import_path);
-                    $command = $import->command("< /tmp/{$filename}");
-
-                    $engine->execRaw(
-                        $command->build(),
-                        $service_name
-                    );
-                }
-            } else {
-                $command = $import->command("< {$import_path}");
-                $this->_exec($command->build());
-            }
-        } else {
-            throw new \Exception(
-                "Environment engine doesn't support database import."
-            );
-        }
+        $this->executeEngineCommand($command, $service, [], false, $localhost);
 
         return $this;
     }
@@ -444,12 +427,19 @@ abstract class PhpProjectType extends ProjectType
     /**
      * Update composer packages.
      *
+     * @param bool $lock
+     *   Determine to update composer using --lock.
+     *
      * @return self
      */
-    public function updateComposer()
+    public function updateComposer($lock = false)
     {
-        $this->taskComposerUpdate()
-            ->run();
+        $update = $this->taskComposerUpdate();
+
+        if ($lock) {
+            $update->option('lock');
+        }
+        $update->run();
 
         return $this;
     }
@@ -465,6 +455,26 @@ abstract class PhpProjectType extends ProjectType
             ->run();
 
         return $this;
+    }
+
+    /**
+     * Has composer package.
+     *
+     * @param string $vendor
+     *   The package vendor project namespace.
+     * @param boolean $dev
+     *   A flag defining if it's a dev requirement.
+     *
+     * @return boolean
+     */
+    public function hasComposerPackage($vendor, $dev = false)
+    {
+
+        $packages = !$dev
+            ? $this->composer->getRequire()
+            : $this->composer->getRequireDev();
+
+        return isset($packages[$vendor]);
     }
 
     /**
@@ -577,12 +587,62 @@ abstract class PhpProjectType extends ProjectType
     }
 
     /**
+     * Extract archive within appropriate environment.
+     *
+     * @param $filename
+     *   The path to the file archive.
+     * @param $destination
+     *   The destination path of extracted data.
+     * @param string|null $service
+     *   The service name.
+     * @param bool $localhost
+     *   Extract archive on host.
+     * @return null|boolean
+     * @throws \Exception
+     */
+    protected function extractArchive($filename, $destination, $service = null, $localhost = false)
+    {
+        $mime_type = null;
+
+        if (file_exists($filename) && $localhost) {
+            $mime_type = mime_content_type($filename);
+        } else {
+            $engine = $this->getEngineInstance();
+
+            if ($engine instanceof DockerEngineType) {
+                $mime_type = $engine->getFileMimeType($filename, $service);
+            }
+        }
+        $command = null;
+
+        switch ($mime_type) {
+            case 'application/gzip':
+            case 'application/x-gzip':
+                $command = (new CommandBuilder('gunzip', $localhost))
+                    ->command("-c {$filename} > {$destination}");
+                break;
+        }
+
+        if (!isset($command)) {
+            return $filename;
+        }
+
+        // Remove destination file if on localhost.
+        if (file_exists($destination) && $localhost) {
+            $this->_remove($destination);
+        }
+        $this->executeEngineCommand($command, $service, [], false, $localhost);
+
+        return $destination;
+    }
+
+    /**
      * Resolve database import path.
      *
      * @param string|null $import_path
      *   The path to use for the database import.
      *
-     * @return string
+     * @return \SplFileInfo
      *   The database import path.
      * @throws \Exception
      */
@@ -602,7 +662,56 @@ abstract class PhpProjectType extends ProjectType
             }
         }
 
-        return trim($import_path);
+        return new \SplFileInfo($import_path);
+    }
+
+    /**
+     * Resolve database import destination.
+     *
+     * @param $import_path
+     *   The database import path.
+     * @param $service
+     *   The service name.
+     * @param bool $copy_to_service
+     *   Copy imported file to service.
+     * @param bool $localhost
+     *   Resolve destination path from host.
+     * @return bool|null
+     * @throws \Exception
+     */
+    protected function resolveDatabaseImportDestination($import_path, $service, $copy_to_service = false, $localhost = false)
+    {
+        /** @var \SplFileInfo $import_path */
+        $path = $this->resolveDatabaseImportPath($import_path);
+
+        $filename = $path->getFilename();
+        $extract_filename = substr($filename, 0, strrpos($filename, '.'));
+
+        if (!$localhost) {
+            // Copy file to service if uploaded from localhost.
+            if ($copy_to_service) {
+                /** @var DockerEngineType $engine */
+                $engine = $this->getEngineInstance();
+
+                if ($engine instanceof DockerEngineType) {
+                    $engine->copyFileToService($path->getRealPath(), '/tmp', $service);
+                }
+            }
+
+            return $this->extractArchive(
+                "/tmp/{$filename}",
+                "/tmp/{$extract_filename}",
+                $service,
+                $localhost
+            );
+        }
+
+        return $this->extractArchive(
+            $path->getRealPath(),
+            "/tmp/{$extract_filename}",
+            null,
+            $localhost
+        );
     }
 
     /**
@@ -646,15 +755,18 @@ abstract class PhpProjectType extends ProjectType
     /**
      * Resolve database import command.
      *
-     * @param ServiceDbInterface $instance
-     *   The database service instance.
+     * @param string|null $service
+     *   The database service name.
      *
      * @return CommandBuilder
      *   The database command based on the provide service.
-     * @throws \Exception
      */
-    protected function resolveDatabaseImportCommand(ServiceDbInterface $instance)
+    protected function resolveDatabaseImportCommand($service = null)
     {
+        /** @var ServiceDbInterface $instance */
+        $instance = $this->resolveDatabaseServiceInstance($service);
+
+        /** @var DatabaseInterface $database */
         $database = $this->getDatabaseInfo($instance);
 
         switch ($database->getProtocol()) {
@@ -671,6 +783,29 @@ abstract class PhpProjectType extends ProjectType
                     ->password($database->getPassword())
                     ->database($database->getDatabase());
         }
+    }
+
+    /**
+     * Check if host has database connection.
+     *
+     * @param string $host
+     *   The database hostname.
+     * @param int $port
+     *   The database port.
+     * @param int $seconds
+     *   The amount of seconds to continually check.
+     *
+     * @return bool
+     *   Return true if the database is connectible; otherwise false.
+     */
+    protected function hasDatabaseConnection($host, $port = 3306, $seconds = 30)
+    {
+        $hostChecker = $this->getHostChecker();
+        $hostChecker
+            ->setHost($host)
+            ->setPort($port);
+
+        return $hostChecker->isPortOpenRepeater($seconds);
     }
 
     /**
@@ -719,22 +854,20 @@ abstract class PhpProjectType extends ProjectType
     }
 
     /**
-     * Has composer package.
+     * Setup composer packages.
      *
-     * @param string $vendor
-     *   The package vendor project namespace.
-     * @param boolean $dev
-     *   A flag defining if it's a dev requirement.
-     *
-     * @return boolean
+     * @return $this
      */
-    protected function hasComposerPackage($vendor, $dev = false)
+    protected function setupComposerPackages()
     {
-        $packages = !$dev
-            ? $this->composer->getRequire()
-            : $this->composer->getRequireDev();
+        $platform = $this->getPlatformInstance();
 
-        return isset($packages[$vendor]);
+        if ($platform instanceof ComposerPackageInterface) {
+            $platform->alterComposer($this->composer);
+        }
+        $this->saveComposer();
+
+        return $this;
     }
 
     /**

@@ -29,8 +29,8 @@ class ProjectXSetup implements FormInterface
      */
     public function buildForm()
     {
-        return (new Form())
-            ->addFields([
+        $form = new Form();
+        $form->addFields([
                 (new TextField('name', 'Project name'))
                     ->setDefault($this->getDefaultName()),
                 (new TextField('root', 'Project root'))
@@ -48,70 +48,80 @@ class ProjectXSetup implements FormInterface
                     }),
                 (new SelectField('engine', 'Select engine'))
                     ->setOptions($this->getEngineOptions())
-                    ->setDefault('docker'),
-                (new BooleanField('remote', 'Setup Remote?'))
-                    ->setSubform(function ($subform, $value) {
-                        if ($value === true) {
-                            $subform->addFields([
-                                (new FieldGroup('environments'))
-                                    ->addFields([
-                                        (new SelectField('realm', 'Remote Realm'))
-                                            ->setOptions([
-                                                'stg' => 'stg',
-                                                'prd' => 'prd',
-                                                'dev' => 'dev',
-                                            ])
-                                            ->setRequired(false),
-                                        (new TextField('name', 'Remote Name'))
-                                            ->setCondition('realm', null, '!='),
-                                        (new TextField('path', 'Remote Path'))
-                                            ->setDefault('/var/www/html')
-                                            ->setCondition('realm', null, '!='),
-                                        (new TextField('uri', 'Remote URI'))
-                                            ->setCondition('realm', null, '!='),
-                                        (new TextField('ssh_url', 'Remote SSH URL'))
-                                            ->setCondition('realm', null, '!='),
-                                    ])
-                                    ->setLoopUntil(function ($result) {
-                                        if (!isset($result['realm'])) {
-                                            return false;
-                                        }
-                                        $this->printInfoMessage('Leave remote realm empty to exit.');
+                    ->setDefault('docker')
+        ]);
 
-                                        return true;
-                                    })
-                            ]);
-                        }
-                    }),
-                (new BooleanField('github', 'Setup GitHub?'))
-                    ->setSubform(function ($subform, $value) {
-                        if ($value === true) {
-                            $subform->addFields([
-                                (new TextField('url', 'GitHub URL')),
-                            ]);
-                        }
-                    }),
-                (new BooleanField('host', 'Setup host?'))
-                    ->setSubform(function ($subform, $value) {
-                        if ($value === true) {
-                            $subform->addFields([
-                                (new TextField('name', 'Hostname'))
-                                    ->setDefault($this->getDefaultHostname()),
-                                (new BooleanField('open_on_startup', 'Open browser on startup?'))
-                                    ->setDefault(true),
-                            ]);
-                        }
-                    }),
-                (new BooleanField('network', 'Setup network?'))
-                    ->setSubform(function ($subform, $value) {
-                        if ($value === true) {
-                            $subform->addFields([
-                                (new BooleanField('proxy', 'Use Proxy'))
-                                    ->setDefault('true'),
-                            ]);
-                        }
-                    })
+        if ($platform_options = $this->getPlatformOptions()) {
+            $form->addField((new SelectField('platform', 'Select platform', false))
+                ->setOptions($platform_options));
+        }
+
+        $form->addFields([
+            (new BooleanField('remote', 'Setup Remote?'))
+                ->setSubform(function ($subform, $value) {
+                    if ($value === true) {
+                        $subform->addFields([
+                            (new FieldGroup('environments'))
+                                ->addFields([
+                                    (new SelectField('realm', 'Remote Realm'))
+                                        ->setOptions([
+                                            'stg' => 'stg',
+                                            'prd' => 'prd',
+                                            'dev' => 'dev',
+                                        ])
+                                        ->setRequired(false),
+                                    (new TextField('name', 'Remote Name'))
+                                        ->setCondition('realm', null, '!='),
+                                    (new TextField('path', 'Remote Path'))
+                                        ->setDefault('/var/www/html')
+                                        ->setCondition('realm', null, '!='),
+                                    (new TextField('uri', 'Remote URI'))
+                                        ->setCondition('realm', null, '!='),
+                                    (new TextField('ssh_url', 'Remote SSH URL'))
+                                        ->setCondition('realm', null, '!='),
+                                ])
+                                ->setLoopUntil(function ($result) {
+                                    if (!isset($result['realm'])) {
+                                        return false;
+                                    }
+                                    $this->printInfoMessage('Leave remote realm empty to exit.');
+
+                                    return true;
+                                })
+                        ]);
+                    }
+                }),
+            (new BooleanField('github', 'Setup GitHub?'))
+                ->setSubform(function ($subform, $value) {
+                    if ($value === true) {
+                        $subform->addFields([
+                            (new TextField('url', 'GitHub URL')),
+                        ]);
+                    }
+                }),
+            (new BooleanField('host', 'Setup host?'))
+                ->setSubform(function ($subform, $value) {
+                    if ($value === true) {
+                        $subform->addFields([
+                            (new TextField('name', 'Hostname'))
+                                ->setDefault($this->getDefaultHostname()),
+                            (new BooleanField('open_on_startup', 'Open browser on startup?'))
+                                ->setDefault(true),
+                        ]);
+                    }
+                }),
+            (new BooleanField('network', 'Setup network?'))
+                ->setSubform(function ($subform, $value) {
+                    if ($value === true) {
+                        $subform->addFields([
+                            (new BooleanField('proxy', 'Use Proxy'))
+                                ->setDefault('true'),
+                        ]);
+                    }
+                })
             ]);
+
+        return $form;
     }
 
     /**
@@ -188,6 +198,18 @@ class ProjectXSetup implements FormInterface
     {
         return ProjectX::getContainer()
             ->get('projectXEngineResolver')
+            ->getOptions();
+    }
+
+    /**
+     * Get platform type options.
+     *
+     * @return array
+     */
+    protected function getPlatformOptions()
+    {
+        return ProjectX::getContainer()
+            ->get('projectXPlatformResolver')
             ->getOptions();
     }
 

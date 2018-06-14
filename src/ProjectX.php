@@ -5,7 +5,13 @@ namespace Droath\ProjectX;
 use Dotenv\Dotenv;
 use Droath\ProjectX\Config\ProjectXConfig;
 use Droath\ProjectX\Discovery\PhpClassDiscovery;
+use Droath\ProjectX\Platform\PlatformTypeFactory;
+use Droath\ProjectX\Platform\PlatformTypeInterface;
+use Droath\ProjectX\Platform\PlatformTypeResolver;
+use Droath\ProjectX\Task\EngineTasks;
+use Droath\ProjectX\Task\ProjectTasks;
 use League\Container\ContainerAwareTrait;
+use Robo\Collection\CollectionBuilder;
 use Robo\Robo;
 use Symfony\Component\Console\Application;
 
@@ -157,6 +163,15 @@ class ProjectX extends Application
             ->share('projectXProjectResolver', \Droath\ProjectX\Project\ProjectTypeResolver::class)
             ->withArgument('projectXFilesystemCache');
         $container
+            ->add('projectXPlatform', function () use ($container) {
+                return (new PlatformTypeFactory(
+                    $container->get('projectXPlatformResolver')
+                ))->createInstance();
+            });
+        $container
+            ->share('projectXPlatformResolver', PlatformTypeResolver::class)
+            ->withArgument('projectXFilesystemCache');
+        $container
             ->share('projectXFilesystemCache', \Symfony\Component\Cache\Adapter\FilesystemAdapter::class)
             ->withArguments(['', 0, "$project_root/.project-x/cache"]);
     }
@@ -193,7 +208,9 @@ class ProjectX extends Application
     {
         $locations = array_merge(
             [self::projectRoot()],
-            self::getProjectType()->taskDirectories()
+            self::getEngineType()->taskDirectories(),
+            self::getProjectType()->taskDirectories(),
+            self::getPlatformType()->taskDirectories()
         );
 
         if (self::hasProjectConfig()) {
@@ -244,6 +261,30 @@ class ProjectX extends Application
     }
 
     /**
+     * Get the project-x platform type.
+     *
+     * @return PlatformTypeInterface
+     */
+    public static function getPlatformType()
+    {
+        $container = self::getContainer();
+        $builder = CollectionBuilder::create($container, false);
+
+        return $container->get('projectXPlatform')
+            ->setBuilder($builder);
+    }
+
+    /**
+     * Get the project-x platform type.
+     *
+     * @return string
+     */
+    public static function platformType()
+    {
+        return static::getProjectConfig()->getPlatform();
+    }
+
+    /**
      * Get project type instance.
      *
      * @return \Droath\ProjectX\Project\ProjectTypeInterface
@@ -252,8 +293,11 @@ class ProjectX extends Application
      */
     public static function getProjectType()
     {
-        return self::getContainer()
-            ->get('projectXProject');
+        $container = self::getContainer();
+        $builder = CollectionBuilder::create($container, new ProjectTasks());
+
+        return $container->get('projectXProject')
+            ->setBuilder($builder);
     }
 
     /**
@@ -275,8 +319,11 @@ class ProjectX extends Application
      */
     public static function getEngineType()
     {
-        return self::getContainer()
-            ->get('projectXEngine');
+        $container = self::getContainer();
+        $builder = CollectionBuilder::create($container, new EngineTasks());
+
+        return $container->get('projectXEngine')
+            ->setBuilder($builder);
     }
 
     /**

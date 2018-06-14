@@ -18,6 +18,9 @@ class InitializeTest extends TestBase
 {
     public function testExecute()
     {
+        // Add custom platform, project, and engine plugins.
+        $this->addComposerPluginStructure();
+
         $app = new ProjectX();
         $app->add(new Initialize());
 
@@ -55,18 +58,30 @@ class InitializeTest extends TestBase
         $this->assertEquals('dev.project-x.com', $config->getRemote()['environments'][0]['uri']);
         $this->assertEquals('admin@dev.project-x.com', $config->getRemote()['environments'][0]['ssh_url']);
         $this->assertEquals('docker', $config->getEngine());
+        $this->assertEquals('testing_platform_type', $config->getPlatform());
         $this->assertEquals('local.testing.com', $config->getHost()['name']);
         $this->assertEquals('true', $config->getHost()['open_on_startup']);
         $this->assertEquals('true', $config->getNetwork()['proxy']);
         $this->assertContains('Success, the project-x configuration have been saved.', $output);
-        $this->assertEquals('standard', $config->getOptions()['drupal']['site']['profile']);
-        $this->assertEquals('Whatever you Say!!!!', $config->getOptions()['drupal']['site']['name']);
-        $this->assertEquals('testing@example.com', $config->getOptions()['drupal']['account']['mail']);
-        $this->assertEquals('hacker123', $config->getOptions()['drupal']['account']['name']);
-        $this->assertEquals('secret', $config->getOptions()['drupal']['account']['pass']);
-        $this->assertContains('Success, the options have been saved.', $output);
-        $this->assertEquals('droath/project-x', $config->getOptions()['deploy']['github_repo']);
+        $this->assertArrayHasKey('drupal', $config->getOptions());
+        $this->assertEquals([
+            'site' => [
+                'profile' => 'standard',
+                'name' => 'Whatever you Say!!!!',
+            ],
+            'account' => [
+                'mail' => 'testing@example.com',
+                'name' => 'hacker123',
+                'pass' => 'secret',
+            ]
+        ], $config->getOptions()['drupal']);
+        $this->assertArrayHasKey('deploy', $config->getOptions());
+        $this->assertEquals([
+            'github_repo' => 'droath/project-x'
+        ], $config->getOptions()['deploy']);
         $this->assertArrayHasKey('docker', $config->getOptions());
+        $this->assertNotEmpty($config->getOptions()['docker']['services']);
+        $this->assertContains('Success, the configuration options have been saved.', $output);
     }
 
     protected function questionHelperMock()
@@ -91,6 +106,8 @@ class InitializeTest extends TestBase
                         return 8;
                     case 'select_engine':
                         return 'docker';
+                    case 'select_platform':
+                        return 'testing_platform_type';
                     case 'github_repo':
                         return 'droath/project-x';
                     case 'github_url':

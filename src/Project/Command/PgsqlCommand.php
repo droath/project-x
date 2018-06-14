@@ -9,7 +9,7 @@ use Droath\ProjectX\CommandBuilder;
  */
 class PgsqlCommand extends CommandBuilder
 {
-    protected $executable = 'psql';
+    const DEFAULT_EXECUTABLE = 'psql';
 
     /**
      * Database host.

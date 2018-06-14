@@ -12,6 +12,7 @@ use Droath\ProjectX\Config\ComposerConfig;
 use Droath\ProjectX\Database;
 use Droath\ProjectX\DatabaseInterface;
 use Droath\ProjectX\Engine\DockerEngineType;
+use Droath\ProjectX\Event\EngineEventInterface;
 use Droath\ProjectX\Exception\TaskResultRuntimeException;
 use Droath\ProjectX\OptionFormAwareInterface;
 use Droath\ProjectX\Project\Command\DrushCommand;
@@ -25,7 +26,7 @@ use Symfony\Component\Finder\Finder;
 /**
  * Define Drupal project type.
  */
-class DrupalProjectType extends PhpProjectType implements TaskSubTypeInterface, OptionFormAwareInterface
+class DrupalProjectType extends PhpProjectType implements TaskSubTypeInterface, OptionFormAwareInterface, EngineEventInterface
 {
     /**
      * Composer package version constants.
@@ -89,9 +90,6 @@ class DrupalProjectType extends PhpProjectType implements TaskSubTypeInterface, 
         // Drupal settings file.
         $this->settingFile = "{$this->sitesPath}/default/settings.php";
         $this->settingLocalFile = "{$this->sitesPath}/default/settings.local.php";
-
-        // Drupal project supports Docker engines.
-        $this->supportsDocker();
     }
 
     /**
@@ -189,9 +187,9 @@ class DrupalProjectType extends PhpProjectType implements TaskSubTypeInterface, 
 
         $this
             ->setupProjectComposer()
+            ->setupComposerPackages()
             ->setupProjectFilesystem()
             ->setupDrush()
-            ->saveComposer()
             ->updateComposer();
 
         if (!$this->canInstall()) {
@@ -246,16 +244,18 @@ class DrupalProjectType extends PhpProjectType implements TaskSubTypeInterface, 
         parent::setupExistingProject($no_engine, $restore_method, $no_browser, $localhost);
 
         $this
-            ->installComposer()
+            ->setupComposerPackages()
+            ->updateComposer(true)
+            ->setupDrushAlias()
+            ->setupDrupalFilesystem()
             ->setupDrupalFilesystem()
             ->setupDrupalSettingsLocalInclude()
-            ->setupDrupalLocalSettings()
-            ->setupDrushAlias();
+            ->setupDrupalLocalSettings();
 
         if (!$no_engine) {
             $this->projectEnvironmentUp();
         }
-        $this->setupDrupalDatastore($restore_method, $localhost);
+        $this->setupDatabaseFromRestore($restore_method, $localhost);
 
         if (!$no_browser) {
             $this->projectLaunchBrowser();
@@ -298,7 +298,7 @@ class DrupalProjectType extends PhpProjectType implements TaskSubTypeInterface, 
     {
         if ($this->getProjectVersion() >= 8) {
             try {
-                $drush = (new DrushCommand())
+                $drush = (new DrushCommand(null, $localhost))
                     ->command('cr')
                     ->command('cim');
 
@@ -385,6 +385,13 @@ class DrupalProjectType extends PhpProjectType implements TaskSubTypeInterface, 
     {
         // Ensure default files permissions are 0775.
         $this->_chmod($this->sitesFiles, 0775, 0000, true);
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function onEngineDown()
+    {
     }
 
     /**
@@ -568,7 +575,6 @@ class DrupalProjectType extends PhpProjectType implements TaskSubTypeInterface, 
      *
      * The setup process consist of the following:
      *   - Copy the template drush directory into the project root.
-     *   - Add drush/drush to the composer.json.
      *
      * @param bool $exclude_remote
      *   Exclude the remote drush aliases from being generated.
@@ -588,11 +594,6 @@ class DrupalProjectType extends PhpProjectType implements TaskSubTypeInterface, 
             ->append()
             ->place('PROJECT_ROOT', $this->getInstallRoot(true))
             ->run();
-
-        if (!$this->hasDrush()) {
-            $this->composer
-                ->addDevRequire('drush/drush', static::DRUSH_VERSION);
-        }
 
         $this->setupDrushAlias($exclude_remote);
 
@@ -637,7 +638,7 @@ class DrupalProjectType extends PhpProjectType implements TaskSubTypeInterface, 
         if (!file_exists("$project_root/drush/site-aliases")) {
             $continue = $this->askConfirmQuestion(
                 "Drush aliases haven't been setup for this project.\n"
-                . "\nDo you want run the Drush setup?",
+                . "\nDo you want run the Drush alias setup?",
                 true
             );
 
@@ -753,20 +754,22 @@ class DrupalProjectType extends PhpProjectType implements TaskSubTypeInterface, 
      *   The account role.
      * @param string $email
      *   The account email.
-     *
+     * @param bool $localhost
+     *   Run the command on localhost.
      * @return $this
      */
     public function createDrupalAccount(
         $user = 'admin',
         $pass = 'admin',
         $role = 'administrator',
-        $email = 'admin@example.com'
+        $email = 'admin@example.com',
+        $localhost = false
     ) {
-        $drush = (new DrushCommand())
+        $drush = (new DrushCommand(null, $localhost))
             ->command("ucrt {$user} --mail='{$email}' --password='{$pass}'")
             ->command("urol '{$role}' --name='{$user}'");
 
-        $this->runDrushCommand($drush);
+        $this->runDrushCommand($drush, false, $localhost);
 
         return $this;
     }
@@ -778,10 +781,11 @@ class DrupalProjectType extends PhpProjectType implements TaskSubTypeInterface, 
      *   The drupal login user.
      * @param null $path
      *   The path to redirect to after login.
-     *
+     * @param bool $localhost
+     *   Run the command on localhost.
      * @return $this
      */
-    public function createDrupalLoginLink($user = null, $path = null)
+    public function createDrupalLoginLink($user = null, $path = null, $localhost = false)
     {
         $arg = [];
         if (isset($user)) {
@@ -792,10 +796,10 @@ class DrupalProjectType extends PhpProjectType implements TaskSubTypeInterface, 
         }
         $args = implode(' ', $arg);
 
-        $drush = (new DrushCommand())
+        $drush = (new DrushCommand(null, $localhost))
             ->command("uli {$args}");
 
-        $this->runDrushCommand($drush);
+        $this->runDrushCommand($drush, false, $localhost);
 
         return $this;
     }
@@ -1138,32 +1142,20 @@ class DrupalProjectType extends PhpProjectType implements TaskSubTypeInterface, 
         if ($command instanceof CommandBuilder) {
             $drush = $command;
         } else {
-            $drush = new DrushCommand();
+            $drush = new DrushCommand(null, $localhost);
             foreach (explode('&&', $command) as $string) {
                 $drush->command($string);
             }
         }
-        $engine = $this->getEngineInstance();
 
-        if ($engine instanceof DockerEngineType && !$localhost) {
-            $result = $engine->execRaw(
-                $drush->build(),
-                $this->getPhpServiceName(),
-                [],
-                $quiet
-            );
-        } else {
-            $command = $drush->useLocalhost()->build();
-            $execute = $this->taskExec($command);
-
-            if ($quiet) {
-                $execute->printOutput(false);
-            }
-            $result = $execute->run();
-        }
-        $this->validateTaskResult($result);
-
-        return $result;
+        return $this->executeEngineCommand(
+            $drush,
+            $this->getPhpServiceName(),
+            [],
+            $quiet,
+            $localhost
+        );
+        ;
     }
 
     /**
@@ -1176,6 +1168,47 @@ class DrupalProjectType extends PhpProjectType implements TaskSubTypeInterface, 
         }
 
         return $this;
+    }
+
+    /**
+     * Set Drupal UUID.
+     *
+     * @param bool $localhost
+     *   Determine if the drush command should be ran on the host.
+     *
+     * @return $this
+     * @throws \Exception
+     */
+    public function setDrupalUuid($localhost = false)
+    {
+        if ($this->getProjectVersion() >= 8) {
+            $build_info = $this->getProjectOptionByKey('build_info');
+
+            if ($build_info !== false
+                && isset($build_info['uuid'])
+                && !empty($build_info['uuid'])) {
+                $drush = new DrushCommand(null, $localhost);
+                $drush
+                    ->command("cset system.site uuid {$build_info['uuid']}")
+                    ->command('ev \'\Drupal::entityManager()->getStorage(\"shortcut_set\")->load(\"default\")->delete();\'');
+
+                $this->runDrushCommand($drush, false, $localhost);
+            }
+        }
+
+        return $this;
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    protected function setupComposerPackages()
+    {
+        if (!$this->hasDrush()) {
+            $this->composer->addDevRequire('drush/drush', static::DRUSH_VERSION);
+        }
+
+        return parent::setupComposerPackages();
     }
 
     /**
@@ -1256,7 +1289,7 @@ class DrupalProjectType extends PhpProjectType implements TaskSubTypeInterface, 
      */
     protected function clearDrupalCache($localhost = false)
     {
-        $drush = new DrushCommand();
+        $drush = new DrushCommand(null, $localhost);
 
         if ($this->getProjectVersion() >= 8) {
             $drush->command('cr');
@@ -1268,45 +1301,50 @@ class DrupalProjectType extends PhpProjectType implements TaskSubTypeInterface, 
     }
 
     /**
-     * Setup Drupal persistent datastore.
+     * Setup a Drupal database from restore.
      *
-     * @param null $restore_method
-     *   The method on which to restore data.
+     * @param null $method
+     *   The method on how to restore.
      * @param bool $localhost
      *   Run commands using the localhost.
      *
      * @return $this
      * @throws \Robo\Exception\TaskException
      */
-    protected function setupDrupalDatastore(
-        $restore_method = null,
+    protected function setupDatabaseFromRestore(
+        $method = null,
         $localhost = false
     ) {
         /** @var EngineType $engine */
         $engine = $this->getEngineInstance();
 
         if ($engine instanceof DockerEngineType) {
-            if ($this->getProjectVersion() >= 8 && $this->hasDrupalConfig()) {
-                $options = ['site-config', 'database-import'];
+            $options = $this->databaseRestoreOptions();
 
-                if (!isset($restore_method)
-                    || !in_array($restore_method, $options)) {
-                    $restore_method = $this->doAsk(new ChoiceQuestion(
-                        'Setup the project using? ',
-                        $options
-                    ));
-                }
-
-                if ($restore_method === 'site-config') {
+            if (!isset($method)
+                || !in_array($method, $options)) {
+                $method = $this->doAsk(new ChoiceQuestion(
+                    'Setup the project using? ',
+                    $options
+                ));
+            }
+            switch ($method) {
+                case 'site-config':
                     $this
                         ->setupDrupalInstall($localhost)
                         ->setDrupalUuid($localhost)
                         ->importDrupalConfig(1, $localhost);
-                } else {
-                    $this->importDatabaseToService(null, null, $localhost);
-                }
-            } else {
-                $this->importDatabaseToService(null, null, $localhost);
+                    break;
+                case 'database-import':
+                    $this->importDatabaseToService($this->getPhpServiceName(), null, true, $localhost);
+                    break;
+                default:
+                    /** @var DrupalPlatformRestoreInterface $platform */
+                    $platform = $this->getPlatformInstance();
+
+                    if ($platform instanceof DrupalPlatformRestoreInterface) {
+                        $platform->drupalRestore($method);
+                    }
             }
             $this->clearDrupalCache($localhost);
         } else {
@@ -1318,6 +1356,30 @@ class DrupalProjectType extends PhpProjectType implements TaskSubTypeInterface, 
         }
 
         return $this;
+    }
+
+    /**
+     * Drupal database restore options.
+     *
+     * @return array
+     */
+    protected function databaseRestoreOptions()
+    {
+        $options = [];
+
+        if ($this->getProjectVersion() >= 8 && $this->hasDrupalConfig()) {
+            $options[] = 'site-config';
+        }
+        $options[] = 'database-import';
+
+        /** @var DrupalPlatformRestoreInterface $platform */
+        $platform = $this->getPlatformInstance();
+
+        if ($platform instanceof DrupalPlatformRestoreInterface) {
+            $options = array_merge($options, $platform->drupalRestoreOptions());
+        }
+
+        return $options;
     }
 
     /**
@@ -1391,35 +1453,6 @@ class DrupalProjectType extends PhpProjectType implements TaskSubTypeInterface, 
         }
 
         return $uuid;
-    }
-
-    /**
-     * Set Drupal UUID.
-     *
-     * @param bool $localhost
-     *   Determine if the drush command should be ran on the host.
-     *
-     * @return $this
-     * @throws \Exception
-     */
-    protected function setDrupalUuid($localhost = false)
-    {
-        if ($this->getProjectVersion() >= 8) {
-            $build_info = $this->getProjectOptionByKey('build_info');
-
-            if ($build_info !== false
-                && isset($build_info['uuid'])
-                && !empty($build_info['uuid'])) {
-                $drush = new DrushCommand();
-                $drush
-                    ->command("cset system.site uuid {$build_info['uuid']}")
-                    ->command('ev \'\Drupal::entityManager()->getStorage(\"shortcut_set\")->load(\"default\")->delete();\'');
-
-                $this->runDrushCommand($drush, false, $localhost);
-            }
-        }
-
-        return $this;
     }
 
     /**

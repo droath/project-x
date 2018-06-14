@@ -161,6 +161,7 @@ abstract class TestBase extends TestCase
         return [
             'name' => 'Project-X Test',
             'type' => 'drupal',
+            'version' => 8,
             'engine' => 'docker',
             'root' => '/www',
             'remote' => [
@@ -303,6 +304,80 @@ abstract class TestBase extends TestCase
         return file_get_contents(
             $this->getProjectFileUrl($filename)
         );
+    }
+
+    /**
+     * Add composer plugin structure.
+     */
+    protected function addComposerPluginStructure()
+    {
+        $contents = json_encode([
+            [
+                'name' => 'droath/platform-example',
+                'type' => 'project-x',
+                'autoload' => [
+                    'psr-4' => [
+                        'Droath\\PlatformExample\\' => './src'
+                    ],
+                ],
+            ],
+            [
+                'name' => 'droath/project-example',
+                'type' => 'project-x',
+                'autoload' => [
+                    'psr-4' => [
+                        'Droath\\ProjectExample\\' => './src'
+                    ],
+                ],
+            ],
+            [
+                'name' => 'droath/engine-example',
+                'type' => 'project-x',
+                'autoload' => [
+                    'psr-4' => [
+                        'Droath\\EngineExample\\' => './src'
+                    ],
+                ],
+            ],
+        ]);
+        $engine_path = APP_ROOT . '/tests/fixtures/TestEngineType.php';
+        $project_path = APP_ROOT . '/tests/fixtures/TestProjectType.php';
+        $platform_path = APP_ROOT . '/tests/fixtures/TestPlatformType.php';
+
+        vfsStream::create([
+            'vendor' => [
+                'composer' => [
+                    'installed.json' => $contents
+                ],
+                'droath' => [
+                    'platform-example' => [
+                        'src' => [
+                            'Platform' => [
+                                'TestPlatformType.php' => file_get_contents($platform_path)
+                            ]
+                        ]
+                    ],
+                    'project-example' => [
+                        'src' => [
+                            'Project' => [
+                                'TestProjectType.php' => file_get_contents($project_path)
+                            ]
+                        ]
+                    ],
+                    'engine-example' => [
+                        'src' => [
+                            'Engine' => [
+                                'TestEngineType.php' => file_get_contents($engine_path)
+                            ]
+                        ]
+                    ]
+                ]
+            ]
+        ], $this->projectDir);
+
+        require_once $engine_path;
+        require_once $project_path;
+        require_once $platform_path;
     }
 
     /**
