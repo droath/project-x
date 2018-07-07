@@ -592,7 +592,7 @@ abstract class PhpProjectType extends ProjectType implements DeployAwareInterfac
      */
     protected function askTravisCi()
     {
-        if ($this->askConfirmQuestion('Setup TravisCI?', true)) {
+        if ($this->askConfirmQuestion('Setup TravisCI?', false)) {
             $this->setupTravisCi();
         }
 
@@ -606,7 +606,7 @@ abstract class PhpProjectType extends ProjectType implements DeployAwareInterfac
      */
     protected function askProboCi()
     {
-        if ($this->askConfirmQuestion('Setup ProboCI?', true)) {
+        if ($this->askConfirmQuestion('Setup ProboCI?', false)) {
             $this->setupProboCi();
         }
 
@@ -620,7 +620,7 @@ abstract class PhpProjectType extends ProjectType implements DeployAwareInterfac
      */
     protected function askBehat()
     {
-        if ($this->askConfirmQuestion('Setup Behat?', true)) {
+        if ($this->askConfirmQuestion('Setup Behat?', false)) {
             $this->setupBehat();
         }
 
@@ -634,7 +634,7 @@ abstract class PhpProjectType extends ProjectType implements DeployAwareInterfac
      */
     protected function askPhpUnit()
     {
-        if ($this->askConfirmQuestion('Setup PHPUnit?', true)) {
+        if ($this->askConfirmQuestion('Setup PHPUnit?', false)) {
             $this->setupPhpUnit();
         }
 
@@ -648,7 +648,7 @@ abstract class PhpProjectType extends ProjectType implements DeployAwareInterfac
      */
     protected function askPhpCodeSniffer()
     {
-        if ($this->askConfirmQuestion('Setup PHP code sniffer?', true)) {
+        if ($this->askConfirmQuestion('Setup PHP code sniffer?', false)) {
             $this->setupPhpCodeSniffer();
         }
 
