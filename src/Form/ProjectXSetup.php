@@ -52,8 +52,13 @@ class ProjectXSetup implements FormInterface
         ]);
 
         if ($platform_options = $this->getPlatformOptions()) {
-            $form->addField((new SelectField('platform', 'Select platform', false))
-                ->setOptions($platform_options));
+            $platform_field = (new SelectField('platform', 'Select platform', false))
+                ->setOptions($platform_options);
+
+            if (count($platform_options) === 1) {
+                $platform_field->setDefault(key($platform_options));
+            }
+            $form->addField($platform_field);
         }
 
         $form->addFields([
