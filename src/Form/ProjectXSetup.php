@@ -62,18 +62,18 @@ class ProjectXSetup implements FormInterface
         }
 
         $form->addFields([
-            (new BooleanField('host', 'Setup host?'))
+            (new BooleanField('host', 'Setup host'))
                 ->setSubform(function ($subform, $value) {
                     if ($value === true) {
                         $subform->addFields([
                             (new TextField('name', 'Hostname'))
                                 ->setDefault($this->getDefaultHostname()),
-                            (new BooleanField('open_on_startup', 'Open browser on startup?'))
+                            (new BooleanField('open_on_startup', 'Open browser on start'))
                                 ->setDefault(true),
                         ]);
                     }
                 }),
-            (new BooleanField('network', 'Setup network?'))
+            (new BooleanField('network', 'Setup network'))
                 ->setSubform(function ($subform, $value) {
                     if ($value === true) {
                         $subform->addFields([

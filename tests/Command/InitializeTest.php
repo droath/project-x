@@ -142,7 +142,7 @@ class InitializeTest extends TestBase
                     case 'save_results':
                     case 'setup_network':
                     case 'setup_build_deploy':
-                    case 'open_browser_on_startup':
+                    case 'open_browser_on_start':
                     case 'setup_drupal_site_options':
                     case 'setup_drupal_account_options':
                         return true;
