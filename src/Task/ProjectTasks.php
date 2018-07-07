@@ -12,7 +12,7 @@ class ProjectTasks extends TaskBase
     /**
      * Setup a fresh new project.
      */
-    public function projectNew()
+    public function projectSetupNew()
     {
         $this->executeCommandHook(__FUNCTION__, 'before');
         $this->projectInstance()->setupNewProject();
@@ -20,7 +20,7 @@ class ProjectTasks extends TaskBase
     }
 
     /**
-     * Setup a rusty old project.
+     * Setup an existing project.
      *
      * @param array $opts
      *
@@ -35,7 +35,7 @@ class ProjectTasks extends TaskBase
      * @option string $restore-method Set the database restore method: site-config, or database-import.
      * @option bool $localhost Install database using localhost.
      */
-    public function projectExisting($opts = [
+    public function projectSetupExisting($opts = [
         'db-name' => null,
         'db-user' => null,
         'db-pass' => null,
