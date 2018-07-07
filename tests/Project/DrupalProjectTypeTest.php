@@ -32,6 +32,31 @@ class DrupalProjectTypeTest extends TestTaskBase
             ->setContainer($this->container);
     }
 
+    public function testDefaultServices()
+    {
+        $expected = [
+            'web' => [
+                'type' => 'apache',
+                'version' => DrupalProjectType::DEFAULT_APACHE,
+            ],
+            'database' => [
+                'type' => 'mysql',
+                'version' => DrupalProjectType::DEFAULT_MYSQL,
+            ],
+            'php' => [
+                'type' => 'php',
+                'version' => DrupalProjectType::DEFAULT_PHP7
+            ]
+        ];
+        $this->assertEquals($expected, $this->drupalProject->defaultServices());
+        // Update project-x configurations to drupal 7.
+        $config = ProjectX::getProjectConfig();
+        $config->setVersion(7);
+        $config->save($this->getProjectXFilePath());
+        $expected['php']['version'] = DrupalProjectType::DEFAULT_PHP5;
+        $this->assertEquals($expected, $this->drupalProject->defaultServices());
+    }
+
     public function testOnEngineUp()
     {
         vfsStream::create([

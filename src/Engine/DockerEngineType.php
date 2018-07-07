@@ -11,6 +11,7 @@ use Droath\ProjectX\Engine\DockerServices\PhpService;
 use Droath\ProjectX\Engine\DockerServices\PostgresService;
 use Droath\ProjectX\Engine\DockerServices\RedisService;
 use Droath\ProjectX\Exception\EngineRuntimeException;
+use Droath\ProjectX\Project\ProjectType;
 use Droath\ProjectX\ProjectX;
 use Droath\ProjectX\TaskCommonTrait;
 use Droath\ProjectX\TaskSubTypeInterface;
@@ -619,7 +620,7 @@ class DockerEngineType extends EngineType implements TaskSubTypeInterface
      * @param $service
      *   The service to run the command inside.
      *
-     * @return bool|string|void
+     * @return bool|string
      * @throws \Exception
      */
     public function getFileMimeType($filename, $service)
@@ -951,6 +952,7 @@ class DockerEngineType extends EngineType implements TaskSubTypeInterface
     protected function copyDockerServiceFiles()
     {
         $root = ProjectX::projectRoot() . "/docker/services";
+        $configs = $this->getProjectServiceConfigs();
         $project_type = $this->getProjectType();
 
         foreach ($this->getServices() as $name => $info) {
@@ -958,17 +960,23 @@ class DockerEngineType extends EngineType implements TaskSubTypeInterface
                 continue;
             }
             $type = $info['type'];
+
+            /** @var DockerService $instance */
             $instance = self::loadService($this, $type, $name);
 
             if (isset($info['version'])) {
                 $instance->setVersion($info['version']);
             }
-            foreach ($instance->templateFiles() as $template => $file_info) {
+
+            if (isset($configs[$type])) {
+                $instance->setConfigs($configs[$type]);
+            }
+
+            foreach ($instance->templateFiles() as $template => $temp_info) {
                 $paths = [
                     "{$type}/{$project_type}/{$template}",
                     "{$type}/{$template}"
                 ];
-
                 foreach ($paths as $path) {
                     $filepath = $this->getTemplateFilePath($path);
 
@@ -979,10 +987,11 @@ class DockerEngineType extends EngineType implements TaskSubTypeInterface
                         if (!file_exists($destination)) {
                             $filesystem->mkdir($destination);
                         }
-                        $destination = "{$destination}/" . basename($filepath);
+                        $filename = basename($filepath);
+                        $destination = "{$destination}/{$filename}";
 
-                        $overwrite = isset($file_info['overwrite'])
-                            ? $file_info['overwrite']
+                        $overwrite = isset($temp_info['overwrite'])
+                            ? $temp_info['overwrite']
                             : false;
 
                         $status = $filesystem
@@ -990,12 +999,12 @@ class DockerEngineType extends EngineType implements TaskSubTypeInterface
                             ->run();
 
                         if ($status->wasSuccessful()
-                            && !empty($file_info['variables'])) {
+                            && !empty($temp_info['variables'])) {
                             $file_task = $this
                                 ->taskWriteToFile($destination)
                                 ->append();
 
-                            foreach ($file_info['variables'] as $name => $value) {
+                            foreach ($temp_info['variables'] as $name => $value) {
                                 $file_task->place($name, $value);
                             }
 
@@ -1009,6 +1018,23 @@ class DockerEngineType extends EngineType implements TaskSubTypeInterface
         }
 
         return $this;
+    }
+
+    /**
+     * Get project service configurations.
+     *
+     * @return array
+     */
+    protected function getProjectServiceConfigs()
+    {
+        /** @var ProjectType $project */
+        $project = $this->getProjectInstance();
+
+        if ($project instanceof EngineServiceInterface) {
+            return $project->serviceConfigs();
+        }
+
+        return [];
     }
 
     /**

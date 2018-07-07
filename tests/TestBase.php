@@ -223,7 +223,13 @@ abstract class TestBase extends TestCase
                         ],
                         'php' => [
                             'type' => 'php',
-                            'version' => 7.2
+                            'version' => 7.2,
+                            'packages' => ['nmap'],
+                            'extensions' => ['soap'],
+                            'pecl_packages' => ['Event_Dispatcher:1.1.0'],
+                            'commands' => [
+                                'mv /var/html/test.html /var/html/project.html'
+                            ]
                         ],
                         'database' => [
                             'type' => 'mysql',

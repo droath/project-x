@@ -11,7 +11,19 @@ use Droath\ProjectX\ProjectX;
  */
 abstract class DockerServiceBase
 {
+    /**
+     * Docker service default version.
+     */
     const DEFAULT_VERSION = 'latest';
+
+    /**
+     * Docker service allowed variables.
+     */
+    const DOCKER_VARIABLES = [];
+
+    /**
+     * Docker service properties override.
+     */
     const PROPERTIES_OVERRIDE = [
         'ports',
         'links',
@@ -45,6 +57,13 @@ abstract class DockerServiceBase
      * @var DockerService
      */
     protected $service;
+
+    /**
+     * The docker service configs
+     *
+     * @var array
+     */
+    protected $configs = [];
 
     /**
      * Bind ports to host.
@@ -95,6 +114,21 @@ abstract class DockerServiceBase
     public function setVersion($version)
     {
         $this->version = $version;
+
+        return $this;
+    }
+
+    /**
+     * Set the docker service configs.
+     *
+     * @param array $configs
+     *   An array of configurations.
+     *
+     * @return $this
+     */
+    public function setConfigs(array $configs)
+    {
+        $this->configs = $configs;
 
         return $this;
     }
@@ -355,6 +389,57 @@ abstract class DockerServiceBase
         }
 
         return $service;
+    }
+
+    /**
+     * Format command into a docker run statement.
+     *
+     * @param array $commands
+     * @return string
+     */
+    protected function formatRunCommand(array $commands)
+    {
+        $last = end($commands);
+
+        return 'RUN ' . implode("\r\n  && ", array_map(
+            function ($value) use ($last) {
+                return $last !== $value ? "{$value} \\" : $value;
+            },
+            $commands
+        ));
+    }
+
+    /**
+     * Format an array into a string delimiter.
+     *
+     * @param array $values
+     * @param string $delimiter
+     * @return string
+     */
+    protected function formatValueDelimiter(array $values, $delimiter = ' ')
+    {
+        return implode($delimiter, $values);
+    }
+
+    /**
+     * Merge configuration variables.
+     *
+     * @param $name
+     *   The name of variable.
+     * @param array $values
+     *   An array of values to merge into the configuration.
+     *
+     * @return $this
+     */
+    protected function mergeConfigVariable($name, array $values)
+    {
+        if (in_array($name, static::DOCKER_VARIABLES)) {
+            $this->configs[$name] = array_unique(
+                array_merge($this->configs[$name], $values)
+            );
+        }
+
+        return $this;
     }
 
     /**

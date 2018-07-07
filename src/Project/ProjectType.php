@@ -202,18 +202,7 @@ abstract class ProjectType extends TaskSubType implements ProjectTypeInterface, 
     {
         return $this->isDirEmpty($this->getInstallPath());
     }
-
-    /**
-     * Get project default services.
-     *
-     * @return array
-     *   An array of default services.
-     */
-    public function defaultServices()
-    {
-        return [];
-    }
-
+    
     /**
      * Get project option by key.
      *

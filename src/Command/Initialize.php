@@ -7,6 +7,7 @@ use Droath\ConsoleForm\Field\TextField;
 use Droath\ConsoleForm\Form;
 use Droath\ProjectX\Config\ProjectXConfig;
 use Droath\ProjectX\DeployAwareInterface;
+use Droath\ProjectX\Engine\EngineServiceInterface;
 use Droath\ProjectX\OptionFormAwareInterface;
 use Droath\ProjectX\Platform\NullPlatformType;
 use Droath\ProjectX\ProjectX;
@@ -212,13 +213,16 @@ class Initialize extends Command
      */
     protected function setEngineServiceOptions()
     {
-        $engine = ProjectX::getEngineType();
         $project = ProjectX::getProjectType();
+        
+        if ($project instanceof EngineServiceInterface) {
+            $engine = ProjectX::getEngineType();
 
-        $classname = get_class($engine);
-        $this->options[$classname::getTypeId()] = [
-            'services' => $project->defaultServices()
-        ];
+            $classname = get_class($engine);
+            $this->options[$classname::getTypeId()] = [
+                'services' => $project->defaultServices()
+            ];
+        }
 
         return $this;
     }

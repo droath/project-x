@@ -2,6 +2,7 @@
 
 namespace Droath\ProjectX\Engine;
 
+use Droath\ProjectX\ProjectTrait;
 use Droath\ProjectX\ProjectX;
 use Droath\ProjectX\TaskSubType;
 
@@ -10,6 +11,8 @@ use Droath\ProjectX\TaskSubType;
  */
 abstract class EngineType extends TaskSubType implements EngineTypeInterface
 {
+    use ProjectTrait;
+
     /**
      * Engine install path.
      */

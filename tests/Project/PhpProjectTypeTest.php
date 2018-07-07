@@ -7,7 +7,6 @@ use Droath\ProjectX\Project\PhpProjectType;
 use Droath\ProjectX\ProjectX;
 use Droath\ProjectX\Tests\TestTaskBase;
 use org\bovigo\vfs\vfsStream;
-use Symfony\Component\Console\Input\StringInput;
 
 /**
  * Define the PHP project type test.
@@ -28,6 +27,41 @@ class PhpProjectTypeTest extends TestTaskBase
         $this->phpProject = $this->getMockForAbstractClass('\Droath\ProjectX\Project\PhpProjectType')
             ->setBuilder($this->builder)
             ->setContainer($this->container);
+    }
+
+    public function testDefaultServices()
+    {
+        $this->assertEquals([
+            'php' => [
+                'type' => 'php',
+                'version' => PhpProjectType::DEFAULT_PHP7
+            ]
+        ], $this->phpProject->defaultServices());
+    }
+
+    public function testServiceConfigs()
+    {
+        // Project-x configuration is set to use a mysql database type.
+        $this->assertTrue(in_array('mysql-client', $this->phpProject->serviceConfigs()['php']['PACKAGE_INSTALL']));
+
+        // Update project-x configuration to use postgres database.
+        $config = ProjectX::getProjectConfig();
+        $project_options = $config->getOptions();
+        $project_options['docker']['services']['database'] = [
+            'type' => 'postgres',
+            'version' => 9.6,
+            'ports' => ['5432'],
+            'environment' => [
+                'POSTGRES_USER=admin',
+                'POSTGRES_PASSWORD=root',
+                "POSTGRES_DB=drupal",
+                'PGDATA=/var/lib/postgresql/data'
+            ]
+        ];
+        $config->setOptions($project_options);
+        $config->save($this->getProjectXFilePath());
+
+        $this->assertTrue(in_array('postgresql-client', $this->phpProject->serviceConfigs()['php']['PACKAGE_INSTALL']));
     }
 
     public function testGetEnvPhpVersion()
@@ -121,7 +155,6 @@ class PhpProjectTypeTest extends TestTaskBase
             ->setPort(5253)
             ->setProtocol('pgsql')
             ->setHostname('127.0.0.1'));
-
         $this->assertEquals(new \ArrayIterator([
             'hostname' => '127.0.0.1',
             'port' => '5253',

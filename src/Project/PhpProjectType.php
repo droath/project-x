@@ -9,9 +9,9 @@ use Droath\ProjectX\Database;
 use Droath\ProjectX\DatabaseInterface;
 use Droath\ProjectX\DeployAwareInterface;
 use Droath\ProjectX\Engine\DockerEngineType;
+use Droath\ProjectX\Engine\EngineServiceInterface;
 use Droath\ProjectX\Engine\EngineType;
 use Droath\ProjectX\Engine\ServiceDbInterface;
-use Droath\ProjectX\Engine\ServiceInterface;
 use Droath\ProjectX\Project\Command\MysqlCommand;
 use Droath\ProjectX\Project\Command\PgsqlCommand;
 use Droath\ProjectX\ProjectX;
@@ -23,10 +23,18 @@ use Symfony\Component\Console\Question\Question;
 /**
  * Define PHP project type.
  */
-abstract class PhpProjectType extends ProjectType implements DeployAwareInterface
+abstract class PhpProjectType extends ProjectType implements DeployAwareInterface, EngineServiceInterface
 {
     use composerTasks;
     use fileSystemTasks;
+
+    /**
+     * Service constants.
+     */
+    const DEFAULT_PHP7 = 7.1;
+    const DEFAULT_PHP5 = 5.6;
+    const DEFAULT_MYSQL = '5.6';
+    const DEFAULT_APACHE = '2.4';
 
     /**
      * Package versions.
@@ -103,6 +111,78 @@ abstract class PhpProjectType extends ProjectType implements DeployAwareInterfac
     }
 
     /**
+     * {@inheritdoc}
+     */
+    public function defaultServices()
+    {
+        return [
+            'php' => [
+                'type' => 'php',
+                'version' => static::DEFAULT_PHP7
+            ],
+        ];
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function serviceConfigs()
+    {
+        $configs = [
+            'php' => [
+                'PACKAGE_INSTALL' => [
+                    'file',
+                    'libpng12-dev',
+                    'libjpeg-dev',
+                    'libwebp-dev',
+                    'libpq-dev',
+                    'libmcrypt-dev',
+                    'libmagickwand-dev'
+                ],
+                'PHP_PECL' => [
+                    'redis',
+                    'xdebug',
+                    'imagick:3.4.3'
+                ],
+                'PHP_EXT_ENABLE' => [],
+                'PHP_EXT_CONFIG' => [
+                    'gd --with-png-dir=/usr --with-jpeg-dir=/usr  --with-webp-dir=/usr'
+                ],
+                'PHP_EXT_INSTALL' => [
+                    'gd',
+                    'zip',
+                    'pdo',
+                    'mcrypt',
+                    'opcache',
+                    'mbstring',
+                ],
+                'PHP_COMMANDS' => [
+                    'curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer'
+                ]
+            ]
+        ];
+
+        /** @var EngineType $engine */
+        $engine = $this->getEngineInstance();
+
+        /** @var ServiceDbInterface $service */
+        $service = $engine->getServiceInstanceByInterface(ServiceDbInterface::class);
+
+        switch ($service->protocol()) {
+            case 'mysql':
+                $configs['php']['PACKAGE_INSTALL'][] = 'mysql-client';
+                $configs['php']['PHP_EXT_INSTALL'][] =  'pdo_mysql';
+                break;
+            case 'pgsql':
+                $configs['php']['PACKAGE_INSTALL'][] = 'postgresql-client';
+                $configs['php']['PHP_EXT_INSTALL'][] = 'pdo_pgsql';
+                break;
+        }
+
+        return $configs;
+    }
+
+    /**
      * Import database dump into a service.
      *
      * @param null $service
@@ -173,7 +253,7 @@ abstract class PhpProjectType extends ProjectType implements DeployAwareInterfac
                 );
             }
         }
-        $database =  $this->getServiceInstanceDatabase($instance);
+        $database = $this->getServiceInstanceDatabase($instance);
 
         if (!$allow_override || !isset($this->databaseOverride)) {
             return $database;

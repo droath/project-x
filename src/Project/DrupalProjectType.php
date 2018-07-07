@@ -11,7 +11,10 @@ use Droath\ProjectX\CommandBuilder;
 use Droath\ProjectX\Config\ComposerConfig;
 use Droath\ProjectX\Database;
 use Droath\ProjectX\DatabaseInterface;
+use Droath\ProjectX\Engine\EngineServiceInterface;
 use Droath\ProjectX\Engine\DockerEngineType;
+use Droath\ProjectX\Engine\EngineType;
+use Droath\ProjectX\Engine\ServiceDbInterface;
 use Droath\ProjectX\Event\EngineEventInterface;
 use Droath\ProjectX\Exception\TaskResultRuntimeException;
 use Droath\ProjectX\OptionFormAwareInterface;
@@ -26,7 +29,7 @@ use Symfony\Component\Finder\Finder;
 /**
  * Define Drupal project type.
  */
-class DrupalProjectType extends PhpProjectType implements TaskSubTypeInterface, OptionFormAwareInterface, EngineEventInterface
+class DrupalProjectType extends PhpProjectType implements TaskSubTypeInterface, OptionFormAwareInterface, EngineEventInterface, EngineServiceInterface
 {
     /**
      * Composer package version constants.
@@ -37,8 +40,6 @@ class DrupalProjectType extends PhpProjectType implements TaskSubTypeInterface, 
     /**
      * Service constants.
      */
-    const DEFAULT_PHP7 = 7.1;
-    const DEFAULT_PHP5 = 5.6;
     const DEFAULT_MYSQL = '5.6';
     const DEFAULT_APACHE = '2.4';
 
@@ -113,22 +114,23 @@ class DrupalProjectType extends PhpProjectType implements TaskSubTypeInterface, 
      */
     public function defaultServices()
     {
-        return [
+        $services = [
             'web' => [
                 'type' => 'apache',
                 'version' => static::DEFAULT_APACHE,
-            ],
-            'php' => [
-                'type' => 'php',
-                'version' => $this->getProjectVersion() === 8
-                    ? static::DEFAULT_PHP7
-                    : static::DEFAULT_PHP5,
             ],
             'database' => [
                 'type' => 'mysql',
                 'version' => static::DEFAULT_MYSQL,
             ]
-        ];
+        ] + parent::defaultServices();
+
+        // Set php version based on Drupal project version.
+        $services['php']['version'] = $this->getProjectVersion() === 8
+            ? static::DEFAULT_PHP7
+            : static::DEFAULT_PHP5;
+
+        return $services;
     }
 
     /**
