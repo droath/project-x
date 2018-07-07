@@ -62,7 +62,7 @@ class InitializeTest extends TestBase
         $this->assertEquals('local.testing.com', $config->getHost()['name']);
         $this->assertEquals('true', $config->getHost()['open_on_startup']);
         $this->assertEquals('true', $config->getNetwork()['proxy']);
-        $this->assertContains('Success, the project-x configuration have been saved.', $output);
+        $this->assertContains('Success, the project-x configurations have been saved.', $output);
         $this->assertArrayHasKey('drupal', $config->getOptions());
         $this->assertEquals([
             'site' => [
@@ -81,7 +81,7 @@ class InitializeTest extends TestBase
         ], $config->getOptions()['deploy']);
         $this->assertArrayHasKey('docker', $config->getOptions());
         $this->assertNotEmpty($config->getOptions()['docker']['services']);
-        $this->assertContains('Success, the configuration options have been saved.', $output);
+        $this->assertContains('Success, the project-x options have been saved.', $output);
     }
 
     protected function questionHelperMock()

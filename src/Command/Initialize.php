@@ -75,7 +75,7 @@ class Initialize extends Command
 
                 if ($saved) {
                     $output->writeln(
-                        sprintf('🚀  <info>Success, the project-x configuration have been saved.</info>')
+                        sprintf('🚀  <info>Success, the project-x configurations have been saved.</info>')
                     );
                     ProjectX::clearProjectConfig();
                     ProjectX::setProjectPath($filepath);
@@ -95,7 +95,7 @@ class Initialize extends Command
 
             if ($saved) {
                 $output->writeln(
-                    sprintf('🚀  <info>Success, the configuration options have been saved.</info>')
+                    sprintf('🚀  <info>Success, the project-x options have been saved.</info>')
                 );
             }
         }
@@ -214,7 +214,7 @@ class Initialize extends Command
     protected function setEngineServiceOptions()
     {
         $project = ProjectX::getProjectType();
-        
+
         if ($project instanceof EngineServiceInterface) {
             $engine = ProjectX::getEngineType();
 
