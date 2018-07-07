@@ -52,11 +52,6 @@ class InitializeTest extends TestBase
         $this->assertEquals('Project-Test', $config->getName());
         $this->assertEquals('drupal', $config->getType());
         $this->assertEquals(8, $config->getVersion());
-        $this->assertEquals('stg', $config->getRemote()['environments'][0]['realm']);
-        $this->assertEquals('Development', $config->getRemote()['environments'][0]['name']);
-        $this->assertEquals('/var/www/html/docroot', $config->getRemote()['environments'][0]['path']);
-        $this->assertEquals('dev.project-x.com', $config->getRemote()['environments'][0]['uri']);
-        $this->assertEquals('admin@dev.project-x.com', $config->getRemote()['environments'][0]['ssh_url']);
         $this->assertEquals('docker', $config->getEngine());
         $this->assertEquals('testing_platform_type', $config->getPlatform());
         $this->assertEquals('local.testing.com', $config->getHost()['name']);
