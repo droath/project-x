@@ -144,7 +144,7 @@ class DrupalProjectTypeTest extends TestTaskBase
                         'bootstrap' => []
                     ]
                 ],
-                'profile' => [
+                'profiles' => [
                     'custom' => [
                         'lighting' => []
                     ]
@@ -172,7 +172,7 @@ class DrupalProjectTypeTest extends TestTaskBase
         $this->assertFileExists("{$build_root}/{$install_root}/web.config");
         $this->assertFileExists("{$build_root}/{$install_root}/modules/custom/page_manager");
         $this->assertFileExists("{$build_root}/{$install_root}/themes/custom/bootstrap");
-        $this->assertFileExists("{$build_root}/{$install_root}/profile/custom/lighting");
+        $this->assertFileExists("{$build_root}/{$install_root}/profiles/custom/lighting");
         $this->assertFileExists("{$build_root}/{$install_root}/libraries/jquery_colorpicker");
         $this->assertFileExists("{$build_root}/salt.txt");
         $this->assertFileExists("{$build_root}/{$install_root}/sites/default/settings.php");
@@ -249,7 +249,7 @@ class DrupalProjectTypeTest extends TestTaskBase
 
         $this->assertProjectFilePermission('0775', 'www/sites');
         $this->assertProjectFileExists('www/sites/default/files');
-        $this->assertProjectFileExists('www/profile/custom');
+        $this->assertProjectFileExists('www/profiles/custom');
         $this->assertProjectFileExists('www/modules/custom');
         $this->assertProjectFileExists('www/modules/contrib');
     }

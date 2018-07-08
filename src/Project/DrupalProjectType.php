@@ -557,7 +557,7 @@ class DrupalProjectType extends PhpProjectType implements TaskSubTypeInterface, 
             static::installRoot() . '/libraries',
             static::installRoot() . '/themes/custom',
             static::installRoot() . '/modules/custom',
-            static::installRoot() . '/profile/custom'
+            static::installRoot() . '/profiles/custom'
         ];
 
         foreach ($mirror_directories as $directory) {
@@ -826,7 +826,7 @@ class DrupalProjectType extends PhpProjectType implements TaskSubTypeInterface, 
             $install_path = $this->getInstallPath();
 
             $this->taskFilesystemStack()
-                ->mkdir("{$install_path}/profile/custom", 0775, true)
+                ->mkdir("{$install_path}/profiles/custom", 0775, true)
                 ->mkdir("{$install_path}/modules/custom", 0775, true)
                 ->mkdir("{$install_path}/modules/contrib", 0775, true)
                 ->run();
