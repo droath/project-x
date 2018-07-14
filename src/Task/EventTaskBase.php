@@ -51,14 +51,13 @@ abstract class EventTaskBase extends Tasks
                 continue;
             }
 
-            switch($command->getType()) {
+            switch ($command->getType()) {
                 case 'symfony':
                     $this->executeSymfonyCmdHook($command, $method);
                     break;
                 default:
                     $this->executeEngineCmdHook($command);
                     break;
-
             }
         }
 
