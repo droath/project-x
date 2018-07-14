@@ -95,6 +95,11 @@ class ProjectTypeTest extends TestTaskBase
         $this->assertEquals('www', $this->projectType->getInstallRoot(true));
     }
 
+    public function testGetQualifiedInstallRoot()
+    {
+        $this->assertEquals('vfs://root/www', $this->projectType->getQualifiedInstallRoot());
+    }
+
     public function testOnDeployBuild()
     {
         $directory = vfsStream::create([

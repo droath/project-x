@@ -86,6 +86,16 @@ abstract class ProjectType extends TaskSubType implements ProjectTypeInterface, 
     }
 
     /**
+     * Get project fully qualified install root.
+     *
+     * @return string
+     */
+    public function getQualifiedInstallRoot()
+    {
+        return ProjectX::projectRoot() . $this->getInstallRoot();
+    }
+
+    /**
      * {@inheritdoc}
      */
     public function setupNewProject()

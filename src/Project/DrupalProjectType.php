@@ -854,16 +854,16 @@ class DrupalProjectType extends PhpProjectType implements TaskSubTypeInterface, 
             "{$this->sitesPath}/default/default.settings.php",
             $this->settingFile
         );
-        $project_root = ProjectX::projectRoot();
+        $install_root = dirname($this->getQualifiedInstallRoot());
 
         if ($this->getProjectVersion() >= 8) {
-            $this->taskWriteToFile("{$project_root}/salt.txt")
+            $this->taskWriteToFile("{$install_root}/salt.txt")
                 ->line(Utility::randomHash())
                 ->run();
 
             $this->taskFilesystemStack()
-                ->mkdir("{$project_root}/config", 0775)
-                ->chmod("{$project_root}/salt.txt", 0775)
+                ->mkdir("{$install_root}/config", 0775)
+                ->chmod("{$install_root}/salt.txt", 0775)
                 ->run();
 
             $this->taskWriteToFile($this->settingFile)
