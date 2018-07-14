@@ -3,8 +3,14 @@
 namespace Droath\ProjectX\Task;
 
 use Consolidation\AnnotatedCommand\Parser\CommandInfo;
+use Droath\ProjectX\CommandBuilder;
 use Droath\ProjectX\CommandHook;
+use Droath\ProjectX\CommandHookInterface;
+use Droath\ProjectX\Engine\DockerEngineType;
+use Droath\ProjectX\Engine\EngineTypeInterface;
+use Droath\ProjectX\EngineTrait;
 use Droath\ProjectX\Exception\CommandHookRuntimeException;
+use Droath\ProjectX\ProjectTrait;
 use Droath\ProjectX\ProjectX;
 use Robo\Contract\TaskInterface;
 use Robo\Tasks;
@@ -14,6 +20,8 @@ use Robo\Tasks;
  */
 abstract class EventTaskBase extends Tasks
 {
+    use EngineTrait;
+    use ProjectTrait;
 
     /**
      * Execute command hook.
@@ -24,6 +32,7 @@ abstract class EventTaskBase extends Tasks
      *   The event type on which to execute.
      *
      * @return $this
+     *
      * @throws \Psr\Container\ContainerExceptionInterface
      * @throws \Psr\Container\NotFoundExceptionInterface
      */
@@ -38,102 +47,191 @@ abstract class EventTaskBase extends Tasks
                 $command = CommandHook::createWithData($command);
             }
 
-            if (!$command instanceof CommandHook) {
+            if (!$command instanceof CommandHookInterface) {
                 continue;
             }
-            $execute = $this->getCommandHookExecute($command, $method);
 
-            if (!$execute || !$execute instanceof TaskInterface) {
-                continue;
+            switch($command->getType()) {
+                case 'symfony':
+                    $this->executeSymfonyCmdHook($command, $method);
+                    break;
+                default:
+                    $this->executeEngineCmdHook($command);
+                    break;
+
             }
-            $execute->run();
         }
 
         return $this;
     }
 
     /**
-     * Get command hook execute task.
+     * Execute engine command hook.
      *
-     * @param CommandHook $command_hook
+     * @param CommandHookInterface $hook_command
      *   The command hook object.
-     * @param $parent_method
-     *   The parent method that's executing the command hook.
      *
-     * @return bool|\Robo\Task\Base\Exec|\Robo\Task\Base\SymfonyCommand
-     * @throws \Psr\Container\ContainerExceptionInterface
-     * @throws \Psr\Container\NotFoundExceptionInterface
+     * @return \Robo\Result|\Robo\ResultData
      */
-    protected function getCommandHookExecute(CommandHook $command_hook, $parent_method)
+    protected function executeEngineCmdHook(CommandHookInterface $hook_command)
     {
-        $hook_type = $command_hook->getType();
+        $options = $hook_command->getOptions();
 
-        if (!isset($hook_type)) {
-            return false;
+        // Determine the service the command should be ran inside.
+        $service = isset($options['service'])
+            ? $options['service']
+            : null;
+
+        // Determine if the command should be ran locally.
+        $localhost = (boolean) isset($options['localhost'])
+            ? $options['localhost']
+            : !isset($service);
+
+        $command = $this->resolveHookCommand($hook_command);
+
+        return $this->executeEngineCommand($command, $service, [], false, $localhost);
+    }
+
+    /**
+     * Resolve hook command.
+     *
+     * @param CommandHookInterface $command_hook
+     *   The command hook object.
+     *
+     * @return bool|CommandBuilder
+     */
+    protected function resolveHookCommand(CommandHookInterface $command_hook)
+    {
+        $command = null;
+
+        switch ($command_hook->getType()) {
+            case 'raw':
+                $command = $command_hook->getCommand();
+                break;
+            case 'engine':
+                $command = $this->getEngineCommand($command_hook);
+                break;
+            case 'project':
+                $command = $this->getProjectCommand($command_hook);
+                break;
         }
+
+        return isset($command) ? $command : false;
+    }
+
+    /**
+     * Execute symfony command hook.
+     *
+     * @param CommandHookInterface $command_hook
+     * @param $method
+     *
+     * @return \Robo\Result
+     */
+    protected function executeSymfonyCmdHook(CommandHookInterface $command_hook, $method)
+    {
         $command = $command_hook->getCommand();
 
-        if (!isset($command)) {
-            return false;
+        $container = ProjectX::getContainer();
+        $application = $container->get('application');
+
+        try {
+            $info = $this->getCommandInfo($method);
+            $command = $application->find($command);
+
+            if ($command->getName() === $info->getName()) {
+                throw new \Exception(sprintf(
+                    'Unable to call the %s command hook due to it ' .
+                    'invoking the parent method.',
+                    $command->getName()
+                ));
+            }
+        } catch (CommandNotFoundException $exception) {
+            throw new CommandHookRuntimeException(sprintf(
+                'Unable to find %s command in the project-x command ' .
+                'hook.',
+                $command
+            ));
+        } catch (\Exception $exception) {
+            throw new CommandHookRuntimeException($exception->getMessage());
         }
-        switch ($hook_type) {
-            case 'symfony':
-                try {
-                    $info = $this->getCommandInfo($parent_method);
-                    $container = ProjectX::getContainer();
-                    $application = $container->get('application');
+        $exec = $this->taskSymfonyCommand($command);
+        $definition = $command->getDefinition();
 
-                    $command = $application->find($command);
-
-                    if ($command->getName() === $info->getName()) {
-                        throw new \Exception(sprintf(
-                            'Unable to call the %s command hook due to it ' .
-                            'invoking the parent method.',
-                            $command->getName()
-                        ));
-                    }
-                } catch (CommandNotFoundException $exception) {
-                    throw new CommandHookRuntimeException(sprintf(
-                        'Unable to find %s command in the project-x command ' .
-                        'hook.',
-                        $command
-                    ));
-                } catch (\Exception $exception) {
-                    throw new CommandHookRuntimeException($exception->getMessage());
+        // Support symfony command options.
+        if ($command_hook->hasOptions()) {
+            foreach ($command_hook->getOptions() as $option => $value) {
+                if (is_numeric($option)) {
+                    $option = $value;
+                    $value = null;
                 }
-                $exec = $this->taskSymfonyCommand($command);
-                $definition = $command->getDefinition();
-
-                // Support symfony command options.
-                if ($command_hook->hasOptions()) {
-                    foreach ($command_hook->getOptions() as $option => $value) {
-                        if (is_numeric($option)) {
-                            $option = $value;
-                            $value = null;
-                        }
-                        if (!$definition->hasOption($option)) {
-                            continue;
-                        }
-                        $exec->opt($option, $value);
-                    }
+                if (!$definition->hasOption($option)) {
+                    continue;
                 }
-
-                // Support symfony command arguments.
-                if ($command_hook->hasArguments()) {
-                    foreach ($command_hook->getArguments() as $arg => $value) {
-                        if (!isset($value) || !$definition->hasArgument($arg)) {
-                            continue;
-                        }
-                        $exec->arg($arg, $value);
-                    }
-                }
-                break;
-            case 'raw':
-            default:
-                $exec = $this->taskExec($command);
+                $exec->opt($option, $value);
+            }
         }
 
-        return $exec;
+        // Support symfony command arguments.
+        if ($command_hook->hasArguments()) {
+            foreach ($command_hook->getArguments() as $arg => $value) {
+                if (!isset($value) || !$definition->hasArgument($arg)) {
+                    continue;
+                }
+                $exec->arg($arg, $value);
+            }
+        }
+
+        return $exec->run();
+    }
+
+    /**
+     * Get project command.
+     *
+     * @param CommandHookInterface $command_hook
+     *
+     * @return CommandBuilder
+     */
+    protected function getProjectCommand(CommandHookInterface $command_hook)
+    {
+        $method = $command_hook->getCommand();
+        $project = $this->getProjectInstance();
+
+        if (!method_exists($project, $method)) {
+            throw new CommandHookRuntimeException(
+                sprintf("The %s method doesn't exist on the project.", $method)
+            );
+        }
+        $args = array_merge(
+            $command_hook->getOptions(),
+            $command_hook->getArguments()
+        );
+
+        return call_user_func_array([$project, $method], [$args]);
+    }
+
+    /**
+     * Get environment engine command.
+     *
+     * @param CommandHookInterface $command_hook
+     *
+     * @return CommandBuilder
+     */
+    protected function getEngineCommand(CommandHookInterface $command_hook)
+    {
+        $method = $command_hook->getCommand();
+        $engine = $this->getEngineInstance();
+
+        if (!method_exists($engine, $method)) {
+            throw new CommandHookRuntimeException(
+                sprintf("The %s method doesn't exist on the environment engine.", $method)
+            );
+        }
+        $args = array_merge(
+            $command_hook->getOptions(),
+            $command_hook->getArguments()
+        );
+
+        return call_user_func_array([$engine, $method], [$args]);
     }
 
     /**

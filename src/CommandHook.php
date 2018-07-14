@@ -3,9 +3,9 @@
 namespace Droath\ProjectX;
 
 /**
- * Define command hook.
+ * Define command hook class.
  */
-class CommandHook
+class CommandHook implements CommandHookInterface
 {
     protected $type;
 
