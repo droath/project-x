@@ -5,8 +5,10 @@ namespace Droath\ProjectX\Project;
 use Droath\ProjectX\EngineTrait;
 use Droath\ProjectX\Event\DeployEventInterface;
 use Droath\ProjectX\PlatformTrait;
+use Droath\ProjectX\Project\Command\SymlinkCommand;
 use Droath\ProjectX\ProjectX;
 use Droath\ProjectX\TaskSubType;
+use Symfony\Component\Finder\SplFileInfo;
 
 /**
  * Define Project-X project type.
@@ -253,6 +255,54 @@ abstract class ProjectType extends TaskSubType implements ProjectTypeInterface, 
     public function rebuildSettings()
     {
         // Nothing to do at parent level.
+    }
+
+    /**
+     * Create symbolic links on project.
+     *
+     * @param array $options
+     *
+     * @return SymlinkCommand
+     */
+    public function createSymbolicLinksOnProject(array $options)
+    {
+        $project_root = ProjectX::projectRoot();
+
+        $excludes = isset($options['excludes'])
+            ? $options['excludes']
+            : [];
+
+        $includes = isset($options['includes'])
+            ? $options['includes']
+            : [];
+
+        $target_dir = isset($options['target_dir'])
+            ? $options['target_dir']
+            : null;
+
+        $source_dir = isset($options['source_dir'])
+            ? $options['source_dir']
+            : $project_root;
+
+        $symlink_command = new SymlinkCommand();
+
+        /** @var SplFileInfo $file_info */
+        foreach (new \FilesystemIterator($project_root, \FilesystemIterator::SKIP_DOTS) as $file_info) {
+            $filename = $file_info->getFilename();
+
+            if (strpos($filename, '.') === 0
+                || in_array($filename, $excludes)) {
+                continue;
+            }
+
+            if (!empty($includes) && !in_array($filename, $includes)) {
+                continue;
+            }
+
+            $symlink_command->link("{$source_dir}/{$filename}", "{$target_dir}/{$filename}");
+        }
+
+        return $symlink_command;
     }
 
     /**
