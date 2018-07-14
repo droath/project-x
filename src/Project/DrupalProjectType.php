@@ -14,7 +14,6 @@ use Droath\ProjectX\DatabaseInterface;
 use Droath\ProjectX\Engine\EngineServiceInterface;
 use Droath\ProjectX\Engine\DockerEngineType;
 use Droath\ProjectX\Engine\EngineType;
-use Droath\ProjectX\Engine\ServiceDbInterface;
 use Droath\ProjectX\Event\EngineEventInterface;
 use Droath\ProjectX\Exception\TaskResultRuntimeException;
 use Droath\ProjectX\OptionFormAwareInterface;
@@ -174,18 +173,6 @@ class DrupalProjectType extends PhpProjectType implements TaskSubTypeInterface, 
     public function setupNewProject()
     {
         parent::setupNewProject();
-
-        $status = $this->canBuild();
-
-        if ($status === static::BUILD_ABORT) {
-            $this->say('Project build process has been aborted! ⛈️');
-
-            return;
-        }
-
-        if ($status === static::BUILD_DIRTY) {
-            $this->deleteInstallDirectory();
-        }
 
         $this
             ->setupProjectComposer()

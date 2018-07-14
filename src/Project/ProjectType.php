@@ -103,6 +103,18 @@ abstract class ProjectType extends TaskSubType implements ProjectTypeInterface, 
         $this->say('Setup process for a fresh exciting new project has begun. 🤘');
         $this->io()->newLine();
 
+        $status = $this->canBuild();
+
+        if ($status === static::BUILD_ABORT) {
+            $this->say('Project build process has been aborted! ⛈️');
+
+            return;
+        }
+
+        if ($status === static::BUILD_DIRTY) {
+            $this->deleteInstallDirectory();
+        }
+
         $this->installEnvEngine();
     }
 
@@ -115,7 +127,7 @@ abstract class ProjectType extends TaskSubType implements ProjectTypeInterface, 
         $no_browser = false,
         $localhost = false
     ) {
-        $this->say('Setup process for an old rusty project has begun. 🤮');
+        $this->say('Setup process for an existing project has begun. 🤠');
         $this->io()->newLine();
 
         $engine = $this->getEngineInstance();

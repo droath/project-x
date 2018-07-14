@@ -68,9 +68,9 @@ abstract class PhpProjectType extends ProjectType implements DeployAwareInterfac
     /**
      * {@inheritdoc}
      */
-    public function build()
+    public function setupNewProject()
     {
-        parent::build();
+        parent::setupNewProject();
 
         $this
             ->askTravisCi()
