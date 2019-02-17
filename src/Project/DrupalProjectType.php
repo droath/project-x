@@ -1179,7 +1179,7 @@ class DrupalProjectType extends PhpProjectType implements TaskSubTypeInterface, 
                 $drush = new DrushCommand(null, $localhost);
                 $drush
                     ->command("cset system.site uuid {$build_info['uuid']}")
-                    ->command('ev \'\Drupal::entityManager()->getStorage(\"shortcut_set\")->load(\"default\")->delete();\'');
+                    ->command('ev \'\Drupal::entityManager()->getStorage("shortcut_set")->load("default")->delete();\'');
 
                 $this->runDrushCommand($drush, false, $localhost);
             }
