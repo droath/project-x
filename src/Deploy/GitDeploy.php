@@ -173,7 +173,9 @@ class GitDeploy extends DeployBase
         $result = $this->runSilentCommand($task);
         $version = trim($result->getMessage());
 
-        return !empty($version) ? $version : '0.0.0';
+        return !empty($version) && preg_match('/(\d.\d.\d)/', $version)
+            ? $version
+            : '0.0.0';
     }
 
     /**
