@@ -191,7 +191,7 @@ class Initialize extends Command
                         ->setSubform(function ($subform, $value) {
                             if (true === $value) {
                                 $subform->addFields([
-                                    (new TextField('github_repo', 'GitHub Repo')),
+                                    (new TextField('repo_url', 'Repository URL')),
                                 ]);
                             }
                         })

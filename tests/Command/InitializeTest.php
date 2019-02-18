@@ -72,7 +72,7 @@ class InitializeTest extends TestBase
         ], $config->getOptions()['drupal']);
         $this->assertArrayHasKey('deploy', $config->getOptions());
         $this->assertEquals([
-            'github_repo' => 'droath/project-x'
+            'repo_url' => 'git@github.com:droath/project-x.git'
         ], $config->getOptions()['deploy']);
         $this->assertArrayHasKey('docker', $config->getOptions());
         $this->assertNotEmpty($config->getOptions()['docker']['services']);
@@ -103,8 +103,8 @@ class InitializeTest extends TestBase
                         return 'docker';
                     case 'select_platform':
                         return 'testing_platform_type';
-                    case 'github_repo':
-                        return 'droath/project-x';
+                    case 'repository_url':
+                        return 'git@github.com:droath/project-x.git';
                     case 'github_url':
                         return 'https://github.com/droath/project-x';
                     case 'hostname':

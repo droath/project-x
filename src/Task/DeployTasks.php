@@ -24,7 +24,7 @@ class DeployTasks extends TaskBase
      */
     public function deployBuild($opts = [
         'build-path' => null,
-        'deploy-type' => 'github',
+        'deploy-type' => 'git',
         'include-asset' => [],
     ])
     {
@@ -64,7 +64,7 @@ class DeployTasks extends TaskBase
      */
     public function deployPush($opts = [
         'build-path' => null,
-        'deploy-type' => 'github',
+        'deploy-type' => 'git',
     ])
     {
         $this->executeCommandHook(__FUNCTION__, 'before');
@@ -200,7 +200,7 @@ class DeployTasks extends TaskBase
     protected function deployDefinitions()
     {
         return [
-            'github' => '\Droath\ProjectX\Deploy\GitHubDeploy',
+            'git' => '\Droath\ProjectX\Deploy\GitDeploy',
         ];
     }
 }

@@ -8,9 +8,9 @@ use Robo\Result;
 use Symfony\Component\Console\Question\Question;
 
 /**
- * Define GitHub deployment.
+ * Define the Git deployment.
  */
-class GitHubDeploy extends DeployBase
+class GitDeploy extends DeployBase
 {
     use TaskResultTrait;
 
@@ -139,7 +139,7 @@ class GitHubDeploy extends DeployBase
         if (!$this->buildHasGit()) {
             $stack
                 ->exec('init')
-                ->exec("remote add {$origin} git@github.com:{$repo}");
+                ->exec("remote add {$origin} {$repo}");
 
             if ($this->gitRemoteBranchExist()) {
                 $stack
@@ -184,7 +184,7 @@ class GitHubDeploy extends DeployBase
     protected function gitRemoteBranchExist()
     {
         $task = $this->getGitBuildStack()
-            ->exec("ls-remote --exit-code --heads git@github.com:{$this->gitRepo()} {$this->gitBranch()}");
+            ->exec("ls-remote --exit-code --heads {$this->gitRepo()} {$this->gitBranch()}");
 
         /** @var Result $result */
         $result = $this->runSilentCommand($task);
@@ -217,13 +217,13 @@ class GitHubDeploy extends DeployBase
     {
         $options = $this->getOptions();
 
-        $repo = isset($options['github_repo'])
-            ? $options['github_repo']
+        $repo = isset($options['repo_url'])
+            ? $options['repo_url']
             : null;
 
         if (!isset($repo) && $throw_exception) {
             throw new DeploymentRuntimeException(
-                'Missing GitHub repository in deploy options.'
+                'Missing Git repository in deploy options.'
             );
         }
 
