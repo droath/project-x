@@ -29,7 +29,7 @@
         "consolidation/Robo": "^1.0",
         "geerlingguy/ping": "^1.1",
         "boedah/robo-drush": "^3.0",
-        "droath/console-form": "~0.0.7",
+        "droath/console-form": "~0.0.8",
         "droath/robo-github": "^0.0.2",
         "droath/robo-docker-compose": "^0.0.8",
         "droath/robo-google-lighthouse": "^1.0",
