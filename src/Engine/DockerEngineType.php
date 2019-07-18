@@ -53,7 +53,7 @@ class DockerEngineType extends EngineType implements TaskSubTypeInterface
     /**
      * Define the traefik version number.
      */
-    const TRAEFIK_VERSION = '1.6-alpine';
+    const TRAEFIK_VERSION = '1.7-alpine';
 
     /**
      * Define the traefik network name.
